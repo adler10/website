@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="stylesheet.css">
+    <title>Passwortgeschützte Seite</title>
+    <style>
+        body {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        form {
+            background-color: rgba(42, 42, 43, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        form input, form button {
+            margin: 10px 0;
+            width: 90%;
+            padding: 10px;
+        }
+
+        form input {
+            border: none;
+            border-radius: 5px;
+        }
+
+        form button {
+            background-color: #fe0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #242222;
+        }
+    </style>
+</head>
+<body>
+    <form id="passwordForm">
+        <h1 style="color: white;">Passwortgeschützt</h1>
+        <label for="password" style="color: white;"><b>Passwort eingeben:</b></label><br>
+        <input type="password" id="password" name="password" placeholder="Passwort" required><br>
+        <button type="submit">Eingeben</button>
+        <p id="errorMsg" style="color: red; display: none;">Falsches Passwort. Bitte versuche es erneut.</p>
+    </form>
+
+    <script>
+        // Liste der Hintergrundbilder aus der index.html
+        const images = [
+            'img/mlf.JPEG',
+            'img/mlf-lf.JPEG',
+            'img/dlk.JPEG'
+        ];
+
+        // Zufälliges Bild auswählen und setzen
+        const randomImage = images[Math.floor(Math.random() * images.length)];
+        document.body.style.backgroundImage = `url(${randomImage})`;
+
+        // Passwort-Validierung
+        document.getElementById('passwordForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const correctPassword = "pw"; // Ersetze dies durch dein Passwort
+            const enteredPassword = document.getElementById('password').value;
+
+            if (enteredPassword === correctPassword) {
+                window.location.href = "index.html";
+            } else {
+                document.getElementById('errorMsg').style.display = "block";
+            }
+        });
+    </script>
+</body>
+</html>
