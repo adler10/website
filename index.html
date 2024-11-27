@@ -1,87 +1,118 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="stylesheet.css">
-    <title>Passwortgeschützte Seite</title>
+    <title>404 - Page Not Found</title>
     <style>
         body {
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
             display: flex;
             justify-content: center;
             align-items: center;
-        }
-
-        form {
-            background-color: rgba(42, 42, 43, 0.9);
-            padding: 20px;
-            border-radius: 10px;
+            height: 100vh;
             text-align: center;
-            max-width: 400px;
-            width: 100%;
         }
 
-        form input, form button {
-            margin: 10px 0;
-            width: 90%;
-            padding: 10px;
+        .container {
+            position: relative;
+            max-width: 600px;
+            padding: 20px;
         }
 
-        form input {
-            border: none;
-            border-radius: 5px;
+        h1 {
+            font-size: 4rem;
+            color: #333;
         }
 
-        form button {
-            background-color: #fe0000;
+        p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        a {
+            color: #007BFF;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .easter-egg {
+            margin-top: 20px;
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #007BFF;
             color: white;
             border: none;
             border-radius: 5px;
-            cursor: pointer;
+            font-size: 1rem;
+            display: inline-block;
         }
 
-        form button:hover {
-            background-color: #242222;
+        #game {
+            display: none;
+            margin-top: 20px;
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border: 2px solid #ccc;
+            background-color: #eee;
+            overflow: hidden;
+        }
+
+        .firetruck {
+            position: absolute;
+            width: 50px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <form id="passwordForm">
-        <h1 style="color: white;">Passwortgeschützt</h1>
-        <label for="password" style="color: white;"><b>Passwort eingeben:</b></label><br>
-        <input type="password" id="password" name="password" placeholder="Passwort" required><br>
-        <button type="submit">Eingeben</button>
-        <p id="errorMsg" style="color: red; display: none;">Falsches Passwort. Bitte versuche es erneut.</p>
-    </form>
+    <div class="container">
+        <h1>404</h1>
+        <p>Oops! The page you're looking for doesn't exist.</p>
+        <p><a href="https://google.com">Go back home</a></p>
+        <button class="easter-egg" onclick="startGame()">Discover a hidden surprise</button>
+        <div id="game">
+            <img src="https://www.alles-fuer-selbermacher.de/image/data/autorentool/60ff0cbcea5a6.jpg" alt="Firetruck" class="firetruck" id="firetruck">
+        </div>
+    </div>
 
     <script>
-        // Liste der Hintergrundbilder aus der index.html
-        const images = [
-            'img/mlf.JPEG',
-            'img/mlf-lf.JPEG',
-            'img/dlk.JPEG'
-        ];
+        function startGame() {
+            const game = document.getElementById('game');
+            const firetruck = document.getElementById('firetruck');
+            game.style.display = 'block';
 
-        // Zufälliges Bild auswählen und setzen
-        const randomImage = images[Math.floor(Math.random() * images.length)];
-        document.body.style.backgroundImage = `url(${randomImage})`;
+            // Random movement of the firetruck
+            function moveFiretruck() {
+                const gameWidth = game.clientWidth;
+                const gameHeight = game.clientHeight;
+                const truckWidth = firetruck.clientWidth;
+                const truckHeight = firetruck.clientHeight;
 
-        // Passwort-Validierung
-        document.getElementById('passwordForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const correctPassword = "pw"; // Ersetze dies durch dein Passwort
-            const enteredPassword = document.getElementById('password').value;
+                const randomX = Math.random() * (gameWidth - truckWidth);
+                const randomY = Math.random() * (gameHeight - truckHeight);
 
-            if (enteredPassword === correctPassword) {
-                window.location.href = "index2.html";
-            } else {
-                document.getElementById('errorMsg').style.display = "block";
+                firetruck.style.left = `${randomX}px`;
+                firetruck.style.top = `${randomY}px`;
             }
-        });
+
+            // Move the firetruck every second
+            let interval = setInterval(moveFiretruck, 1000);
+
+            // End the game when the firetruck is clicked
+            firetruck.addEventListener('click', () => {
+                clearInterval(interval);
+                alert('Congrats! You caught the firetruck!');
+                game.style.display = 'none';
+            });
+        }
     </script>
 </body>
 </html>
