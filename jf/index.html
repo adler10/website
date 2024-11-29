@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="stylesheet.css">
+    <title>Passwortgeschützte Seite</title>
+  <style>
+    form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #242222;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: auto;
+}
+
+form input, form button {
+    margin: 10px 0;
+    width: 100%;
+    padding: 10px;
+}
+
+  </style>
+</head>
+<body>
+    <div class="centered-text">
+        <h1>Passwortgeschützt</h1>
+        <form id="passwordForm" class="content">
+            <label for="password"><b>Passwort eingeben:</b></label>
+            <input type="password" id="password" name="password" class="link" required>
+            <button type="submit" id="submitBtn" class="link">Eingeben</button>
+            <p id="errorMsg" style="color: red; display: none;">Falsches Passwort. Bitte versuche es erneut.</p>
+        </form>
+    </div>
+    <script>
+        document.getElementById('passwordForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const correctPassword = "deinPasswort"; // Ersetze dies durch dein Passwort
+            const enteredPassword = document.getElementById('password').value;
+
+            if (enteredPassword === correctPassword) {
+                window.location.href = "index.html";
+            } else {
+                document.getElementById('errorMsg').style.display = "block";
+            }
+        });
+    </script>
+</body>
+</html>
