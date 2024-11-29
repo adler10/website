@@ -3,14 +3,73 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ihre Bestellung - Nr. 112</title>
+    <title>Download-Seite</title>
     <style>
-      .center{
+      .center {
         text-align: center;
+        margin-top: 50px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin: 10px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      #countdown {
+        font-size: 18px;
+        color: red;
+        margin-top: 10px;
       }
     </style>
+    <script>
+      function startCountdown() {
+        const countdownElement = document.getElementById("countdown");
+        const download3DButton = document.getElementById("download3D");
+        let timeLeft = 10; // Countdown-Zeit in Sekunden
+
+        // Aktualisiere den Countdown-Text
+        countdownElement.textContent = `Bitte warten: ${timeLeft} Sekunden`;
+
+        // Starte den Countdown
+        const timer = setInterval(() => {
+          timeLeft--;
+          if (timeLeft > 0) {
+            countdownElement.textContent = `Bitte warten: ${timeLeft} Sekunden`;
+          } else {
+            clearInterval(timer);
+            countdownElement.textContent = "Sie können jetzt die 3D-Datei herunterladen.";
+            download3DButton.disabled = false;
+            download3DButton.textContent = "3D-Datei herunterladen";
+          }
+        }, 1000);
+      }
+    </script>
   </head>
   <body>
-    <h2 class="center">Ihre Bestellung - Nr. 112</h2>
-    <p class="center">Vielen Dank für Ihre Bestellung bei DBaldauf.org</p>
+    <div class="center">
+      <h2>Ihre Bestellung - Nr. 112</h2>
+      <p>Vielen Dank für Ihre Bestellung bei DBaldauf.org</p>
+
+      <!-- Button für Rechnung -->
+      <a href="rechnung.pdf" target="_blank" download="Rechnung_Nr112.pdf">
+        <button id="downloadInvoice" onclick="startCountdown()">
+          Rechnung herunterladen
+        </button>
+      </a>
+
+      <!-- Countdown-Anzeige -->
+      <p id="countdown"></p>
+
+      <!-- Button für 3D-Datei -->
+      <a href="3d_datei.stl" download="3D_Modell.stl">
+        <button id="download3D" disabled>
+          Bitte laden Sie zuerst die Rechnung herunter
+        </button>
+      </a>
+    </div>
   </body>
+</html>
