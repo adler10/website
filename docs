@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Dokumente Anzeige</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        iframe {
+            border: none;
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <iframe src="https://docs.google.com/document/d/140TDuZ1LExTwVPiE9-Kem3i7EJTys56syC7jRR-E34U/edit?usp=sharing"></iframe>
+</body>
+</html>
