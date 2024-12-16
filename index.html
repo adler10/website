@@ -1,118 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found</title>
+    <title>404</title>
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
-
-        .container {
-            position: relative;
-            max-width: 600px;
-            padding: 20px;
-        }
-
-        h1 {
-            font-size: 4rem;
-            color: #333;
-        }
-
-        p {
-            font-size: 1.2rem;
-            color: #666;
-        }
-
-        a {
-            color: #007BFF;
-            text-decoration: none;
-            font-size: 1.2rem;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .easter-egg {
-            margin-top: 20px;
-            cursor: pointer;
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1rem;
-            display: inline-block;
-        }
-
-        #game {
-            display: none;
-            margin-top: 20px;
-            position: relative;
-            width: 100%;
-            height: 300px;
-            border: 2px solid #ccc;
-            background-color: #eee;
-            overflow: hidden;
-        }
-
-        .firetruck {
-            position: absolute;
-            width: 50px;
-            cursor: pointer;
-        }
+	h1{
+	text-align: center;
+	font-size: 100px;
+	}
+	
+	h2{
+	text-align: center;
+	}
+	
+	p{
+	text-align: center;
+	}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>404</h1>
-        <p>Oops! The page you're looking for doesn't exist.</p>
-        <p><a href="https://google.com">Go back home</a></p>
-        <button class="easter-egg" onclick="startGame()">Discover a hidden surprise</button>
-        <div id="game">
-            <img src="https://www.alles-fuer-selbermacher.de/image/data/autorentool/60ff0cbcea5a6.jpg" alt="Firetruck" class="firetruck" id="firetruck">
-        </div>
-    </div>
-
-    <script>
-        function startGame() {
-            const game = document.getElementById('game');
-            const firetruck = document.getElementById('firetruck');
-            game.style.display = 'block';
-
-            // Random movement of the firetruck
-            function moveFiretruck() {
-                const gameWidth = game.clientWidth;
-                const gameHeight = game.clientHeight;
-                const truckWidth = firetruck.clientWidth;
-                const truckHeight = firetruck.clientHeight;
-
-                const randomX = Math.random() * (gameWidth - truckWidth);
-                const randomY = Math.random() * (gameHeight - truckHeight);
-
-                firetruck.style.left = `${randomX}px`;
-                firetruck.style.top = `${randomY}px`;
-            }
-
-            // Move the firetruck every second
-            let interval = setInterval(moveFiretruck, 500);
-
-            // End the game when the firetruck is clicked
-            firetruck.addEventListener('click', () => {
-                clearInterval(interval);
-                alert('Congrats! You caught the firetruck!');
-                game.style.display = 'none';
-            });
-        }
-    </script>
+    <h1>404</h1>
+	<h2>SORRY, NICHTS HIER</h2>
+	<p>Schreib mir eine E-Mail: <a href="mailto:info@dbaldauf.org">info@dbaldauf.org<a><p>
 </body>
 </html>
