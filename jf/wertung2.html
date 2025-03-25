@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Team Ranking mit 8 Stationen, Löschfunktion & Persistenz</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1, h2 { color: #333; }
+    form { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; }
+    label { display: inline-block; width: 150px; }
+    input[type="text"],
+    input[type="number"],
+    select { padding: 5px; margin: 5px 0; }
+    button { padding: 7px 15px; margin-top: 10px; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .action-btn { margin: 0 3px; padding: 5px 10px; border: 1px solid #ccc; background-color: #e7e7e7; cursor: pointer; }
+    .action-btn:hover { background-color: #d7d7d7; }
+    .delete-cache-btn { background-color: #f44336; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    .delete-cache-btn:hover { background-color: #d32f2f; }
+  </style>
+</head>
+<body>
+
+  <h1>Team Ranking mit 8 Stationen & Persistenz</h1>
+  
+  <!-- Button zum Löschen des LocalStorage -->
+  <button class="delete-cache-btn" onclick="clearCache()" title="Lokalen Cache löschen">
+    Cache leeren
+  </button>
+
+  <!-- Abschnitt: Teams erstellen -->
+  <div>
+    <h2>Teams erstellen</h2>
+    <form id="createTeamForm">
+      <label for="newTeamName">Team Name:</label>
+      <input type="text" id="newTeamName" required>
+      <br>
+      <button type="submit" title="Team anlegen">Team anlegen</button>
+    </form>
+  </div>
+
+  <!-- Tabelle zur Anzeige aller Teams -->
+  <div>
+    <h2>Team Übersicht</h2>
+    <table id="teamTable">
+      <thead>
+        <tr>
+          <th>Team Name</th>
+          <th>Station 1</th>
+          <th>Station 2</th>
+          <th>Station 3</th>
+          <th>Station 4</th>
+          <th>Station 5</th>
+          <th>Station 6</th>
+          <th>Station 7</th>
+          <th>Station 8</th>
+          <th>Gesamtpunkte</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Dynamisches Ranking -->
+  <div>
+    <h2>Top Ranking</h2>
+    <ol id="rankingList">
+    </ol>
+  </div>
+
+  <script>
+    let teams = [];
+    let teamIdCounter = 0; // Eindeutige ID für jedes Team
+
+    // Speichert die Daten in LocalStorage
+    function storeData() {
+      localStorage.setItem('teamsData', JSON.stringify(teams));
+    }
+
+    // Lädt die Daten aus LocalStorage
+    function loadData() {
+      const storedTeams = localStorage.getItem('teamsData');
+      if (storedTeams) {
+        teams = JSON.parse(storedTeams);
+        teamIdCounter = teams.reduce((max, team) => Math.max(max, team.id), 0) + 1;
+      }
+    }
+
+    // Berechnet die Gesamtsumme der Punkte eines Teams
+    function calculateTotal(team) {
+      return team.station1 + team.station2 + team.station3 + team.station4 +
+             team.station5 + team.station6 + team.station7 + team.station8;
+    }
+
+    // Aktualisiert die gesamte Tabelle
+    function updateTeamTable() {
+      const tbody = document.getElementById('teamTable').getElementsByTagName('tbody')[0];
+      tbody.innerHTML = '';
+      teams.forEach(team => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-team-id', team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.station1}</td>
+          <td>${team.station2}</td>
+          <td>${team.station3}</td>
+          <td>${team.station4}</td>
+          <td>${team.station5}</td>
+          <td>${team.station6}</td>
+          <td>${team.station7}</td>
+          <td>${team.station8}</td>
+          <td>${team.total}</td>
+          <td>
+            <button class="action-btn" onclick="editTeam(${team.id})" title="Bearbeiten">Bearbeiten</button>
+            <button class="action-btn" onclick="deleteTeam(${team.id})" title="Löschen">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      updateRanking();
+    }
+
+    // Aktualisiert das Ranking basierend auf den Gesamtpunkten
+    function updateRanking() {
+      const sortedTeams = teams.slice().sort((a, b) => b.total - a.total);
+      const rankingList = document.getElementById('rankingList');
+      rankingList.innerHTML = '';
+      sortedTeams.forEach(team => {
+        const li = document.createElement('li');
+        li.textContent = `${team.teamName} - ${team.total} Punkte`;
+        rankingList.appendChild(li);
+      });
+    }
+
+    // Neues Team anlegen
+    document.getElementById('createTeamForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const teamName = document.getElementById('newTeamName').value.trim();
+      if (!teamName) return;
+      const team = {
+        id: teamIdCounter++,
+        teamName: teamName,
+        station1: 0,
+        station2: 0,
+        station3: 0,
+        station4: 0,
+        station5: 0,
+        station6: 0,
+        station7: 0,
+        station8: 0,
+        total: 0
+      };
+      teams.push(team);
+      storeData();
+      updateTeamTable();
+      this.reset();
+    });
+
+    // Löscht ein Team nach Bestätigung
+    function deleteTeam(teamId) {
+      if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
+        teams = teams.filter(t => t.id !== teamId);
+        storeData();
+        updateTeamTable();
+      }
+    }
+
+    // Löscht den gesamten LocalStorage und lädt die Seite neu
+    function clearCache() {
+      if (confirm("Sollen wirklich alle gespeicherten Daten gelöscht werden?")) {
+        localStorage.removeItem('teamsData');
+        teams = [];
+        updateTeamTable();
+      }
+    }
+
+    // Versetzt eine Zeile in den Editiermodus
+    function editTeam(teamId) {
+      const team = teams.find(t => t.id === teamId);
+      const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
+      tr.innerHTML = `
+        <td>${team.teamName}</td>
+        <td><input type="number" min="0" value="${team.station1}" style="width: 60px;" id="edit-st1-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station2}" style="width: 60px;" id="edit-st2-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station3}" style="width: 60px;" id="edit-st3-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station4}" style="width: 60px;" id="edit-st4-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station5}" style="width: 60px;" id="edit-st5-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station6}" style="width: 60px;" id="edit-st6-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station7}" style="width: 60px;" id="edit-st7-${teamId}"></td>
+        <td><input type="number" min="0" value="${team.station8}" style="width: 60px;" id="edit-st8-${teamId}"></td>
+        <td id="total-${teamId}">${team.total}</td>
+        <td>
+          <button class="action-btn" onclick="saveTeam(${teamId})" title="Speichern">Speichern</button>
+          <button class="action-btn" onclick="cancelEdit(${teamId})" title="Abbrechen">Abbrechen</button>
+        </td>
+      `;
+      // Dynamische Aktualisierung des Totalwerts
+      for (let i = 1; i <= 8; i++) {
+        document.getElementById(`edit-st${i}-${teamId}`).addEventListener('input', () => {
+          updateRowTotal(teamId);
+        });
+      }
+    }
+
+    // Aktualisiert den Totalwert in der bearbeiteten Zeile
+    function updateRowTotal(teamId) {
+      let total = 0;
+      for (let i = 1; i <= 8; i++) {
+        const val = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        total += val;
+      }
+      document.getElementById(`total-${teamId}`).textContent = total;
+    }
+
+    // Speichert die Änderungen und verlässt den Editiermodus
+    function saveTeam(teamId) {
+      const team = teams.find(t => t.id === teamId);
+      for (let i = 1; i <= 8; i++) {
+        team['station' + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+      }
+      team.total = calculateTotal(team);
+      storeData();
+      updateTeamTable();
+    }
+
+    // Bricht den Editiermodus ab und stellt den ursprünglichen Zustand wieder her
+    function cancelEdit(teamId) {
+      updateTeamTable();
+    }
+
+    // Beim Laden der Seite Daten aus LocalStorage laden
+    window.addEventListener('load', () => {
+      loadData();
+      updateTeamTable();
+    });
+  </script>
+
+</body>
+</html>
