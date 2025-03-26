@@ -147,6 +147,15 @@
       color: var(--text-color);
     }
     footer { text-align: center; margin-top: 20px; }
+    /* Stil für die Suchleiste */
+    #searchTeamInput {
+      width: 100%;
+      max-width: 300px;
+      padding: 7px;
+      margin-bottom: 10px;
+      border: 1px solid var(--button-border);
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -190,6 +199,8 @@
     <!-- Tabelle zur Anzeige aller Teams (Übersicht & Bearbeitung) -->
     <section>
       <h2>Team Übersicht</h2>
+      <!-- Suchleiste zum Filtern der Teams -->
+      <input type="text" id="searchTeamInput" placeholder="Team suchen..." oninput="filterTeams()">
       <table id="teamTable">
         <thead>
           <tr>
@@ -275,7 +286,9 @@
       snapshot.forEach((docSnap) => {
         globalTeams.push({ id: docSnap.id, ...docSnap.data() });
       });
-      updateTeamTable(globalTeams);
+      // Aktualisiere Tabelle basierend auf dem Suchbegriff
+      filterTeams();
+      // Ranking unabhängig von der Suche aktualisieren
       updateRanking(globalTeams);
     });
 
@@ -303,7 +316,7 @@
       }
     });
 
-    // Übersichtstabelle aktualisieren
+    // Aktualisiert die Team-Tabelle basierend auf einem übergebenen Array
     function updateTeamTable(teams) {
       const tbody = document.querySelector("#teamTable tbody");
       tbody.innerHTML = "";
@@ -328,6 +341,13 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Filtert die global geladenen Teams basierend auf dem Suchbegriff und aktualisiert die Tabelle
+    function filterTeams() {
+      const searchTerm = document.getElementById("searchTeamInput").value.toLowerCase();
+      const filteredTeams = globalTeams.filter(team => team.teamName.toLowerCase().includes(searchTerm));
+      updateTeamTable(filteredTeams);
     }
 
     // Berechnet die Gesamtpunkte (Summe aller Stationen)
@@ -385,7 +405,7 @@
 
     // Bricht den Editiermodus ab
     function cancelEdit() {
-      updateTeamTable(globalTeams);
+      filterTeams(); // Zeigt die zuletzt gefilterte Liste erneut an
     }
 
     // Löscht ein Team (nach Bestätigung)
@@ -459,6 +479,7 @@
     window.openModal = openModal;
     window.closeModal = closeModal;
     window.checkPassword = checkPassword;
+    window.filterTeams = filterTeams;
   </script>
 </body>
 </html>
