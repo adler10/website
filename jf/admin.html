@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel – Bali-Cup 2025</title>
+  <style>
+    /* Farbvariablen Dark Mode (Standard) */
+    :root {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --header-bg: #1e1e1e;
+      --container-bg: #1e1e1e;
+      --button-bg: #333;
+      --button-border: #444;
+      --button-hover: #555;
+      --delete-bg: #d32f2f;
+      --delete-hover: #b71c1c;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background-color: var(--header-bg);
+      border-bottom: 1px solid var(--button-border);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: var(--container-bg);
+    }
+    th, td {
+      border: 1px solid var(--button-border);
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: var(--button-bg);
+    }
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      border: 1px solid var(--button-border);
+      background-color: var(--button-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: var(--button-hover);
+    }
+    .delete-btn {
+      background-color: var(--delete-bg);
+      border: none;
+      color: white;
+    }
+    .delete-btn:hover {
+      background-color: var(--delete-hover);
+    }
+    /* Modal für Login */
+    #loginModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: block;
+      z-index: 1000;
+    }
+    #loginModal .modal-content {
+      background: #1e1e1e;
+      padding: 20px;
+      max-width: 400px;
+      margin: 20% auto;
+      border: 1px solid var(--button-border);
+      border-radius: 4px;
+      text-align: center;
+    }
+    #loginModal input {
+      width: 80%;
+      padding: 10px;
+      margin: 10px auto;
+      display: block;
+    }
+    /* Modal für Ranking */
+    .modal-popup {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-popup .modal-content {
+      background-color: var(--container-bg);
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid var(--button-border);
+      width: 90%;
+      max-width: 600px;
+      border-radius: 4px;
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 1.2em;
+      border: none;
+      background: none;
+      color: var(--text-color);
+    }
+    /* Versionsanzeige */
+    footer {
+      text-align: center;
+      padding: 10px;
+      border-top: 1px solid var(--button-border);
+      margin-top: 20px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Modal -->
+  <div id="loginModal">
+    <div class="modal-content">
+      <h2>Bitte Passwort eingeben</h2>
+      <input type="password" id="loginPassword" placeholder="Passwort">
+      <br>
+      <button onclick="checkAdminPassword()">Einloggen</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>Admin Panel – Bali-Cup 2025</h1>
+  </header>
+
+  <div class="container">
+    <!-- Button zum Öffnen des Ranking-Popups -->
+    <button onclick="openRankingModal()">Ranking anzeigen</button>
+    <!-- Button zum Löschen einzelner Teams und Bearbeiten sind in der Tabelle integriert -->
+
+    <!-- Tabelle der Teams -->
+    <h2>Team Übersicht</h2>
+    <table id="teamTable">
+      <thead>
+        <tr>
+          <th>Team Name</th>
+          <th>Station 1</th>
+          <th>Station 2</th>
+          <th>Station 3</th>
+          <th>Station 4</th>
+          <th>Station 5</th>
+          <th>Station 6</th>
+          <th>Station 7</th>
+          <th>Station 8</th>
+          <th>Gesamtpunkte</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dynamische Inhalte -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Ranking Modal -->
+  <div id="rankingModal" class="modal-popup">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeRankingModal()">✖</button>
+      <h2>Top Ranking</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Platz</th>
+            <th>Team</th>
+            <th>Punkte</th>
+            <th>Abgeschlossene Stationen</th>
+          </tr>
+        </thead>
+        <tbody id="rankingBody">
+          <!-- Dynamische Inhalte -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <p id="versionDisplay">Version: 1.0.2</p>
+  </footer>
+
+  <!-- Firebase und Admin-Panel-Logik -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
+    import { getFirestore, collection, onSnapshot, updateDoc, deleteDoc, doc } 
+      from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+    // Firebase-Konfiguration – Ersetze diese Werte durch deine eigenen (Achte auf Sicherheit!)
+    const firebaseConfig = {
+      apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
+      authDomain: "bali-cup2025.firebaseapp.com",
+      projectId: "bali-cup2025",
+      storageBucket: "bali-cup2025.firebasestorage.app",
+      messagingSenderId: "867421335336",
+      appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
+      measurementId: "G-484CZNKVQ1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Versionsnummer anzeigen
+    const currentVersion = "1.0.2";
+    document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
+
+    // Globale Variable für Teams
+    let globalTeams = [];
+
+    // Echtzeit-Listener: Abonniere die Collection "teams"
+    onSnapshot(collection(db, "teams"), (snapshot) => {
+      globalTeams = [];
+      snapshot.forEach((docSnap) => {
+        globalTeams.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      updateTeamTable(globalTeams);
+      updateRanking(globalTeams);
+    });
+
+    // Tabelle aktualisieren
+    function updateTeamTable(teams) {
+      const tbody = document.querySelector("#teamTable tbody");
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.station1}</td>
+          <td>${team.station2}</td>
+          <td>${team.station3}</td>
+          <td>${team.station4}</td>
+          <td>${team.station5}</td>
+          <td>${team.station6}</td>
+          <td>${team.station7}</td>
+          <td>${team.station8}</td>
+          <td>${team.total}</td>
+          <td>
+            <button onclick="editTeam('${team.id}')">Bearbeiten</button>
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Ranking aktualisieren
+    function updateRanking(teams) {
+      const sortedTeams = teams.slice().sort((a, b) => b.total - a.total);
+      const tbody = document.getElementById("rankingBody");
+      tbody.innerHTML = "";
+      sortedTeams.forEach((team, index) => {
+        let completedStations = 0;
+        for (let i = 1; i <= 8; i++) {
+          if (team["station" + i] > 0) completedStations++;
+        }
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${team.teamName}</td>
+          <td>${team.total}</td>
+          <td>${completedStations}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Bearbeiten: Öffnet den Bearbeitungsmodus für ein Team (hier als Popup-Dialog kann man dies erweitern)
+    function editTeam(teamId) {
+      // Für diese Beispielversion führen wir den Editiermodus nicht als Modal aus.
+      // Stattdessen kannst du hier erweiterten Code einbinden, um das Team direkt in der Tabelle zu bearbeiten.
+      alert("Bearbeitungsfunktion ist noch nicht vollständig implementiert.");
+    }
+
+    // Löscht ein Team
+    async function deleteTeam(teamId) {
+      if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
+        await deleteDoc(doc(db, "teams", teamId));
+      }
+    }
+
+    // Ranking-Popup öffnen/schließen
+    function openRankingModal() {
+      document.getElementById("rankingModal").style.display = "block";
+    }
+    function closeRankingModal() {
+      document.getElementById("rankingModal").style.display = "none";
+    }
+
+    // Admin-Login: Passwortprüfung
+    function checkAdminPassword() {
+      const input = document.getElementById("loginPassword").value;
+      if (input === "adminbalicup") {
+        document.getElementById("loginModal").style.display = "none";
+      } else {
+        alert("Falsches Passwort!");
+      }
+    }
+    // Funktionen global verfügbar machen
+    window.checkAdminPassword = checkAdminPassword;
+    window.editTeam = editTeam;
+    window.deleteTeam = deleteTeam;
+    window.openRankingModal = openRankingModal;
+    window.closeRankingModal = closeRankingModal;
+  </script>
+</body>
+</html>
