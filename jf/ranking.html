@@ -20,12 +20,18 @@
       --table-bg: #2c2c2c;
       --table-border: #666;
     }
+    /* Fade-In Animation für den gesamten Body */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       transition: background 0.3s, color 0.3s;
+      animation: fadeIn 1s ease-out;
     }
     header {
       background-color: var(--header-bg);
@@ -60,6 +66,14 @@
       border-top: 1px solid var(--table-border);
       font-size: 0.9em;
       margin-top: 20px;
+    }
+    /* Animation für einzelne Tabellenzeilen */
+    .fade-in {
+      animation: rowFadeIn 0.5s ease-out;
+    }
+    @keyframes rowFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -126,17 +140,16 @@
 
     // Ranking aktualisieren: sortiere nach Gesamtpunkten absteigend
     function updateRanking(teams) {
-      // Sortiere Teams nach Punkten (absteigend)
       teams.sort((a, b) => b.total - a.total);
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
       teams.forEach((team, index) => {
-        // Zähle, wie viele Stationen abgeschlossen sind (Punkte > 0)
         let completedStations = 0;
         for (let i = 1; i <= 8; i++) {
           if (team["station" + i] > 0) completedStations++;
         }
         const row = document.createElement("tr");
+        row.classList.add("fade-in");
         row.innerHTML = `
           <td>${index + 1}</td>
           <td>${team.teamName}</td>
