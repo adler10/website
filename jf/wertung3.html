@@ -155,9 +155,9 @@
   </header>
 
   <div class="container">
-    <!-- Button zum Löschen des LocalStorage (Cache) -->
-    <button class="delete-cache-btn" onclick="clearCache()" title="Lokalen Cache löschen">
-      Cache leeren
+    <!-- Button zum Löschen der gesamten Datenbank (Cache) mit Passwortabfrage -->
+    <button class="delete-cache-btn" onclick="clearDatabase()" title="Datenbank löschen (Passwort erforderlich)">
+      Datenbank leeren
     </button>
 
     <!-- Abschnitt: Teams erstellen -->
@@ -230,7 +230,7 @@
     import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
-    // Firebase-Konfiguration (deine Daten)
+    // Firebase-Konfiguration – ACHTUNG: Entferne diese sensiblen Daten aus öffentlichen Repositories!
     const firebaseConfig = {
       apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
       authDomain: "bali-cup2025.firebaseapp.com",
@@ -246,20 +246,15 @@
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Variable für Versionsnummer (aktuell manuell aktualisiert)
+    // Versionsnummer anzeigen (aktuell manuell aktualisiert)
     const currentVersion = "1.0.0";
     document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
-
-    // Teams werden in Firestore gespeichert. Wir definieren hier Funktionen zum
-    // Anlegen, Laden, Bearbeiten und Löschen der Teams.
-    let teamIdCounter = 0; // Wird lokal nicht mehr benötigt, da Firestore IDs vergibt
 
     // Neues Team anlegen
     document.getElementById("createTeamForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const teamName = document.getElementById("newTeamName").value.trim();
       if (!teamName) return;
-      // Standardmäßig alle Stationen auf 0 und Gesamtpunkte 0
       try {
         await addDoc(collection(db, "teams"), {
           teamName: teamName,
@@ -280,7 +275,7 @@
       }
     });
 
-    // Teams aus Firestore laden und in der Tabelle anzeigen
+    // Teams aus Firestore laden
     async function loadTeams() {
       const querySnapshot = await getDocs(collection(db, "teams"));
       const teams = [];
@@ -291,7 +286,7 @@
       updateRanking(teams);
     }
 
-    // Aktualisiert die Übersichtstabelle
+    // Übersichtstabelle aktualisieren
     function updateTeamTable(teams) {
       const tbody = document.querySelector("#teamTable tbody");
       tbody.innerHTML = "";
@@ -324,9 +319,8 @@
              team.station5 + team.station6 + team.station7 + team.station8;
     }
 
-    // Editiermodus für ein Team (Einzelne Zeile in Eingabefelder umwandeln)
+    // Team bearbeiten: Zeile in Editiermodus umwandeln
     async function editTeam(teamId) {
-      // Hier laden wir die aktuellen Daten für das Team aus Firestore
       const querySnapshot = await getDocs(collection(db, "teams"));
       let team;
       querySnapshot.forEach(docSnap => {
@@ -374,18 +368,17 @@
       for (let i = 1; i <= 8; i++) {
         newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
       }
-      newData.total = newData.station1 + newData.station2 + newData.station3 + newData.station4 +
-                      newData.station5 + newData.station6 + newData.station7 + newData.station8;
+      newData.total = calculateTotal(newData);
       await updateDoc(doc(db, "teams", teamId), newData);
       loadTeams();
     }
 
-    // Bricht den Editiermodus ab (einfach neu laden)
+    // Bricht den Editiermodus ab
     function cancelEdit() {
       loadTeams();
     }
 
-    // Löscht ein Team (nach Bestätigung)
+    // Löscht ein Team aus Firestore (nach Bestätigung)
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
         await deleteDoc(doc(db, "teams", teamId));
@@ -393,15 +386,24 @@
       }
     }
 
-    // Löscht den gesamten LocalStorage (Cache) und leert die Anzeige
-    function clearCache() {
-      if (confirm("Sollen wirklich alle gespeicherten Daten gelöscht werden?")) {
-        localStorage.removeItem("teamsData");
-        loadTeams();
+    // Löscht alle Dokumente in der Collection "teams" (Datenbank leeren)
+    async function clearDatabase() {
+      const password = prompt("Bitte Passwort eingeben:");
+      if (password !== "andy") {
+        alert("Falsches Passwort!");
+        return;
       }
+      const querySnapshot = await getDocs(collection(db, "teams"));
+      const promises = [];
+      querySnapshot.forEach((docSnap) => {
+        promises.push(deleteDoc(doc(db, "teams", docSnap.id)));
+      });
+      await Promise.all(promises);
+      alert("Datenbank geleert.");
+      loadTeams();
     }
 
-    // Ranking-Popup öffnen und Ranking anzeigen
+    // Ranking-Popup öffnen/schließen
     function openModal() {
       document.getElementById("rankingModal").style.display = "block";
     }
@@ -409,14 +411,13 @@
       document.getElementById("rankingModal").style.display = "none";
     }
 
-    // Aktualisiert das Ranking (als Tabelle im Modal) basierend auf den geladenen Teams
+    // Aktualisiert das Ranking (Modal-Tabelle) basierend auf den geladenen Teams
     function updateRanking(teams) {
-      // Es wird eine Kopie genommen und nach Punkten sortiert
       let sortedTeams = teams.slice().sort((a, b) => b.total - a.total);
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
       sortedTeams.forEach((team, index) => {
-        // Anzahl der abgeschlossenen Stationen: Zähle, wie viele Stationen einen Wert > 0 haben
+        // Anzahl der abgeschlossenen Stationen: Zähle, wie viele Stationen > 0 sind
         let completedStations = 0;
         for (let i = 1; i <= 8; i++) {
           if (team["station" + i] > 0) completedStations++;
@@ -431,7 +432,7 @@
       });
     }
 
-    // Beim Laden der Seite werden die Teams geladen
+    // Beim Laden der Seite werden die Teams aus Firestore geladen
     window.addEventListener("load", loadTeams);
   </script>
 </body>
