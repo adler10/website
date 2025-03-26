@@ -227,7 +227,7 @@
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } 
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
     // Firebase-Konfiguration – ACHTUNG: Entferne diese sensiblen Daten aus öffentlichen Repositories!
@@ -250,8 +250,18 @@
     const currentVersion = "1.0.0";
     document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
 
-    // Globale Variable, um Teams zwischenzuspeichern
+    // Globale Variable für Teams
     let globalTeams = [];
+
+    // Echtzeit-Listener: Teams aus Firestore abonnieren
+    onSnapshot(collection(db, "teams"), (snapshot) => {
+      globalTeams = [];
+      snapshot.forEach((docSnap) => {
+        globalTeams.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      updateTeamTable(globalTeams);
+      updateRanking(globalTeams);
+    });
 
     // Neues Team anlegen
     document.getElementById("createTeamForm").addEventListener("submit", async (e) => {
@@ -272,22 +282,11 @@
           total: 0
         });
         document.getElementById("createTeamForm").reset();
-        loadTeams();
+        // Der Echtzeit-Listener übernimmt die Aktualisierung
       } catch (error) {
         console.error("Fehler beim Anlegen des Teams:", error);
       }
     });
-
-    // Teams aus Firestore laden
-    async function loadTeams() {
-      const querySnapshot = await getDocs(collection(db, "teams"));
-      globalTeams = [];
-      querySnapshot.forEach((docSnap) => {
-        globalTeams.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      updateTeamTable(globalTeams);
-      updateRanking(globalTeams);
-    }
 
     // Übersichtstabelle aktualisieren
     function updateTeamTable(teams) {
@@ -316,7 +315,7 @@
       });
     }
 
-    // Berechnet die Gesamtpunkte (Summe aller Stationen) – wir übergeben hier ein Objekt mit station1..station8
+    // Berechnet die Gesamtpunkte (Summe aller Stationen)
     function calculateTotal(teamObj) {
       return teamObj.station1 + teamObj.station2 + teamObj.station3 + teamObj.station4 +
              teamObj.station5 + teamObj.station6 + teamObj.station7 + teamObj.station8;
@@ -367,19 +366,20 @@
       }
       newData.total = calculateTotal(newData);
       await updateDoc(doc(db, "teams", teamId), newData);
-      loadTeams();
+      // onSnapshot aktualisiert die Anzeige automatisch
     }
 
     // Bricht den Editiermodus ab
     function cancelEdit() {
-      loadTeams();
+      // onSnapshot aktualisiert die Anzeige automatisch
+      updateTeamTable(globalTeams);
     }
 
     // Löscht ein Team (nach Bestätigung)
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
         await deleteDoc(doc(db, "teams", teamId));
-        loadTeams();
+        // onSnapshot aktualisiert die Anzeige automatisch
       }
     }
 
@@ -397,7 +397,7 @@
       });
       await Promise.all(promises);
       alert("Datenbank geleert.");
-      loadTeams();
+      // onSnapshot aktualisiert die Anzeige automatisch
     }
 
     // Ranking-Popup öffnen und schließen
@@ -414,7 +414,6 @@
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
       sortedTeams.forEach((team, index) => {
-        // Zähle abgeschlossene Stationen (Stationen mit > 0 Punkten)
         let completedStations = 0;
         for (let i = 1; i <= 8; i++) {
           if (team["station" + i] > 0) completedStations++;
@@ -429,13 +428,8 @@
       });
     }
 
-    // Beim Laden der Seite Teams laden
-    window.addEventListener("load", loadTeams);
-
-    // WICHTIG: Funktionen als global verfügbar machen, da wir sie in HTML (onclick) verwenden
-    window.toggleMode = function() {
-      document.body.classList.toggle("dark");
-    }
+    // Funktionen global verfügbar machen (falls Inline-Event-Handler genutzt werden)
+    window.toggleMode = () => document.body.classList.toggle("dark");
     window.editTeam = editTeam;
     window.saveTeam = saveTeam;
     window.cancelEdit = cancelEdit;
@@ -443,7 +437,6 @@
     window.clearDatabase = clearDatabase;
     window.openModal = openModal;
     window.closeModal = closeModal;
-    window.loadTeams = loadTeams;
   </script>
 </body>
 </html>
