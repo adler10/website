@@ -11,19 +11,16 @@
       --header-bg: #fff;
       --table-bg: #fff;
       --table-border: #ccc;
+      --counter-bg: #e0e0e0;
     }
-    /* Dark Mode (falls benötigt) */
+    /* Dark Mode */
     body.dark {
       --bg-color: #1e1e1e;
       --text-color: #eee;
       --header-bg: #2c2c2c;
       --table-bg: #2c2c2c;
       --table-border: #666;
-    }
-    /* Fade-In Animation für den gesamten Body */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      --counter-bg: #444;
     }
     body {
       margin: 0;
@@ -32,6 +29,10 @@
       color: var(--text-color);
       transition: background 0.3s, color 0.3s;
       animation: fadeIn 1s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     header {
       background-color: var(--header-bg);
@@ -45,6 +46,14 @@
     }
     .ranking-container {
       padding: 20px;
+    }
+    .update-counter {
+      background-color: var(--counter-bg);
+      padding: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 1.1em;
     }
     table {
       width: 100%;
@@ -67,22 +76,28 @@
       font-size: 0.9em;
       margin-top: 20px;
     }
-    /* Animation für einzelne Tabellenzeilen */
-    .fade-in {
-      animation: rowFadeIn 0.5s ease-out;
-    }
-    @keyframes rowFadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .toggle-mode {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      cursor: pointer;
+      border: 1px solid var(--table-border);
+      background-color: var(--header-bg);
+      color: var(--text-color);
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
+  <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
   <header>
     <h1>Bali-Cup 2025 - Live Ranking</h1>
   </header>
-
   <div class="ranking-container">
+    <div class="update-counter" id="updateCounter">
+      Letzte Aktualisierung: 0 Minuten, 0 Sekunden
+    </div>
     <table>
       <thead>
         <tr>
@@ -97,14 +112,12 @@
       </tbody>
     </table>
   </div>
-
   <footer>
     <p id="versionDisplay">Version: 1.0.1</p>
   </footer>
 
   <!-- Firebase und Ranking-Logik -->
   <script type="module">
-    // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
@@ -120,25 +133,33 @@
       measurementId: "G-484CZNKVQ1"
     };
 
-    // Firebase initialisieren
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Versionsnummer anzeigen (aktuell manuell aktualisiert)
+    // Versionsnummer anzeigen
     const currentVersion = "1.0.1";
     document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
 
-    // Echtzeit-Listener für die Collection "teams"
-    onSnapshot(collection(db, "teams"), (snapshot) => {
-      const teams = [];
-      snapshot.forEach(doc => {
-        teams.push({ id: doc.id, ...doc.data() });
-      });
-      updateRanking(teams);
-    });
+    // Variable für die letzte Aktualisierungszeit
+    let lastUpdateTime = new Date();
+    let updateInterval;
 
-    // Ranking aktualisieren: sortiere nach Gesamtpunkten absteigend
+    // Startet den Zähler
+    function startUpdateCounter() {
+      clearInterval(updateInterval);
+      lastUpdateTime = new Date();
+      updateInterval = setInterval(() => {
+        const now = new Date();
+        const diff = Math.floor((now - lastUpdateTime) / 1000);
+        const minutes = Math.floor(diff / 60);
+        const seconds = diff % 60;
+        document.getElementById("updateCounter").textContent = 
+          `Letzte Aktualisierung: ${minutes} Minuten, ${seconds} Sekunden`;
+      }, 1000);
+    }
+
+    // Aktualisiert das Ranking basierend auf den Daten aus Firestore
     function updateRanking(teams) {
       teams.sort((a, b) => b.total - a.total);
       const tbody = document.getElementById("rankingBody");
@@ -149,7 +170,8 @@
           if (team["station" + i] > 0) completedStations++;
         }
         const row = document.createElement("tr");
-        row.classList.add("fade-in");
+        // Einfacher Fade-In-Effekt für jede neue Zeile:
+        row.style.opacity = 0;
         row.innerHTML = `
           <td>${index + 1}</td>
           <td>${team.teamName}</td>
@@ -157,7 +179,24 @@
           <td>${completedStations}</td>
         `;
         tbody.appendChild(row);
+        setTimeout(() => { row.style.transition = "opacity 0.5s"; row.style.opacity = 1; }, 50);
       });
+    }
+
+    // Echtzeit-Listener: Abonniere die Collection "teams"
+    onSnapshot(collection(db, "teams"), (snapshot) => {
+      const teams = [];
+      snapshot.forEach(doc => {
+        teams.push({ id: doc.id, ...doc.data() });
+      });
+      updateRanking(teams);
+      // Wenn Daten neu empfangen werden, starte den Aktualisierungszähler neu
+      startUpdateCounter();
+    });
+
+    // Light/Dark Mode Toggle
+    window.toggleMode = function() {
+      document.body.classList.toggle("dark");
     }
   </script>
 </body>
