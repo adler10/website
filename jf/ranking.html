@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Bali-Cup 2025 - Live Ranking</title>
+  <style>
+    /* Basisfarben (Light Mode) */
+    :root {
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --header-bg: #fff;
+      --table-bg: #fff;
+      --table-border: #ccc;
+    }
+    /* Dark Mode (falls benötigt) */
+    body.dark {
+      --bg-color: #1e1e1e;
+      --text-color: #eee;
+      --header-bg: #2c2c2c;
+      --table-bg: #2c2c2c;
+      --table-border: #666;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    header {
+      background-color: var(--header-bg);
+      padding: 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--table-border);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    .ranking-container {
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--table-bg);
+    }
+    th, td {
+      border: 1px solid var(--table-border);
+      padding: 12px;
+      text-align: center;
+      font-size: 1.2em;
+    }
+    th {
+      background-color: var(--header-bg);
+    }
+    footer {
+      text-align: center;
+      padding: 10px;
+      border-top: 1px solid var(--table-border);
+      font-size: 0.9em;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bali-Cup 2025 - Live Ranking</h1>
+  </header>
+
+  <div class="ranking-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Platz</th>
+          <th>Team</th>
+          <th>Punkte</th>
+          <th>Abgeschlossene Stationen</th>
+        </tr>
+      </thead>
+      <tbody id="rankingBody">
+        <!-- Rangliste wird hier dynamisch eingefügt -->
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <p id="versionDisplay">Version: 1.0.1</p>
+  </footer>
+
+  <!-- Firebase und Ranking-Logik -->
+  <script type="module">
+    // Firebase SDKs importieren
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+    // Firebase-Konfiguration – ersetze diese Werte durch deine eigenen
+    const firebaseConfig = {
+      apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
+      authDomain: "bali-cup2025.firebaseapp.com",
+      projectId: "bali-cup2025",
+      storageBucket: "bali-cup2025.firebasestorage.app",
+      messagingSenderId: "867421335336",
+      appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
+      measurementId: "G-484CZNKVQ1"
+    };
+
+    // Firebase initialisieren
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Versionsnummer anzeigen (aktuell manuell aktualisiert)
+    const currentVersion = "1.0.1";
+    document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
+
+    // Echtzeit-Listener für die Collection "teams"
+    onSnapshot(collection(db, "teams"), (snapshot) => {
+      const teams = [];
+      snapshot.forEach(doc => {
+        teams.push({ id: doc.id, ...doc.data() });
+      });
+      updateRanking(teams);
+    });
+
+    // Ranking aktualisieren: sortiere nach Gesamtpunkten absteigend
+    function updateRanking(teams) {
+      // Sortiere Teams nach Punkten (absteigend)
+      teams.sort((a, b) => b.total - a.total);
+      const tbody = document.getElementById("rankingBody");
+      tbody.innerHTML = "";
+      teams.forEach((team, index) => {
+        // Zähle, wie viele Stationen abgeschlossen sind (Punkte > 0)
+        let completedStations = 0;
+        for (let i = 1; i <= 8; i++) {
+          if (team["station" + i] > 0) completedStations++;
+        }
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${team.teamName}</td>
+          <td>${team.total}</td>
+          <td>${completedStations}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
