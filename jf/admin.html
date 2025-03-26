@@ -223,8 +223,6 @@
   <!-- Header -->
   <header>
     <h1>Admin Panel – Bali-Cup 2025</h1>
-    <!-- Neuer PDF-Export-Button -->
-    <button class="admin-btn" onclick="exportAsPDF()">PDF Export</button>
   </header>
 
   <div class="container">
@@ -324,7 +322,7 @@
     <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
   </div>
 
-  <!-- Ranking Modal (mit getrenntem Ranking für Normale Gruppen und Kindergruppen) -->
+  <!-- Ranking Modal (getrennt nach Normale Gruppen und Kindergruppen) -->
   <div id="rankingModal" class="modal-popup">
     <div class="modal-content">
       <button class="close-modal" onclick="closeRankingModal()">✖</button>
@@ -339,7 +337,7 @@
           </tr>
         </thead>
         <tbody id="rankingNormalBody">
-          <!-- Dynamische Inhalte für Normale Gruppen -->
+          <!-- Dynamische Inhalte -->
         </tbody>
       </table>
       <h2>Top Ranking – Kindergruppen</h2>
@@ -353,7 +351,7 @@
           </tr>
         </thead>
         <tbody id="rankingKinderBody">
-          <!-- Dynamische Inhalte für Kindergruppen -->
+          <!-- Dynamische Inhalte -->
         </tbody>
       </table>
     </div>
@@ -367,14 +365,12 @@
       <form id="newTeamForm">
         <label for="teamName">Team Name:</label>
         <input type="text" id="teamName" placeholder="Team Name" required>
-        
         <label for="teamType">Team Typ:</label>
         <select id="teamType" required>
           <option value="" disabled selected>Bitte wähle einen Typ</option>
           <option value="Kindergruppe">Kindergruppe</option>
           <option value="Normale Gruppe">Normale Gruppe</option>
         </select>
-        
         <button type="submit">Team eintragen</button>
       </form>
       <div id="newTeamFeedback"></div>
@@ -385,14 +381,11 @@
     <p id="versionDisplay">Version: 1.0.3</p>
   </footer>
 
-  <!-- Firebase, jsPDF und Admin-Panel Logik -->
+  <!-- Firebase und Admin-Panel Logik -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-    // Angepasster Import: UMD-Build liefert den Defaultexport
-    import jspdf from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    const { jsPDF } = jspdf;
 
     // Globale Variable für Teams – wird in initAdminPanel() befüllt
     let globalTeams = [];
@@ -462,7 +455,6 @@
         }
       });
 
-      // Funktionen, die Firebase-Daten benötigen, werden ab hier global gemacht
       window.clearDatabase = async function clearDatabase() {
         if (confirm("Wirklich die gesamte Datenbank leeren?")) {
           const teamsSnap = await getDocs(collection(db, "teams"));
@@ -667,7 +659,7 @@
       }
     }
 
-    /* --------------------- PDF Export, CSV Export und Theme Toggle --------------------- */
+    /* --------------------- CSV Export und Theme Toggle --------------------- */
 
     function exportTeamsCSV() {
       let csvContent = "data:text/csv;charset=utf-8,";
@@ -726,19 +718,6 @@
       }
     }
     window.toggleTheme = toggleTheme;
-
-    function exportAsPDF() {
-      const doc = new jsPDF("p", "pt", "a4");
-      doc.html(document.body, {
-        callback: function (doc) {
-          doc.save("admin_panel.pdf");
-        },
-        margin: [20, 20, 20, 20],
-        x: 20,
-        y: 20
-      });
-    }
-    window.exportAsPDF = exportAsPDF;
   </script>
 </body>
 </html>
