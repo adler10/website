@@ -398,7 +398,7 @@
     // Löscht alle Dokumente in der Collection "teams" (mit Passwortabfrage)
     async function clearDatabase() {
       const password = prompt("Bitte Passwort eingeben:");
-      if (password !== "andy") {
+      if (password !== "DasIstEinPasswort") {
         alert("Falsches Passwort!");
         return;
       }
@@ -442,7 +442,7 @@
     // Passwortprüfung beim Login (Modal)
     function checkPassword() {
       const input = document.getElementById("loginPassword").value;
-      if (input === "andy") {
+      if (input === "DasIstEinPasswort") {
         document.getElementById("loginModal").style.display = "none";
       } else {
         alert("Falsches Passwort!");
