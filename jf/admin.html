@@ -17,6 +17,9 @@
       --delete-hover: #b71c1c;
       --input-bg: #222;
       --input-border: #555;
+      /* Zusätzliche Variablen für Dashboard-Karten */
+      --card-bg: #1e1e1e;
+      --card-shadow: rgba(0, 0, 0, 0.3);
     }
     body {
       font-family: Arial, sans-serif;
@@ -44,24 +47,31 @@
       max-width: 1200px;
       margin: 0 auto;
     }
-    /* Dashboard Übersicht */
+    /* Dashboard Übersicht – modernes Grid Layout */
     .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
       background-color: var(--container-bg);
-      border: 1px solid var(--button-border);
-      padding: 15px;
-      border-radius: 4px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px var(--card-shadow);
       margin-bottom: 20px;
     }
     .dashboard h2 {
-      margin-top: 0;
-    }
-    .dashboard .stats {
-      display: flex;
-      justify-content: space-around;
-      flex-wrap: wrap;
+      grid-column: 1 / -1;
+      margin: 0 0 10px;
+      font-size: 1.8em;
+      text-align: center;
     }
     .dashboard .stat {
-      margin: 10px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--button-border);
+      border-radius: 6px;
+      padding: 15px;
+      text-align: center;
+      font-size: 0.9em;
+      color: var(--text-color);
     }
     /* Admin-Buttons */
     .admin-btn {
@@ -137,11 +147,6 @@
     .table-section h2 {
       margin-top: 40px;
     }
-    /* Indikator für abgeschlossene Teams */
-    .completed {
-      font-weight: bold;
-      color: #76ff03;
-    }
     /* Login Modal */
     #loginModal {
       position: fixed;
@@ -168,6 +173,38 @@
       background-color: var(--input-bg);
       border: 1px solid var(--input-border);
       color: var(--text-color);
+    }
+    /* Neues Team Modal – vereinfachtes Formular */
+    #newTeamModal .modal-content {
+      background-color: var(--container-bg);
+      margin: 10% auto;
+      padding: 30px;
+      border: 1px solid var(--button-border);
+      width: 90%;
+      max-width: 500px;
+      border-radius: 4px;
+      position: relative;
+    }
+    #newTeamModal label, 
+    #newTeamModal input, 
+    #newTeamModal select, 
+    #newTeamModal button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    #newTeamModal input, 
+    #newTeamModal select {
+      padding: 8px;
+      box-sizing: border-box;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+    }
+    #newTeamModal button {
+      width: auto;
+      margin: 0 auto;
+      display: block;
     }
     /* Modal Popup (für Ranking und Neues Team) */
     .modal-popup {
@@ -228,20 +265,15 @@
   <div class="container">
     <!-- Dashboard Übersicht -->
     <div class="dashboard" id="dashboard">
-      <h2>Übersicht</h2>
-      <div class="stats">
-        <div class="stat" id="totalTeams">Alle Teams: 0</div>
-        <div class="stat" id="confirmedTeams">Bestätigt: 0</div>
-        <div class="stat" id="pendingTeams">Vormerkungen: 0</div>
-        <div class="stat" id="avgPoints">Ø Punkte: 0</div>
-      </div>
+      <!-- Die Inhalte werden dynamisch über updateDashboard() eingefügt -->
     </div>
 
     <!-- Admin-Funktionen -->
     <button class="admin-btn" onclick="exportTeamsCSV()">Export als CSV</button>
     <button class="admin-btn" onclick="openNewTeamModal()">Neues Team hinzufügen</button>
+	<button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
     <button class="admin-btn" onclick="toggleTheme()">Dark/Light Mode</button>
-    <!-- Am Ende: Datenbank leeren -->
+    <!-- Datenbank leeren -->
     <button class="admin-btn clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
     
     <!-- Tabelle: Bestätigte Teams – Normale Gruppen -->
@@ -317,12 +349,9 @@
         </tbody>
       </table>
     </div>
-
-    <!-- Ranking Modal Button -->
-    <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
   </div>
 
-  <!-- Ranking Modal (getrennt nach Normale Gruppen und Kindergruppen) -->
+  <!-- Ranking Modal -->
   <div id="rankingModal" class="modal-popup">
     <div class="modal-content">
       <button class="close-modal" onclick="closeRankingModal()">✖</button>
@@ -361,17 +390,17 @@
   <div id="newTeamModal" class="modal-popup">
     <div class="modal-content">
       <button class="close-modal" onclick="closeNewTeamModal()">✖</button>
-      <h2>Neues Team eintragen</h2>
+      <h2>Neues Team hinzufügen</h2>
       <form id="newTeamForm">
-        <label for="teamName">Team Name:</label>
+        <label for="teamName">Team Name</label>
         <input type="text" id="teamName" placeholder="Team Name" required>
-        <label for="teamType">Team Typ:</label>
+        <label for="teamType">Team Typ</label>
         <select id="teamType" required>
-          <option value="" disabled selected>Bitte wähle einen Typ</option>
+          <option value="" disabled selected>Bitte wählen</option>
           <option value="Kindergruppe">Kindergruppe</option>
           <option value="Normale Gruppe">Normale Gruppe</option>
         </select>
-        <button type="submit">Team eintragen</button>
+        <button type="submit">Team hinzufügen</button>
       </form>
       <div id="newTeamFeedback"></div>
     </div>
@@ -387,11 +416,11 @@
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
-    // Globale Variable für Teams – wird in initAdminPanel() befüllt
+    // Globale Variablen
     let globalTeams = [];
+    let db; // wird in initAdminPanel gesetzt
 
-    /* --------------------- Funktionen, die vor Firebase-Initialisierung benötigt werden --------------------- */
-
+    /* --------------------- Login und Initialisierung --------------------- */
     function checkAdminPassword() {
       const input = document.getElementById("loginPassword").value;
       if (input === "adminbalicup") {
@@ -402,8 +431,6 @@
       }
     }
     window.checkAdminPassword = checkAdminPassword;
-
-    /* --------------------- Initialisierung des Admin Panels (Firebase & Co.) --------------------- */
 
     function initAdminPanel() {
       const firebaseConfig = {
@@ -418,7 +445,7 @@
 
       const app = initializeApp(firebaseConfig);
       const analytics = getAnalytics(app);
-      const db = getFirestore(app);
+      db = getFirestore(app);
 
       const currentVersion = "1.0.3";
       document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
@@ -448,10 +475,10 @@
             total: 0
           });
           document.getElementById("newTeamForm").reset();
-          document.getElementById("newTeamFeedback").textContent = "Team erfolgreich eingetragen!";
+          document.getElementById("newTeamFeedback").textContent = "Team erfolgreich hinzugefügt!";
         } catch (error) {
-          console.error("Fehler beim Eintragen des Teams:", error);
-          document.getElementById("newTeamFeedback").textContent = "Fehler beim Eintragen!";
+          console.error("Fehler beim Hinzufügen des Teams:", error);
+          document.getElementById("newTeamFeedback").textContent = "Fehler beim Hinzufügen!";
         }
       });
 
@@ -467,6 +494,7 @@
         }
       };
 
+      // Funktionen global verfügbar machen
       window.renderRanking = renderRanking;
       window.editTeam = editTeam;
       window.saveTeam = saveTeam;
@@ -476,17 +504,23 @@
       window.exportTeamsCSV = exportTeamsCSV;
     }
 
-    /* --------------------- Funktionen, die mit globalTeams arbeiten --------------------- */
-
+    /* --------------------- Dashboard aktualisieren --------------------- */
     function updateDashboard() {
       const total = globalTeams.length;
       const confirmed = globalTeams.filter(team => team.confirmed === true).length;
       const pending = total - confirmed;
       const avg = total > 0 ? (globalTeams.reduce((sum, team) => sum + (team.total || 0), 0) / total).toFixed(1) : 0;
-      document.getElementById("totalTeams").textContent = "Alle Teams: " + total;
-      document.getElementById("confirmedTeams").textContent = "Bestätigt: " + confirmed;
-      document.getElementById("pendingTeams").textContent = "Vormerkungen: " + pending;
-      document.getElementById("avgPoints").textContent = "Ø Punkte: " + avg;
+      const completed = globalTeams.filter(team => isCompleted(team)).length;
+      const kinder = globalTeams.filter(team => team.teamType === "Kindergruppe").length;
+      const normal = globalTeams.filter(team => team.teamType === "Normale Gruppe").length;
+      document.getElementById("dashboard").innerHTML = `<h2>Übersicht</h2>
+        <div class="stat" id="totalTeams">Alle Teams: ${total}</div>
+        <div class="stat" id="confirmedTeams">Bestätigt: ${confirmed}</div>
+        <div class="stat" id="pendingTeams">Nicht angemeldet: ${pending}</div>
+        <div class="stat" id="avgPoints">Ø Punkte: ${avg}</div>
+        <div class="stat" id="completedTeams">Fertig: ${completed}</div>
+        <div class="stat" id="kinderGruppen">Kindergruppen: ${kinder}</div>
+        <div class="stat" id="normaleGruppen">Normale Gruppen: ${normal}</div>`;
     }
 
     function isCompleted(team) {
@@ -498,6 +532,7 @@
       return true;
     }
 
+    /* --------------------- Tabellen rendern --------------------- */
     function renderTables() {
       const confirmed = globalTeams.filter(team => team.confirmed === true);
       const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
@@ -529,7 +564,7 @@
           <td>${team.station7 || 0}</td>
           <td>${team.station8 || 0}</td>
           <td>${team.total || 0}</td>
-          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>done</span>" : "open"}</td>
           <td>
             ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
             <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
@@ -640,7 +675,7 @@
       }
       newData.total = newData.station1 + newData.station2 + newData.station3 + newData.station4 +
                       newData.station5 + newData.station6 + newData.station7 + newData.station8;
-      await updateDoc(doc(getFirestore(initializeApp({})), "teams", teamId), newData);
+      await updateDoc(doc(db, "teams", teamId), newData);
     }
 
     function cancelEdit(teamId) {
@@ -649,18 +684,17 @@
 
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
-        await deleteDoc(doc(getFirestore(initializeApp({})), "teams", teamId));
+        await deleteDoc(doc(db, "teams", teamId));
       }
     }
 
     async function confirmTeam(teamId) {
       if (confirm("Dieses Team bestätigen?")) {
-        await updateDoc(doc(getFirestore(initializeApp({})), "teams", teamId), { confirmed: true });
+        await updateDoc(doc(db, "teams", teamId), { confirmed: true });
       }
     }
 
     /* --------------------- CSV Export und Theme Toggle --------------------- */
-
     function exportTeamsCSV() {
       let csvContent = "data:text/csv;charset=utf-8,";
       const headers = ["Team Name","Team Typ","Station1","Station2","Station3","Station4","Station5","Station6","Station7","Station8","Gesamtpunkte","Status"];
@@ -718,6 +752,26 @@
       }
     }
     window.toggleTheme = toggleTheme;
+
+    /* --------------------- Ranking Modal Funktionen --------------------- */
+    function openRankingModal() {
+      document.getElementById("rankingModal").style.display = "block";
+    }
+    function closeRankingModal() {
+      document.getElementById("rankingModal").style.display = "none";
+    }
+    window.openRankingModal = openRankingModal;
+    window.closeRankingModal = closeRankingModal;
+
+    /* --------------------- Neues Team Modal Funktionen --------------------- */
+    function openNewTeamModal() {
+      document.getElementById("newTeamModal").style.display = "block";
+    }
+    function closeNewTeamModal() {
+      document.getElementById("newTeamModal").style.display = "none";
+    }
+    window.openNewTeamModal = openNewTeamModal;
+    window.closeNewTeamModal = closeNewTeamModal;
   </script>
 </body>
 </html>
