@@ -30,6 +30,10 @@
       padding: 20px;
       background-color: var(--header-bg);
       border-bottom: 1px solid var(--button-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
     header h1 {
       margin: 0;
@@ -40,51 +44,47 @@
       max-width: 1200px;
       margin: 0 auto;
     }
-    /* Neues Team-Formular (initial versteckt) */
-    .new-team-form {
+    /* Dashboard Übersicht */
+    .dashboard {
       background-color: var(--container-bg);
       border: 1px solid var(--button-border);
       padding: 15px;
       border-radius: 4px;
       margin-bottom: 20px;
-      display: none;
     }
-    .new-team-form label {
-      display: block;
-      margin-top: 10px;
+    .dashboard h2 {
+      margin-top: 0;
     }
-    .new-team-form input,
-    .new-team-form select,
-    .new-team-form button {
-      padding: 8px;
-      margin-top: 5px;
-      width: 100%;
-      box-sizing: border-box;
-      background-color: var(--input-bg);
-      border: 1px solid var(--input-border);
-      color: var(--text-color);
+    .dashboard .stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
     }
-    .new-team-form button {
-      cursor: pointer;
-      background-color: var(--button-bg);
-      border: 1px solid var(--button-border);
-      margin-top: 15px;
+    .dashboard .stat {
+      margin: 10px;
     }
-    .new-team-form button:hover {
-      background-color: var(--button-hover);
-    }
-    /* Button zum Anzeigen des neuen Team-Formulars */
-    .toggle-form-btn {
+    /* Admin-Buttons */
+    .admin-btn {
       padding: 10px 15px;
       background-color: var(--button-bg);
       border: 1px solid var(--button-border);
       color: var(--text-color);
       cursor: pointer;
       border-radius: 4px;
+      margin-right: 10px;
       margin-bottom: 20px;
     }
-    .toggle-form-btn:hover {
+    .admin-btn:hover {
       background-color: var(--button-hover);
+    }
+    /* Spezieller roter Button für "Datenbank leeren" */
+    .clear-db-btn {
+      background-color: var(--delete-bg);
+      border: 1px solid var(--button-border);
+      color: white;
+    }
+    .clear-db-btn:hover {
+      background-color: var(--delete-hover);
     }
     /* Suchfelder */
     .search-input {
@@ -169,7 +169,7 @@
       border: 1px solid var(--input-border);
       color: var(--text-color);
     }
-    /* Ranking Modal */
+    /* Modal Popup (für Ranking und Neues Team) */
     .modal-popup {
       display: none;
       position: fixed;
@@ -199,19 +199,6 @@
       background: none;
       color: var(--text-color);
     }
-    /* Datenbank Clear Button */
-    .clear-db-btn {
-      background-color: var(--delete-bg);
-      border: none;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-    .clear-db-btn:hover {
-      background-color: var(--delete-hover);
-    }
     /* Footer */
     footer {
       text-align: center;
@@ -236,32 +223,29 @@
   <!-- Header -->
   <header>
     <h1>Admin Panel – Bali-Cup 2025</h1>
+    <!-- Neuer PDF-Export-Button -->
+    <button class="admin-btn" onclick="exportAsPDF()">PDF Export</button>
   </header>
 
   <div class="container">
-    <!-- Datenbank Clear Button -->
-    <button class="clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
-    
-    <!-- Toggle-Button zum Anzeigen des neuen Team-Formulars -->
-    <button class="toggle-form-btn" onclick="toggleNewTeamForm()">Neues Team hinzufügen</button>
-    <div class="new-team-form" id="newTeamFormContainer">
-      <h2>Neues Team eintragen</h2>
-      <form id="newTeamForm">
-        <label for="teamName">Team Name:</label>
-        <input type="text" id="teamName" placeholder="Team Name" required>
-        
-        <label for="teamType">Team Typ:</label>
-        <select id="teamType" required>
-          <option value="" disabled selected>Bitte wähle einen Typ</option>
-          <option value="Kindergruppe">Kindergruppe</option>
-          <option value="Normale Gruppe">Normale Gruppe</option>
-        </select>
-        
-        <button type="submit">Team eintragen</button>
-      </form>
-      <div id="newTeamFeedback"></div>
+    <!-- Dashboard Übersicht -->
+    <div class="dashboard" id="dashboard">
+      <h2>Übersicht</h2>
+      <div class="stats">
+        <div class="stat" id="totalTeams">Alle Teams: 0</div>
+        <div class="stat" id="confirmedTeams">Bestätigt: 0</div>
+        <div class="stat" id="pendingTeams">Vormerkungen: 0</div>
+        <div class="stat" id="avgPoints">Ø Punkte: 0</div>
+      </div>
     </div>
 
+    <!-- Admin-Funktionen -->
+    <button class="admin-btn" onclick="exportTeamsCSV()">Export als CSV</button>
+    <button class="admin-btn" onclick="openNewTeamModal()">Neues Team hinzufügen</button>
+    <button class="admin-btn" onclick="toggleTheme()">Dark/Light Mode</button>
+    <!-- Am Ende: Datenbank leeren -->
+    <button class="admin-btn clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
+    
     <!-- Tabelle: Bestätigte Teams – Normale Gruppen -->
     <div class="table-section">
       <h2>Bestätigte Teams – Normale Gruppen</h2>
@@ -337,14 +321,14 @@
     </div>
 
     <!-- Ranking Modal Button -->
-    <button onclick="openRankingModal()">Ranking anzeigen</button>
+    <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
   </div>
 
-  <!-- Ranking Modal -->
+  <!-- Ranking Modal (mit getrenntem Ranking für Normale Gruppen und Kindergruppen) -->
   <div id="rankingModal" class="modal-popup">
     <div class="modal-content">
       <button class="close-modal" onclick="closeRankingModal()">✖</button>
-      <h2>Top Ranking</h2>
+      <h2>Top Ranking – Normale Gruppen</h2>
       <table>
         <thead>
           <tr>
@@ -354,10 +338,46 @@
             <th>Abgeschlossene Stationen</th>
           </tr>
         </thead>
-        <tbody id="rankingBody">
-          <!-- Dynamische Inhalte -->
+        <tbody id="rankingNormalBody">
+          <!-- Dynamische Inhalte für Normale Gruppen -->
         </tbody>
       </table>
+      <h2>Top Ranking – Kindergruppen</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Platz</th>
+            <th>Team</th>
+            <th>Punkte</th>
+            <th>Abgeschlossene Stationen</th>
+          </tr>
+        </thead>
+        <tbody id="rankingKinderBody">
+          <!-- Dynamische Inhalte für Kindergruppen -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Neues Team Modal -->
+  <div id="newTeamModal" class="modal-popup">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeNewTeamModal()">✖</button>
+      <h2>Neues Team eintragen</h2>
+      <form id="newTeamForm">
+        <label for="teamName">Team Name:</label>
+        <input type="text" id="teamName" placeholder="Team Name" required>
+        
+        <label for="teamType">Team Typ:</label>
+        <select id="teamType" required>
+          <option value="" disabled selected>Bitte wähle einen Typ</option>
+          <option value="Kindergruppe">Kindergruppe</option>
+          <option value="Normale Gruppe">Normale Gruppe</option>
+        </select>
+        
+        <button type="submit">Team eintragen</button>
+      </form>
+      <div id="newTeamFeedback"></div>
     </div>
   </div>
 
@@ -365,56 +385,118 @@
     <p id="versionDisplay">Version: 1.0.3</p>
   </footer>
 
-  <!-- Firebase und Admin-Panel Logik -->
+  <!-- Firebase, jsPDF und Admin-Panel Logik -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    // Angepasster Import: UMD-Build liefert den Defaultexport
+    import jspdf from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    const { jsPDF } = jspdf;
 
-    // Firebase-Konfiguration – ACHTUNG: API-Schlüssel sicher verwalten!
-    const firebaseConfig = {
-      apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
-      authDomain: "bali-cup2025.firebaseapp.com",
-      projectId: "bali-cup2025",
-      storageBucket: "bali-cup2025.firebasestorage.app",
-      messagingSenderId: "867421335336",
-      appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
-      measurementId: "G-484CZNKVQ1"
-    };
+    // Globale Variable für Teams – wird in initAdminPanel() befüllt
+    let globalTeams = [];
 
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
+    /* --------------------- Funktionen, die vor Firebase-Initialisierung benötigt werden --------------------- */
 
-    // Versionsnummer
-    const currentVersion = "1.0.3";
-    document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
-
-    // Admin-Login
     function checkAdminPassword() {
       const input = document.getElementById("loginPassword").value;
       if (input === "adminbalicup") {
         document.getElementById("loginModal").style.display = "none";
+        initAdminPanel();
       } else {
         alert("Falsches Passwort!");
       }
     }
     window.checkAdminPassword = checkAdminPassword;
 
-    // Globale Variable für Teams
-    let globalTeams = [];
+    /* --------------------- Initialisierung des Admin Panels (Firebase & Co.) --------------------- */
 
-    // Echtzeit-Listener für Collection "teams"
-    onSnapshot(collection(db, "teams"), (snapshot) => {
-      globalTeams = [];
-      snapshot.forEach((docSnap) => {
-        globalTeams.push({ id: docSnap.id, ...docSnap.data() });
+    function initAdminPanel() {
+      const firebaseConfig = {
+        apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
+        authDomain: "bali-cup2025.firebaseapp.com",
+        projectId: "bali-cup2025",
+        storageBucket: "bali-cup2025.firebasestorage.app",
+        messagingSenderId: "867421335336",
+        appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
+        measurementId: "G-484CZNKVQ1"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
+
+      const currentVersion = "1.0.3";
+      document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
+
+      onSnapshot(collection(db, "teams"), (snapshot) => {
+        globalTeams = [];
+        snapshot.forEach((docSnap) => {
+          globalTeams.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderTables();
+        renderRanking();
+        updateDashboard();
       });
-      renderTables();
-      renderRanking();
-    });
 
-    // Hilfsfunktion: Prüft, ob ein Team alle Stationen abgeschlossen hat (alle stationX > 0)
+      document.getElementById("newTeamForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const teamName = document.getElementById("teamName").value.trim();
+        const teamType = document.getElementById("teamType").value;
+        if (!teamName || !teamType) return;
+        try {
+          await addDoc(collection(db, "teams"), {
+            teamName: teamName,
+            teamType: teamType,
+            confirmed: false,
+            station1: 0, station2: 0, station3: 0, station4: 0,
+            station5: 0, station6: 0, station7: 0, station8: 0,
+            total: 0
+          });
+          document.getElementById("newTeamForm").reset();
+          document.getElementById("newTeamFeedback").textContent = "Team erfolgreich eingetragen!";
+        } catch (error) {
+          console.error("Fehler beim Eintragen des Teams:", error);
+          document.getElementById("newTeamFeedback").textContent = "Fehler beim Eintragen!";
+        }
+      });
+
+      // Funktionen, die Firebase-Daten benötigen, werden ab hier global gemacht
+      window.clearDatabase = async function clearDatabase() {
+        if (confirm("Wirklich die gesamte Datenbank leeren?")) {
+          const teamsSnap = await getDocs(collection(db, "teams"));
+          const promises = [];
+          teamsSnap.forEach(docSnap => {
+            promises.push(deleteDoc(doc(db, "teams", docSnap.id)));
+          });
+          await Promise.all(promises);
+          alert("Datenbank geleert.");
+        }
+      };
+
+      window.renderRanking = renderRanking;
+      window.editTeam = editTeam;
+      window.saveTeam = saveTeam;
+      window.cancelEdit = cancelEdit;
+      window.deleteTeam = deleteTeam;
+      window.confirmTeam = confirmTeam;
+      window.exportTeamsCSV = exportTeamsCSV;
+    }
+
+    /* --------------------- Funktionen, die mit globalTeams arbeiten --------------------- */
+
+    function updateDashboard() {
+      const total = globalTeams.length;
+      const confirmed = globalTeams.filter(team => team.confirmed === true).length;
+      const pending = total - confirmed;
+      const avg = total > 0 ? (globalTeams.reduce((sum, team) => sum + (team.total || 0), 0) / total).toFixed(1) : 0;
+      document.getElementById("totalTeams").textContent = "Alle Teams: " + total;
+      document.getElementById("confirmedTeams").textContent = "Bestätigt: " + confirmed;
+      document.getElementById("pendingTeams").textContent = "Vormerkungen: " + pending;
+      document.getElementById("avgPoints").textContent = "Ø Punkte: " + avg;
+    }
+
     function isCompleted(team) {
       for (let i = 1; i <= 8; i++) {
         if (!team["station" + i] || team["station" + i] === 0) {
@@ -424,17 +506,12 @@
       return true;
     }
 
-    // Rendern der Tabellen
     function renderTables() {
-      // Bestätigte Teams: getrennt nach Typ
       const confirmed = globalTeams.filter(team => team.confirmed === true);
       const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
       const confirmedKinder = confirmed.filter(team => team.teamType === "Kindergruppe");
-      // Sortierung: Offene Teams (nicht abgeschlossen) sollen oben sein
       confirmedNormal.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
       confirmedKinder.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
-
-      // Tentative Teams (nicht bestätigt)
       const tentative = globalTeams.filter(team => !team.confirmed);
       
       renderTable("confirmedNormalTable", confirmedNormal, true);
@@ -442,8 +519,6 @@
       renderTentativeTable("tentativeTable", tentative);
     }
 
-    // Rendern einer Tabelle (für bestätigte Teams)
-    // canEdit: true = Bearbeitungs-Optionen anzeigen
     function renderTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       tbody.innerHTML = "";
@@ -472,7 +547,6 @@
       });
     }
 
-    // Rendern der tentativen Tabelle (Vormerkungen) – weniger Spalten, nur Bestätigen und Löschen
     function renderTentativeTable(tableId, teams) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       tbody.innerHTML = "";
@@ -491,12 +565,14 @@
       });
     }
 
-    // Rendern des Ranking-Modals
     function renderRanking() {
-      const sortedTeams = globalTeams.slice().sort((a, b) => b.total - a.total);
-      const tbody = document.getElementById("rankingBody");
-      tbody.innerHTML = "";
-      sortedTeams.forEach((team, index) => {
+      const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe");
+      const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe");
+      normalTeams.sort((a, b) => b.total - a.total);
+      kinderTeams.sort((a, b) => b.total - a.total);
+      const normalTbody = document.getElementById("rankingNormalBody");
+      normalTbody.innerHTML = "";
+      normalTeams.forEach((team, index) => {
         let completedStations = 0;
         for (let i = 1; i <= 8; i++) {
           if (team["station" + i] > 0) completedStations++;
@@ -508,11 +584,26 @@
           <td>${team.total || 0}</td>
           <td>${completedStations}</td>
         `;
-        tbody.appendChild(row);
+        normalTbody.appendChild(row);
+      });
+      const kinderTbody = document.getElementById("rankingKinderBody");
+      kinderTbody.innerHTML = "";
+      kinderTeams.forEach((team, index) => {
+        let completedStations = 0;
+        for (let i = 1; i <= 8; i++) {
+          if (team["station" + i] > 0) completedStations++;
+        }
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${team.teamName}</td>
+          <td>${team.total || 0}</td>
+          <td>${completedStations}</td>
+        `;
+        kinderTbody.appendChild(row);
       });
     }
 
-    // Bearbeitungsfunktion: Zeile in Editiermodus umwandeln
     function editTeam(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
@@ -541,9 +632,7 @@
         });
       }
     }
-    window.editTeam = editTeam;
 
-    // Aktualisiert den Gesamtwert in der bearbeiteten Zeile
     function updateRowTotal(teamId) {
       let total = 0;
       for (let i = 1; i <= 8; i++) {
@@ -552,7 +641,6 @@
       document.getElementById(`total-${teamId}`).textContent = total;
     }
 
-    // Speichert die bearbeiteten Daten in Firestore
     async function saveTeam(teamId) {
       const newData = {};
       for (let i = 1; i <= 8; i++) {
@@ -560,125 +648,97 @@
       }
       newData.total = newData.station1 + newData.station2 + newData.station3 + newData.station4 +
                       newData.station5 + newData.station6 + newData.station7 + newData.station8;
-      await updateDoc(doc(db, "teams", teamId), newData);
+      await updateDoc(doc(getFirestore(initializeApp({})), "teams", teamId), newData);
     }
-    window.saveTeam = saveTeam;
 
-    // Bricht den Bearbeitungsmodus ab (Zeile neu rendern)
     function cancelEdit(teamId) {
       renderTables();
     }
-    window.cancelEdit = cancelEdit;
 
-    // Löscht ein Team
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
-        await deleteDoc(doc(db, "teams", teamId));
+        await deleteDoc(doc(getFirestore(initializeApp({})), "teams", teamId));
       }
     }
-    window.deleteTeam = deleteTeam;
 
-    // Bestätigt ein tentatives Team
     async function confirmTeam(teamId) {
       if (confirm("Dieses Team bestätigen?")) {
-        await updateDoc(doc(db, "teams", teamId), { confirmed: true });
+        await updateDoc(doc(getFirestore(initializeApp({})), "teams", teamId), { confirmed: true });
       }
     }
-    window.confirmTeam = confirmTeam;
 
-    // Ranking Modal öffnen/schließen
-    function openRankingModal() {
-      document.getElementById("rankingModal").style.display = "block";
-    }
-    function closeRankingModal() {
-      document.getElementById("rankingModal").style.display = "none";
-    }
-    window.openRankingModal = openRankingModal;
-    window.closeRankingModal = closeRankingModal;
+    /* --------------------- PDF Export, CSV Export und Theme Toggle --------------------- */
 
-    // Neues Team hinzufügen: Toggle zum Anzeigen/Verstecken des Formulars
-    function toggleNewTeamForm() {
-      const formContainer = document.getElementById("newTeamFormContainer");
-      formContainer.style.display = formContainer.style.display === "none" || formContainer.style.display === "" ? "block" : "none";
+    function exportTeamsCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      const headers = ["Team Name","Team Typ","Station1","Station2","Station3","Station4","Station5","Station6","Station7","Station8","Gesamtpunkte","Status"];
+      csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
+      globalTeams.forEach(team => {
+        const status = team.confirmed ? (isCompleted(team) ? "Abgeschlossen" : "Offen") : "Vormerkung";
+        const row = [
+          team.teamName,
+          team.teamType || "-",
+          team.station1 || 0,
+          team.station2 || 0,
+          team.station3 || 0,
+          team.station4 || 0,
+          team.station5 || 0,
+          team.station6 || 0,
+          team.station7 || 0,
+          team.station8 || 0,
+          team.total || 0,
+          status
+        ].map(cell => `"${cell}"`).join(",");
+        csvContent += row + "\n";
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "teams_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-    window.toggleNewTeamForm = toggleNewTeamForm;
+    window.exportTeamsCSV = exportTeamsCSV;
 
-    // Neues Team-Formular absenden
-    document.getElementById("newTeamForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const teamName = document.getElementById("teamName").value.trim();
-      const teamType = document.getElementById("teamType").value;
-      if (!teamName || !teamType) return;
-      try {
-        await addDoc(collection(db, "teams"), {
-          teamName: teamName,
-          teamType: teamType,
-          confirmed: false,
-          station1: 0, station2: 0, station3: 0, station4: 0,
-          station5: 0, station6: 0, station7: 0, station8: 0,
-          total: 0
-        });
-        document.getElementById("newTeamForm").reset();
-        document.getElementById("newTeamFeedback").textContent = "Team erfolgreich eingetragen!";
-        setTimeout(() => { document.getElementById("newTeamFeedback").textContent = ""; }, 3000);
-      } catch (error) {
-        console.error("Fehler beim Eintragen des Teams:", error);
-        document.getElementById("newTeamFeedback").textContent = "Fehler beim Eintragen!";
-        setTimeout(() => { document.getElementById("newTeamFeedback").textContent = ""; }, 3000);
+    function toggleTheme() {
+      const root = document.documentElement;
+      if (root.style.getPropertyValue("--bg-color") === "#121212" || !root.style.getPropertyValue("--bg-color")) {
+        root.style.setProperty("--bg-color", "#f5f5f5");
+        root.style.setProperty("--text-color", "#333");
+        root.style.setProperty("--header-bg", "#ddd");
+        root.style.setProperty("--container-bg", "#fff");
+        root.style.setProperty("--button-bg", "#ccc");
+        root.style.setProperty("--button-border", "#bbb");
+        root.style.setProperty("--button-hover", "#aaa");
+        root.style.setProperty("--input-bg", "#fff");
+        root.style.setProperty("--input-border", "#ccc");
+      } else {
+        root.style.setProperty("--bg-color", "#121212");
+        root.style.setProperty("--text-color", "#e0e0e0");
+        root.style.setProperty("--header-bg", "#1e1e1e");
+        root.style.setProperty("--container-bg", "#1e1e1e");
+        root.style.setProperty("--button-bg", "#333");
+        root.style.setProperty("--button-border", "#444");
+        root.style.setProperty("--button-hover", "#555");
+        root.style.setProperty("--input-bg", "#222");
+        root.style.setProperty("--input-border", "#555");
       }
-    });
-
-    // Datenbank Clear Button: Löscht alle Einträge in der Collection "teams"
-    async function clearDatabase() {
-      if (confirm("Wirklich die gesamte Datenbank leeren?")) {
-        const teamsSnap = await getDocs(collection(db, "teams"));
-        const promises = [];
-        teamsSnap.forEach(docSnap => {
-          promises.push(deleteDoc(doc(db, "teams", docSnap.id)));
-        });
-        await Promise.all(promises);
-        alert("Datenbank geleert.");
-      }
     }
-    window.clearDatabase = clearDatabase;
+    window.toggleTheme = toggleTheme;
 
-    // Suchfunktion: Filtert Tabellen anhand des Teamnamens
-    function setupSearch(tableId, searchInputId) {
-      const searchInput = document.getElementById(searchInputId);
-      searchInput.addEventListener("keyup", () => {
-        const filter = searchInput.value.toLowerCase();
-        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
-        rows.forEach(row => {
-          const teamName = row.cells[0].textContent.toLowerCase();
-          row.style.display = teamName.indexOf(filter) > -1 ? "" : "none";
-        });
+    function exportAsPDF() {
+      const doc = new jsPDF("p", "pt", "a4");
+      doc.html(document.body, {
+        callback: function (doc) {
+          doc.save("admin_panel.pdf");
+        },
+        margin: [20, 20, 20, 20],
+        x: 20,
+        y: 20
       });
     }
-    setupSearch("confirmedNormalTable", "searchNormal");
-    setupSearch("confirmedKinderTable", "searchKinder");
-    setupSearch("tentativeTable", "searchTentative");
-
-    // Ranking Modal rendern
-    function renderRanking() {
-      const sortedTeams = globalTeams.slice().sort((a, b) => b.total - a.total);
-      const tbody = document.getElementById("rankingBody");
-      tbody.innerHTML = "";
-      sortedTeams.forEach((team, index) => {
-        let completedStations = 0;
-        for (let i = 1; i <= 8; i++) {
-          if (team["station" + i] > 0) completedStations++;
-        }
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${team.teamName}</td>
-          <td>${team.total || 0}</td>
-          <td>${completedStations}</td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-    window.renderRanking = renderRanking;
+    window.exportAsPDF = exportAsPDF;
   </script>
 </body>
 </html>
