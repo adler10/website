@@ -57,7 +57,8 @@
     label { display: inline-block; width: 150px; }
     input[type="text"],
     input[type="number"],
-    select { padding: 5px; margin: 5px 0; }
+    select,
+    input[type="password"] { padding: 5px; margin: 5px 0; }
     button {
       padding: 7px 15px;
       margin-top: 10px;
@@ -129,6 +130,11 @@
       background: none;
       color: var(--text-color);
     }
+    /* Modal für Login */
+    #loginModal .modal-content {
+      max-width: 400px;
+      text-align: center;
+    }
     /* Toggle Button für Dark/Light Mode */
     .toggle-mode {
       position: fixed;
@@ -144,6 +150,16 @@
   </style>
 </head>
 <body>
+  <!-- Login Modal (wird beim Laden angezeigt) -->
+  <div id="loginModal" class="modal" style="display: block;">
+    <div class="modal-content">
+      <h2>Bitte Admin-Passwort eingeben</h2>
+      <input type="password" id="loginPassword" placeholder="Passwort">
+      <br>
+      <button onclick="checkPassword()">Einloggen</button>
+    </div>
+  </div>
+
   <!-- Dark/Light Mode Toggle -->
   <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
 
@@ -219,7 +235,7 @@
 
   <!-- Footer mit Versionsanzeige -->
   <footer>
-    <p id="versionDisplay">Version: 1.0.0</p>
+    <p id="versionDisplay">Version: 1.0.1</p>
   </footer>
 
   <!-- Firebase und App-Logik -->
@@ -227,7 +243,7 @@
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
-    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc } 
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, deleteDoc, doc, getDocs } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
     // Firebase-Konfiguration – ACHTUNG: Entferne diese sensiblen Daten aus öffentlichen Repositories!
@@ -247,7 +263,7 @@
     const db = getFirestore(app);
 
     // Versionsnummer anzeigen (aktuell manuell aktualisiert)
-    const currentVersion = "1.0.0";
+    const currentVersion = "1.0.1";
     document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
 
     // Globale Variable für Teams
@@ -282,7 +298,6 @@
           total: 0
         });
         document.getElementById("createTeamForm").reset();
-        // Der Echtzeit-Listener übernimmt die Aktualisierung
       } catch (error) {
         console.error("Fehler beim Anlegen des Teams:", error);
       }
@@ -366,12 +381,10 @@
       }
       newData.total = calculateTotal(newData);
       await updateDoc(doc(db, "teams", teamId), newData);
-      // onSnapshot aktualisiert die Anzeige automatisch
     }
 
     // Bricht den Editiermodus ab
     function cancelEdit() {
-      // onSnapshot aktualisiert die Anzeige automatisch
       updateTeamTable(globalTeams);
     }
 
@@ -379,7 +392,6 @@
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
         await deleteDoc(doc(db, "teams", teamId));
-        // onSnapshot aktualisiert die Anzeige automatisch
       }
     }
 
@@ -397,7 +409,6 @@
       });
       await Promise.all(promises);
       alert("Datenbank geleert.");
-      // onSnapshot aktualisiert die Anzeige automatisch
     }
 
     // Ranking-Popup öffnen und schließen
@@ -428,7 +439,17 @@
       });
     }
 
-    // Funktionen global verfügbar machen (falls Inline-Event-Handler genutzt werden)
+    // Passwortprüfung beim Login (Modal)
+    function checkPassword() {
+      const input = document.getElementById("loginPassword").value;
+      if (input === "andy") {
+        document.getElementById("loginModal").style.display = "none";
+      } else {
+        alert("Falsches Passwort!");
+      }
+    }
+
+    // Globale Funktionen für Inline-Handler verfügbar machen
     window.toggleMode = () => document.body.classList.toggle("dark");
     window.editTeam = editTeam;
     window.saveTeam = saveTeam;
@@ -437,6 +458,7 @@
     window.clearDatabase = clearDatabase;
     window.openModal = openModal;
     window.closeModal = closeModal;
+    window.checkPassword = checkPassword;
   </script>
 </body>
 </html>
