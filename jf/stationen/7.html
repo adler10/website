@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Ergebnisse für Station <span id="stationLabel"></span> – Bali-Cup 2025</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, input, button {
+      font-size: 1em;
+      padding: 10px;
+      margin-top: 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      cursor: pointer;
+      background: #e7e7e7;
+      border: 1px solid #ccc;
+    }
+    button:hover {
+      background: #d7d7d7;
+    }
+    #feedback {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      display: none;
+    }
+    #feedback.success {
+      background-color: #c8e6c9;
+      color: #2e7d32;
+    }
+    #feedback.error {
+      background-color: #ffcdd2;
+      color: #c62828;
+    }
+    /* Login Modal Styles */
+    #loginModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: block;
+      z-index: 1000;
+    }
+    #loginModal .modal-content {
+      background: #fff;
+      padding: 20px;
+      max-width: 400px;
+      margin: 15% auto;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+    }
+    #loginModal input {
+      width: 80%;
+      margin: 10px auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Modal -->
+  <div id="loginModal">
+    <div class="modal-content">
+      <h2>Bitte Passwort eingeben</h2>
+      <input type="password" id="loginPassword" placeholder="Passwort" required>
+      <button onclick="checkPassword()">Einloggen</button>
+    </div>
+  </div>
+
+  <header>
+    <h1>Ergebnisse für Station <span id="stationLabel"></span> erfassen</h1>
+  </header>
+  <div class="container">
+    <form id="resultForm">
+      <label for="teamSelect">Team auswählen:</label>
+      <select id="teamSelect" required>
+        <option value="" disabled selected>Bitte wähle ein Team</option>
+      </select>
+      
+      <label for="points">Punkte:</label>
+      <input type="number" id="points" placeholder="Punkte" min="0" required>
+      
+      <button type="submit">Ergebnis speichern</button>
+    </form>
+    <div id="feedback"></div>
+  </div>
+
+  <script type="module">
+    // Passe diese Variable an: für jede Station-Seite einen anderen Wert (1 bis 8)
+    const stationNumber = 7; // Beispiel: Seite für Station 3
+    document.getElementById("stationLabel").textContent = stationNumber;
+    
+    // Das erwartete Passwort setzt sich zusammen aus "station" + stationNumber + "balicup"
+    const expectedPassword = "station" + stationNumber + "balicup";
+
+    // Firebase SDKs importieren
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc } 
+      from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+    // Firebase-Konfiguration (ersetze diese Werte durch deine eigenen)
+    const firebaseConfig = {
+      apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
+      authDomain: "bali-cup2025.firebaseapp.com",
+      projectId: "bali-cup2025",
+      storageBucket: "bali-cup2025.firebasestorage.app",
+      messagingSenderId: "867421335336",
+      appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
+      measurementId: "G-484CZNKVQ1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Login-Funktion: Überprüfe das eingegebene Passwort
+    function checkPassword() {
+      const input = document.getElementById("loginPassword").value;
+      if (input === expectedPassword) {
+        document.getElementById("loginModal").style.display = "none";
+      } else {
+        alert("Falsches Passwort!");
+      }
+    }
+    window.checkPassword = checkPassword; // global verfügbar machen
+
+    // Dropdown mit Teams befüllen
+    async function loadTeamsDropdown() {
+      const teamsRef = collection(db, "teams");
+      const q = query(teamsRef);
+      const querySnapshot = await getDocs(q);
+      const teamSelect = document.getElementById("teamSelect");
+      // Vorhandene Optionen (außer Platzhalter) leeren
+      teamSelect.innerHTML = '<option value="" disabled selected>Bitte wähle ein Team</option>';
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const option = document.createElement("option");
+        option.value = docSnap.id;
+        option.textContent = data.teamName;
+        teamSelect.appendChild(option);
+      });
+    }
+    loadTeamsDropdown();
+
+    // Feedback anzeigen
+    function showFeedback(message, isSuccess = true) {
+      const feedback = document.getElementById("feedback");
+      feedback.textContent = message;
+      feedback.className = isSuccess ? "success" : "error";
+      feedback.style.display = "block";
+      setTimeout(() => { feedback.style.display = "none"; }, 3000);
+    }
+
+    // Formular absenden
+    document.getElementById("resultForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const teamId = document.getElementById("teamSelect").value;
+      const points = parseInt(document.getElementById("points").value, 10);
+      if (!teamId) {
+        showFeedback("Bitte wähle ein Team aus!", false);
+        return;
+      }
+
+      // Hole das Team-Dokument anhand des teamId
+      const teamsRef = collection(db, "teams");
+      const q = query(teamsRef, where("teamName", "!=", "")); // Einfacher Query, um alle Teams zu bekommen
+      const querySnapshot = await getDocs(q);
+      let teamData;
+      querySnapshot.forEach(docSnap => {
+        if (docSnap.id === teamId) {
+          teamData = docSnap.data();
+        }
+      });
+
+      // Falls bereits ein Wert für diese Station vorhanden ist (ungleich 0), warnen
+      if (teamData && teamData["station" + stationNumber] && teamData["station" + stationNumber] !== 0) {
+        if (!confirm("Für dieses Team ist bereits ein Wert eingetragen. Möchten Sie den bestehenden Eintrag überschreiben?")) {
+          showFeedback("Eintrag nicht überschrieben.", false);
+          return;
+        }
+      }
+
+      try {
+        if (!teamData) {
+          // Sollte eigentlich nicht passieren, da das Dropdown gefüllt wird
+          let newTeamData = {
+            teamName: "Unbekannt",
+            station1: 0, station2: 0, station3: 0, station4: 0,
+            station5: 0, station6: 0, station7: 0, station8: 0,
+            total: 0
+          };
+          newTeamData["station" + stationNumber] = points;
+          newTeamData.total = points;
+          await addDoc(teamsRef, newTeamData);
+        } else {
+          // Berechne neuen Gesamtscore: Bestehende Werte nutzen, aktuelle Station setzen
+          let newTotal = 0;
+          for (let i = 1; i <= 8; i++) {
+            newTotal += (i === stationNumber ? points : (teamData["station" + i] || 0));
+          }
+          const updateData = {};
+          updateData["station" + stationNumber] = points;
+          updateData.total = newTotal;
+          await updateDoc(doc(db, "teams", teamId), updateData);
+        }
+        showFeedback("Ergebnis erfolgreich gespeichert!");
+      } catch (error) {
+        console.error("Fehler beim Speichern des Ergebnisses:", error);
+        showFeedback("Fehler beim Speichern!", false);
+      }
+      document.getElementById("resultForm").reset();
+      loadTeamsDropdown(); // Dropdown aktualisieren, falls neue Teams hinzugekommen sind
+    });
+    
+    // Funktionen global verfügbar machen (für Inline-Handler, falls benötigt)
+    window.loadTeamsDropdown = loadTeamsDropdown;
+  </script>
+</body>
+</html>
