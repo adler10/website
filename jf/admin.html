@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Admin Panel – Bali-Cup 2025</title>
   <style>
-    /* Farbvariablen Dark Mode (Standard) */
+    /* Dark Mode Standard – CSS Variablen */
     :root {
       --bg-color: #121212;
       --text-color: #e0e0e0;
@@ -15,6 +15,8 @@
       --button-hover: #555;
       --delete-bg: #d32f2f;
       --delete-hover: #b71c1c;
+      --input-bg: #222;
+      --input-border: #555;
     }
     body {
       font-family: Arial, sans-serif;
@@ -38,10 +40,66 @@
       max-width: 1200px;
       margin: 0 auto;
     }
+    /* Neues Team-Formular (initial versteckt) */
+    .new-team-form {
+      background-color: var(--container-bg);
+      border: 1px solid var(--button-border);
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .new-team-form label {
+      display: block;
+      margin-top: 10px;
+    }
+    .new-team-form input,
+    .new-team-form select,
+    .new-team-form button {
+      padding: 8px;
+      margin-top: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+    }
+    .new-team-form button {
+      cursor: pointer;
+      background-color: var(--button-bg);
+      border: 1px solid var(--button-border);
+      margin-top: 15px;
+    }
+    .new-team-form button:hover {
+      background-color: var(--button-hover);
+    }
+    /* Button zum Anzeigen des neuen Team-Formulars */
+    .toggle-form-btn {
+      padding: 10px 15px;
+      background-color: var(--button-bg);
+      border: 1px solid var(--button-border);
+      color: var(--text-color);
+      cursor: pointer;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .toggle-form-btn:hover {
+      background-color: var(--button-hover);
+    }
+    /* Suchfelder */
+    .search-input {
+      width: 300px;
+      padding: 6px;
+      margin-bottom: 10px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+    }
+    /* Tabellen */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
       background-color: var(--container-bg);
     }
     th, td {
@@ -53,8 +111,8 @@
       background-color: var(--button-bg);
     }
     button {
-      padding: 8px 12px;
-      margin: 5px;
+      padding: 6px 10px;
+      margin: 2px;
       border: 1px solid var(--button-border);
       background-color: var(--button-bg);
       color: var(--text-color);
@@ -72,17 +130,29 @@
     .delete-btn:hover {
       background-color: var(--delete-hover);
     }
-    /* Modal für Login */
+    /* Tabellenabschnitte */
+    .table-section {
+      margin-bottom: 40px;
+    }
+    .table-section h2 {
+      margin-top: 40px;
+    }
+    /* Indikator für abgeschlossene Teams */
+    .completed {
+      font-weight: bold;
+      color: #76ff03;
+    }
+    /* Login Modal */
     #loginModal {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       display: block;
       z-index: 1000;
     }
     #loginModal .modal-content {
-      background: #1e1e1e;
+      background: var(--container-bg);
       padding: 20px;
       max-width: 400px;
       margin: 20% auto;
@@ -95,16 +165,17 @@
       padding: 10px;
       margin: 10px auto;
       display: block;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
     }
-    /* Modal für Ranking */
+    /* Ranking Modal */
     .modal-popup {
       display: none;
       position: fixed;
       z-index: 100;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
       overflow: auto;
       background-color: rgba(0,0,0,0.5);
     }
@@ -128,7 +199,20 @@
       background: none;
       color: var(--text-color);
     }
-    /* Versionsanzeige */
+    /* Datenbank Clear Button */
+    .clear-db-btn {
+      background-color: var(--delete-bg);
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .clear-db-btn:hover {
+      background-color: var(--delete-hover);
+    }
+    /* Footer */
     footer {
       text-align: center;
       padding: 10px;
@@ -143,7 +227,7 @@
   <div id="loginModal">
     <div class="modal-content">
       <h2>Bitte Passwort eingeben</h2>
-      <input type="password" id="loginPassword" placeholder="Passwort">
+      <input type="password" id="loginPassword" placeholder="Passwort" required>
       <br>
       <button onclick="checkAdminPassword()">Einloggen</button>
     </div>
@@ -155,32 +239,105 @@
   </header>
 
   <div class="container">
-    <!-- Button zum Öffnen des Ranking-Popups -->
-    <button onclick="openRankingModal()">Ranking anzeigen</button>
-    <!-- Button zum Löschen einzelner Teams und Bearbeiten sind in der Tabelle integriert -->
+    <!-- Datenbank Clear Button -->
+    <button class="clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
+    
+    <!-- Toggle-Button zum Anzeigen des neuen Team-Formulars -->
+    <button class="toggle-form-btn" onclick="toggleNewTeamForm()">Neues Team hinzufügen</button>
+    <div class="new-team-form" id="newTeamFormContainer">
+      <h2>Neues Team eintragen</h2>
+      <form id="newTeamForm">
+        <label for="teamName">Team Name:</label>
+        <input type="text" id="teamName" placeholder="Team Name" required>
+        
+        <label for="teamType">Team Typ:</label>
+        <select id="teamType" required>
+          <option value="" disabled selected>Bitte wähle einen Typ</option>
+          <option value="Kindergruppe">Kindergruppe</option>
+          <option value="Normale Gruppe">Normale Gruppe</option>
+        </select>
+        
+        <button type="submit">Team eintragen</button>
+      </form>
+      <div id="newTeamFeedback"></div>
+    </div>
 
-    <!-- Tabelle der Teams -->
-    <h2>Team Übersicht</h2>
-    <table id="teamTable">
-      <thead>
-        <tr>
-          <th>Team Name</th>
-          <th>Station 1</th>
-          <th>Station 2</th>
-          <th>Station 3</th>
-          <th>Station 4</th>
-          <th>Station 5</th>
-          <th>Station 6</th>
-          <th>Station 7</th>
-          <th>Station 8</th>
-          <th>Gesamtpunkte</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Dynamische Inhalte -->
-      </tbody>
-    </table>
+    <!-- Tabelle: Bestätigte Teams – Normale Gruppen -->
+    <div class="table-section">
+      <h2>Bestätigte Teams – Normale Gruppen</h2>
+      <input type="text" id="searchNormal" class="search-input" placeholder="Suche in normalen Gruppen...">
+      <table id="confirmedNormalTable">
+        <thead>
+          <tr>
+            <th>Team Name</th>
+            <th>Typ</th>
+            <th>Station 1</th>
+            <th>Station 2</th>
+            <th>Station 3</th>
+            <th>Station 4</th>
+            <th>Station 5</th>
+            <th>Station 6</th>
+            <th>Station 7</th>
+            <th>Station 8</th>
+            <th>Gesamtpunkte</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamische Inhalte -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabelle: Bestätigte Teams – Kindergruppen -->
+    <div class="table-section">
+      <h2>Bestätigte Teams – Kindergruppen</h2>
+      <input type="text" id="searchKinder" class="search-input" placeholder="Suche in Kindergruppen...">
+      <table id="confirmedKinderTable">
+        <thead>
+          <tr>
+            <th>Team Name</th>
+            <th>Typ</th>
+            <th>Station 1</th>
+            <th>Station 2</th>
+            <th>Station 3</th>
+            <th>Station 4</th>
+            <th>Station 5</th>
+            <th>Station 6</th>
+            <th>Station 7</th>
+            <th>Station 8</th>
+            <th>Gesamtpunkte</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamische Inhalte -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabelle: Vormerkungen (Nicht bestätigt) – weniger Spalten -->
+    <div class="table-section">
+      <h2>Vormerkungen (Nicht bestätigt)</h2>
+      <input type="text" id="searchTentative" class="search-input" placeholder="Suche in Vormerkungen...">
+      <table id="tentativeTable">
+        <thead>
+          <tr>
+            <th>Team Name</th>
+            <th>Typ</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamische Inhalte -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Ranking Modal Button -->
+    <button onclick="openRankingModal()">Ranking anzeigen</button>
   </div>
 
   <!-- Ranking Modal -->
@@ -205,17 +362,16 @@
   </div>
 
   <footer>
-    <p id="versionDisplay">Version: 1.0.2</p>
+    <p id="versionDisplay">Version: 1.0.3</p>
   </footer>
 
-  <!-- Firebase und Admin-Panel-Logik -->
+  <!-- Firebase und Admin-Panel Logik -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
-    import { getFirestore, collection, onSnapshot, updateDoc, deleteDoc, doc } 
-      from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
-    // Firebase-Konfiguration – Ersetze diese Werte durch deine eigenen (Achte auf Sicherheit!)
+    // Firebase-Konfiguration – ACHTUNG: API-Schlüssel sicher verwalten!
     const firebaseConfig = {
       apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
       authDomain: "bali-cup2025.firebaseapp.com",
@@ -230,43 +386,85 @@
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Versionsnummer anzeigen
-    const currentVersion = "1.0.2";
+    // Versionsnummer
+    const currentVersion = "1.0.3";
     document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
+
+    // Admin-Login
+    function checkAdminPassword() {
+      const input = document.getElementById("loginPassword").value;
+      if (input === "adminbalicup") {
+        document.getElementById("loginModal").style.display = "none";
+      } else {
+        alert("Falsches Passwort!");
+      }
+    }
+    window.checkAdminPassword = checkAdminPassword;
 
     // Globale Variable für Teams
     let globalTeams = [];
 
-    // Echtzeit-Listener: Abonniere die Collection "teams"
+    // Echtzeit-Listener für Collection "teams"
     onSnapshot(collection(db, "teams"), (snapshot) => {
       globalTeams = [];
       snapshot.forEach((docSnap) => {
         globalTeams.push({ id: docSnap.id, ...docSnap.data() });
       });
-      updateTeamTable(globalTeams);
-      updateRanking(globalTeams);
+      renderTables();
+      renderRanking();
     });
 
-    // Tabelle aktualisieren
-    function updateTeamTable(teams) {
-      const tbody = document.querySelector("#teamTable tbody");
+    // Hilfsfunktion: Prüft, ob ein Team alle Stationen abgeschlossen hat (alle stationX > 0)
+    function isCompleted(team) {
+      for (let i = 1; i <= 8; i++) {
+        if (!team["station" + i] || team["station" + i] === 0) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Rendern der Tabellen
+    function renderTables() {
+      // Bestätigte Teams: getrennt nach Typ
+      const confirmed = globalTeams.filter(team => team.confirmed === true);
+      const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
+      const confirmedKinder = confirmed.filter(team => team.teamType === "Kindergruppe");
+      // Sortierung: Offene Teams (nicht abgeschlossen) sollen oben sein
+      confirmedNormal.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
+      confirmedKinder.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
+
+      // Tentative Teams (nicht bestätigt)
+      const tentative = globalTeams.filter(team => !team.confirmed);
+      
+      renderTable("confirmedNormalTable", confirmedNormal, true);
+      renderTable("confirmedKinderTable", confirmedKinder, true);
+      renderTentativeTable("tentativeTable", tentative);
+    }
+
+    // Rendern einer Tabelle (für bestätigte Teams)
+    // canEdit: true = Bearbeitungs-Optionen anzeigen
+    function renderTable(tableId, teams, canEdit) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
       tbody.innerHTML = "";
       teams.forEach(team => {
         const tr = document.createElement("tr");
         tr.setAttribute("data-team-id", team.id);
         tr.innerHTML = `
           <td>${team.teamName}</td>
-          <td>${team.station1}</td>
-          <td>${team.station2}</td>
-          <td>${team.station3}</td>
-          <td>${team.station4}</td>
-          <td>${team.station5}</td>
-          <td>${team.station6}</td>
-          <td>${team.station7}</td>
-          <td>${team.station8}</td>
-          <td>${team.total}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>${team.station1 || 0}</td>
+          <td>${team.station2 || 0}</td>
+          <td>${team.station3 || 0}</td>
+          <td>${team.station4 || 0}</td>
+          <td>${team.station5 || 0}</td>
+          <td>${team.station6 || 0}</td>
+          <td>${team.station7 || 0}</td>
+          <td>${team.station8 || 0}</td>
+          <td>${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
           <td>
-            <button onclick="editTeam('${team.id}')">Bearbeiten</button>
+            ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
             <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
           </td>
         `;
@@ -274,9 +472,28 @@
       });
     }
 
-    // Ranking aktualisieren
-    function updateRanking(teams) {
-      const sortedTeams = teams.slice().sort((a, b) => b.total - a.total);
+    // Rendern der tentativen Tabelle (Vormerkungen) – weniger Spalten, nur Bestätigen und Löschen
+    function renderTentativeTable(tableId, teams) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>
+            <button onclick="confirmTeam('${team.id}')">Bestätigen</button>
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Rendern des Ranking-Modals
+    function renderRanking() {
+      const sortedTeams = globalTeams.slice().sort((a, b) => b.total - a.total);
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
       sortedTeams.forEach((team, index) => {
@@ -288,19 +505,70 @@
         row.innerHTML = `
           <td>${index + 1}</td>
           <td>${team.teamName}</td>
-          <td>${team.total}</td>
+          <td>${team.total || 0}</td>
           <td>${completedStations}</td>
         `;
         tbody.appendChild(row);
       });
     }
 
-    // Bearbeiten: Öffnet den Bearbeitungsmodus für ein Team (hier als Popup-Dialog kann man dies erweitern)
+    // Bearbeitungsfunktion: Zeile in Editiermodus umwandeln
     function editTeam(teamId) {
-      // Für diese Beispielversion führen wir den Editiermodus nicht als Modal aus.
-      // Stattdessen kannst du hier erweiterten Code einbinden, um das Team direkt in der Tabelle zu bearbeiten.
-      alert("Bearbeitungsfunktion ist noch nicht vollständig implementiert.");
+      const team = globalTeams.find(t => t.id === teamId);
+      if (!team) return;
+      const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
+      tr.innerHTML = `
+        <td>${team.teamName}</td>
+        <td>${team.teamType || "-"}</td>
+        <td><input type="number" min="0" value="${team.station1 || 0}" id="edit-st1-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station2 || 0}" id="edit-st2-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station3 || 0}" id="edit-st3-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station7 || 0}" id="edit-st7-${teamId}" style="width:60px;"></td>
+        <td><input type="number" min="0" value="${team.station8 || 0}" id="edit-st8-${teamId}" style="width:60px;"></td>
+        <td id="total-${teamId}">${team.total || 0}</td>
+        <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+        <td>
+          <button onclick="saveTeam('${team.id}')">Speichern</button>
+          <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
+        </td>
+      `;
+      for (let i = 1; i <= 8; i++) {
+        document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
+          updateRowTotal(teamId);
+        });
+      }
     }
+    window.editTeam = editTeam;
+
+    // Aktualisiert den Gesamtwert in der bearbeiteten Zeile
+    function updateRowTotal(teamId) {
+      let total = 0;
+      for (let i = 1; i <= 8; i++) {
+        total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+      }
+      document.getElementById(`total-${teamId}`).textContent = total;
+    }
+
+    // Speichert die bearbeiteten Daten in Firestore
+    async function saveTeam(teamId) {
+      const newData = {};
+      for (let i = 1; i <= 8; i++) {
+        newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+      }
+      newData.total = newData.station1 + newData.station2 + newData.station3 + newData.station4 +
+                      newData.station5 + newData.station6 + newData.station7 + newData.station8;
+      await updateDoc(doc(db, "teams", teamId), newData);
+    }
+    window.saveTeam = saveTeam;
+
+    // Bricht den Bearbeitungsmodus ab (Zeile neu rendern)
+    function cancelEdit(teamId) {
+      renderTables();
+    }
+    window.cancelEdit = cancelEdit;
 
     // Löscht ein Team
     async function deleteTeam(teamId) {
@@ -308,30 +576,109 @@
         await deleteDoc(doc(db, "teams", teamId));
       }
     }
+    window.deleteTeam = deleteTeam;
 
-    // Ranking-Popup öffnen/schließen
+    // Bestätigt ein tentatives Team
+    async function confirmTeam(teamId) {
+      if (confirm("Dieses Team bestätigen?")) {
+        await updateDoc(doc(db, "teams", teamId), { confirmed: true });
+      }
+    }
+    window.confirmTeam = confirmTeam;
+
+    // Ranking Modal öffnen/schließen
     function openRankingModal() {
       document.getElementById("rankingModal").style.display = "block";
     }
     function closeRankingModal() {
       document.getElementById("rankingModal").style.display = "none";
     }
-
-    // Admin-Login: Passwortprüfung
-    function checkAdminPassword() {
-      const input = document.getElementById("loginPassword").value;
-      if (input === "adminbalicup") {
-        document.getElementById("loginModal").style.display = "none";
-      } else {
-        alert("Falsches Passwort!");
-      }
-    }
-    // Funktionen global verfügbar machen
-    window.checkAdminPassword = checkAdminPassword;
-    window.editTeam = editTeam;
-    window.deleteTeam = deleteTeam;
     window.openRankingModal = openRankingModal;
     window.closeRankingModal = closeRankingModal;
+
+    // Neues Team hinzufügen: Toggle zum Anzeigen/Verstecken des Formulars
+    function toggleNewTeamForm() {
+      const formContainer = document.getElementById("newTeamFormContainer");
+      formContainer.style.display = formContainer.style.display === "none" || formContainer.style.display === "" ? "block" : "none";
+    }
+    window.toggleNewTeamForm = toggleNewTeamForm;
+
+    // Neues Team-Formular absenden
+    document.getElementById("newTeamForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const teamName = document.getElementById("teamName").value.trim();
+      const teamType = document.getElementById("teamType").value;
+      if (!teamName || !teamType) return;
+      try {
+        await addDoc(collection(db, "teams"), {
+          teamName: teamName,
+          teamType: teamType,
+          confirmed: false,
+          station1: 0, station2: 0, station3: 0, station4: 0,
+          station5: 0, station6: 0, station7: 0, station8: 0,
+          total: 0
+        });
+        document.getElementById("newTeamForm").reset();
+        document.getElementById("newTeamFeedback").textContent = "Team erfolgreich eingetragen!";
+        setTimeout(() => { document.getElementById("newTeamFeedback").textContent = ""; }, 3000);
+      } catch (error) {
+        console.error("Fehler beim Eintragen des Teams:", error);
+        document.getElementById("newTeamFeedback").textContent = "Fehler beim Eintragen!";
+        setTimeout(() => { document.getElementById("newTeamFeedback").textContent = ""; }, 3000);
+      }
+    });
+
+    // Datenbank Clear Button: Löscht alle Einträge in der Collection "teams"
+    async function clearDatabase() {
+      if (confirm("Wirklich die gesamte Datenbank leeren?")) {
+        const teamsSnap = await getDocs(collection(db, "teams"));
+        const promises = [];
+        teamsSnap.forEach(docSnap => {
+          promises.push(deleteDoc(doc(db, "teams", docSnap.id)));
+        });
+        await Promise.all(promises);
+        alert("Datenbank geleert.");
+      }
+    }
+    window.clearDatabase = clearDatabase;
+
+    // Suchfunktion: Filtert Tabellen anhand des Teamnamens
+    function setupSearch(tableId, searchInputId) {
+      const searchInput = document.getElementById(searchInputId);
+      searchInput.addEventListener("keyup", () => {
+        const filter = searchInput.value.toLowerCase();
+        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+        rows.forEach(row => {
+          const teamName = row.cells[0].textContent.toLowerCase();
+          row.style.display = teamName.indexOf(filter) > -1 ? "" : "none";
+        });
+      });
+    }
+    setupSearch("confirmedNormalTable", "searchNormal");
+    setupSearch("confirmedKinderTable", "searchKinder");
+    setupSearch("tentativeTable", "searchTentative");
+
+    // Ranking Modal rendern
+    function renderRanking() {
+      const sortedTeams = globalTeams.slice().sort((a, b) => b.total - a.total);
+      const tbody = document.getElementById("rankingBody");
+      tbody.innerHTML = "";
+      sortedTeams.forEach((team, index) => {
+        let completedStations = 0;
+        for (let i = 1; i <= 8; i++) {
+          if (team["station" + i] > 0) completedStations++;
+        }
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${team.teamName}</td>
+          <td>${team.total || 0}</td>
+          <td>${completedStations}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+    window.renderRanking = renderRanking;
   </script>
 </body>
 </html>
