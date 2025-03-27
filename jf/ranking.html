@@ -118,7 +118,8 @@
     }
   </style>
 </head>
-<body>
+<!-- Der Body hat von Anfang an die Klasse "dark", sodass standardmäßig der Dark Mode aktiviert ist -->
+<body class="dark">
   <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
   <header>
     <h1>Bali-Cup 2025 - Live Ranking</h1>
@@ -131,7 +132,8 @@
       <button onclick="filterRanking('all')">Alle</button>
       <button onclick="filterRanking('normal')">Normale Gruppen</button>
       <button onclick="filterRanking('kinder')">Kindergruppen</button>
-      <button onclick="sortByStations()">Sortiere nach Stationen</button>
+      <!-- Hier wird der Button mit id="sortBtn" versehen -->
+      <button id="sortBtn" onclick="sortByStations()">Sortiere nach Stationen: Inaktiv</button>
     </div>
     <table>
       <thead>
@@ -253,13 +255,16 @@
       renderRanking();
     }
 
-    // Sortier-Funktion: Wechselt zwischen Standard-Sortierung und Sortierung nach abgeschlossenen Stationen
+    // Sortier-Funktion: Wechselt zwischen Standard-Sortierung und Sortierung nach abgeschlossenen Stationen.
+    // Aktualisiert auch den Button-Text.
     window.sortByStations = function() {
       currentSortByStations = !currentSortByStations;
+      const sortBtn = document.getElementById("sortBtn");
+      sortBtn.textContent = currentSortByStations ? "Sortiere nach Stationen: Aktiv" : "Sortiere nach Stationen: Inaktiv";
       renderRanking();
     }
 
-    // Light/Dark Mode Toggle
+    // Light/Dark Mode Toggle – Die Seite lädt standardmäßig im Dark Mode (Body hat "dark")
     window.toggleMode = function() {
       document.body.classList.toggle("dark");
     }
