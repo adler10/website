@@ -16,16 +16,18 @@
       --input-bg: #222;
       --input-border: #555;
     }
+    body.dark {
+      /* Wird durch die Klasse "dark" gesteuert – Variablen bleiben gleich */
+    }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       transition: background 0.3s, color 0.3s;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
     .login-container {
       background-color: var(--container-bg);
@@ -34,6 +36,8 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       width: 300px;
       text-align: center;
+      margin: auto;
+      box-sizing: border-box;
     }
     .login-container h2 {
       margin-top: 0;
@@ -48,6 +52,7 @@
       color: var(--text-color);
       border-radius: 4px;
       font-size: 1em;
+      box-sizing: border-box;
     }
     .login-container button {
       width: 100%;
@@ -62,7 +67,6 @@
     .login-container button:hover {
       background-color: var(--button-hover);
     }
-    /* Toggle-Schalter (optional, falls du später den Modus ändern möchtest) */
     .toggle-mode {
       position: fixed;
       top: 20px;
@@ -74,10 +78,17 @@
       color: var(--text-color);
       border-radius: 4px;
     }
+    footer {
+      text-align: center;
+      padding: 10px;
+      border-top: 1px solid var(--input-border);
+      font-size: 0.9em;
+      margin-top: auto;
+    }
   </style>
 </head>
-<body>
-  <!-- Optional: Toggle-Button für den Dark/Light Mode -->
+<body class="dark">
+  <!-- Toggle-Button für Dark/Light Mode -->
   <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
   <div class="login-container">
     <h2>Bali-Cup 2025 Hub</h2>
@@ -85,7 +96,18 @@
     <input type="password" id="password" placeholder="Passwort">
     <button onclick="handleLogin()">Einloggen</button>
   </div>
+  <footer>
+    <p id="versionDisplay">Balicup 2025 - Version: 1.0.0</p>
+  </footer>
   <script>
+    // Login-Funktion: Drücke Enter in einem Input, um einzuloggen
+    document.getElementById("username").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") handleLogin();
+    });
+    document.getElementById("password").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") handleLogin();
+    });
+
     function handleLogin() {
       const username = document.getElementById("username").value.trim().toLowerCase();
       const password = document.getElementById("password").value.trim();
@@ -99,7 +121,7 @@
           alert("Falscher Benutzername oder Passwort!");
       }
     }
-    // Optional: Toggle-Funktion, um zwischen Dark und Light Mode zu wechseln
+    // Toggle-Funktion für Dark/Light Mode
     function toggleMode() {
       document.body.classList.toggle("dark");
     }
