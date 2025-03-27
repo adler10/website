@@ -122,10 +122,16 @@
           alert("Falscher Benutzername oder Passwort!");
       }
     }
-    // Toggle-Funktion für Dark/Light Mode
-    function toggleMode() {
-      document.body.classList.toggle("dark");
-    }
+    function toggleMode () {
+const body = document.body;
+body.classList.toggle("dark");
+// Aktualisiere den Button-Text basierend auf dem aktuellen Mor
+const toggleBtn = document.getElementById ("modeToggle");
+if(body.classList.contains("dark")) {
+toggleBtn.textContent = "Wechsle auf Light Mode";
+} else {
+toggleBtn.textContent = "Wechsle auf Dark Mode";
+}
   </script>
 </body>
 </html>
