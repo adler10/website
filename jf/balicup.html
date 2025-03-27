@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Bali-Cup 2025 - Hub</title>
+  <style>
+    /* Basisvariablen – Dark Mode (Standard) */
+    :root {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --header-bg: #1e1e1e;
+      --container-bg: #1e1e1e;
+      --button-bg: #333;
+      --button-border: #444;
+      --button-hover: #555;
+      --input-bg: #222;
+      --input-border: #555;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    .login-container {
+      background-color: var(--container-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      width: 300px;
+      text-align: center;
+    }
+    .login-container h2 {
+      margin-top: 0;
+      font-size: 1.8em;
+    }
+    .login-container input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+      border-radius: 4px;
+      font-size: 1em;
+    }
+    .login-container button {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--button-bg);
+      border: 1px solid var(--button-border);
+      color: var(--text-color);
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 1em;
+    }
+    .login-container button:hover {
+      background-color: var(--button-hover);
+    }
+    /* Toggle-Schalter (optional, falls du später den Modus ändern möchtest) */
+    .toggle-mode {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      cursor: pointer;
+      border: 1px solid var(--button-border);
+      background-color: var(--header-bg);
+      color: var(--text-color);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Optional: Toggle-Button für den Dark/Light Mode -->
+  <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
+  <div class="login-container">
+    <h2>Bali-Cup 2025 Hub</h2>
+    <input type="text" id="username" placeholder="Benutzername" required>
+    <input type="password" id="password" placeholder="Passwort">
+    <button onclick="handleLogin()">Einloggen</button>
+  </div>
+  <script>
+    function handleLogin() {
+      const username = document.getElementById("username").value.trim().toLowerCase();
+      const password = document.getElementById("password").value.trim();
+      if(username === "admin" && password === "adminbalicup") {
+          // Weiterleitung zum Admin Panel
+          window.location.href = "admin.html";
+      } else if(username === "ranking") {
+          // Weiterleitung zur Rangliste (kein Passwort erforderlich)
+          window.location.href = "ranking.html";
+      } else {
+          alert("Falscher Benutzername oder Passwort!");
+      }
+    }
+    // Optional: Toggle-Funktion, um zwischen Dark und Light Mode zu wechseln
+    function toggleMode() {
+      document.body.classList.toggle("dark");
+    }
+  </script>
+</body>
+</html>
