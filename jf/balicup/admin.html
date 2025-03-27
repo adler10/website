@@ -206,7 +206,7 @@
       margin: 0 auto;
       display: block;
     }
-    /* Modal Popup (für Ranking und Neues Team) */
+    /* Modal Popup (für Ranking, Neues Team und Station Logins) */
     .modal-popup {
       display: none;
       position: fixed;
@@ -260,6 +260,8 @@
   <!-- Header -->
   <header>
     <h1>Admin Panel – Bali-Cup 2025</h1>
+    <!-- Neuer Button: Station Login Übersicht -->
+    <button class="admin-btn" onclick="openStationLoginModal()">Station Login Übersicht</button>
   </header>
 
   <div class="container">
@@ -271,7 +273,7 @@
     <!-- Admin-Funktionen -->
     <button class="admin-btn" onclick="exportTeamsCSV()">Export als CSV</button>
     <button class="admin-btn" onclick="openNewTeamModal()">Neues Team hinzufügen</button>
-	<button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
+    <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
     <button class="admin-btn" onclick="toggleTheme()">Dark/Light Mode</button>
     <!-- Datenbank leeren -->
     <button class="admin-btn clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
@@ -403,6 +405,25 @@
         <button type="submit">Team hinzufügen</button>
       </form>
       <div id="newTeamFeedback"></div>
+    </div>
+  </div>
+
+  <!-- Neuer Modal: Station Login Übersicht -->
+  <div id="stationLoginModal" class="modal-popup">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeStationLoginModal()">✖</button>
+      <h2>Station Login Übersicht</h2>
+      <table id="stationLoginTable">
+        <thead>
+          <tr>
+            <th>Station</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamische Inhalte -->
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -564,7 +585,7 @@
           <td>${team.station7 || 0}</td>
           <td>${team.station8 || 0}</td>
           <td>${team.total || 0}</td>
-          <td>${isCompleted(team) ? "<span class='completed'>done</span>" : "open"}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
           <td>
             ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
             <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
@@ -772,6 +793,37 @@
     }
     window.openNewTeamModal = openNewTeamModal;
     window.closeNewTeamModal = closeNewTeamModal;
+
+    /* --------------------- Station Login Modal Funktionen --------------------- */
+    async function openStationLoginModal() {
+      const tableBody = document.querySelector("#stationLoginTable tbody");
+      tableBody.innerHTML = "";
+      // Abfrage der "stationSessions" Collection – hier wird angenommen, dass
+      // Dokumente mit den IDs "station1", "station2", ... existieren und ein Feld "loggedIn" besitzen.
+      const sessionsSnapshot = await getDocs(collection(db, "stationSessions"));
+      let sessions = {};
+      sessionsSnapshot.forEach(docSnap => {
+        sessions[docSnap.id] = docSnap.data();
+      });
+      for (let i = 1; i <= 8; i++) {
+        const stationId = "station" + i;
+        let status = "Nicht eingeloggt";
+        let statusColor = "red";
+        if (sessions[stationId] && sessions[stationId].loggedIn) {
+          status = "Eingeloggt";
+          statusColor = "green";
+        }
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${stationId}</td><td style="color:${statusColor}; font-weight: bold;">${status}</td>`;
+        tableBody.appendChild(tr);
+      }
+      document.getElementById("stationLoginModal").style.display = "block";
+    }
+    function closeStationLoginModal() {
+      document.getElementById("stationLoginModal").style.display = "none";
+    }
+    window.openStationLoginModal = openStationLoginModal;
+    window.closeStationLoginModal = closeStationLoginModal;
   </script>
 </body>
 </html>
