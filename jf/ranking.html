@@ -116,22 +116,10 @@
       color: var(--text-color);
       border-radius: 4px;
     }
-    .pdf-export {
-      position: fixed;
-      top: 20px;
-      right: 120px;
-      padding: 8px 12px;
-      cursor: pointer;
-      border: 1px solid var(--table-border);
-      background-color: var(--header-bg);
-      color: var(--text-color);
-      border-radius: 4px;
-    }
   </style>
 </head>
 <body>
   <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
-  <button class="pdf-export" onclick="exportAsPDF()">PDF Export</button>
   <header>
     <h1>Bali-Cup 2025 - Live Ranking</h1>
   </header>
@@ -168,9 +156,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-    // PDF Export – jsPDF UMD Import
-    import jspdf from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    const { jsPDF } = jspdf;
 
     // Firebase-Konfiguration – ersetze ggf. deine Werte
     const firebaseConfig = {
@@ -234,17 +219,14 @@
       teamsToShow.sort((a, b) => b.total - a.total);
       // Alternativ: nach abgeschlossenen Stationen sortieren
       if (currentSortByStations) {
-        teamsToShow.sort((a, b) => {
-          const compA = countCompleted(a);
-          const compB = countCompleted(b);
-          return compB - compA;
-        });
+        teamsToShow.sort((a, b) => countCompleted(b) - countCompleted(a));
       }
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
       teamsToShow.forEach((team, index) => {
         const completedStations = countCompleted(team);
         const row = document.createElement("tr");
+        // Einfacher Fade-In-Effekt für jede neue Zeile:
         row.style.opacity = 0;
         row.innerHTML = `
           <td>${index + 1}</td>
@@ -276,21 +258,6 @@
       currentSortByStations = !currentSortByStations;
       renderRanking();
     }
-
-    // PDF Export Funktion
-    function exportAsPDF() {
-      const doc = new jsPDF("p", "pt", "a4");
-      // Wir exportieren den Bereich .ranking-container
-      doc.html(document.querySelector(".ranking-container"), {
-        callback: function (doc) {
-          doc.save("live_ranking.pdf");
-        },
-        margin: [20, 20, 20, 20],
-        x: 20,
-        y: 20
-      });
-    }
-    window.exportAsPDF = exportAsPDF;
 
     // Light/Dark Mode Toggle
     window.toggleMode = function() {
