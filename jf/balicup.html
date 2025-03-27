@@ -16,8 +16,17 @@
       --input-bg: #222;
       --input-border: #555;
     }
-    body.dark {
-      /* Wird durch die Klasse "dark" gesteuert – Variablen bleiben gleich */
+    /* Variablen für Light Mode, wenn body nicht die Klasse "dark" hat */
+    body:not(.dark) {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --header-bg: #f0f0f0;
+      --container-bg: #f0f0f0;
+      --button-bg: #ddd;
+      --button-border: #ccc;
+      --button-hover: #ccc;
+      --input-bg: #ffffff;
+      --input-border: #ccc;
     }
     body {
       margin: 0;
@@ -90,7 +99,7 @@
 </head>
 <body class="dark">
   <!-- Toggle-Button für Dark/Light Mode -->
-  <button id="modeToggle" class="toggle-mode" onclick="toggleMode()">Wechsle auf Dark Mode</button>
+  <button id="modeToggle" class="toggle-mode" onclick="toggleMode()">Wechsle auf Light Mode</button>
   <div class="login-container">
     <h2>Login</h2>
     <input type="text" id="username" placeholder="Benutzername" required>
