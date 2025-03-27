@@ -12,6 +12,13 @@
       --table-bg: #fff;
       --table-border: #ccc;
       --counter-bg: #e0e0e0;
+      /* Buttons */
+      --button-bg: #333;
+      --button-border: #444;
+      --button-hover: #555;
+      /* Dashboard/Card Elemente */
+      --card-bg: #fff;
+      --card-shadow: rgba(0, 0, 0, 0.1);
     }
     /* Dark Mode */
     body.dark {
@@ -21,6 +28,11 @@
       --table-bg: #2c2c2c;
       --table-border: #666;
       --counter-bg: #444;
+      --button-bg: #333;
+      --button-border: #444;
+      --button-hover: #555;
+      --card-bg: #2c2c2c;
+      --card-shadow: rgba(0, 0, 0, 0.3);
     }
     body {
       margin: 0;
@@ -53,7 +65,24 @@
       text-align: center;
       margin-bottom: 20px;
       border-radius: 4px;
-      font-size: 1.1em;
+      font-size: 1em;
+    }
+    /* Filter- und Sortierleiste */
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .controls button {
+      padding: 8px 12px;
+      margin: 0 5px;
+      cursor: pointer;
+      border: 1px solid var(--table-border);
+      background-color: var(--header-bg);
+      color: var(--text-color);
+      border-radius: 4px;
+    }
+    .controls button:hover {
+      background-color: var(--button-hover);
     }
     table {
       width: 100%;
@@ -64,7 +93,7 @@
       border: 1px solid var(--table-border);
       padding: 12px;
       text-align: center;
-      font-size: 1.2em;
+      font-size: 1.1em;
     }
     th {
       background-color: var(--header-bg);
@@ -87,16 +116,34 @@
       color: var(--text-color);
       border-radius: 4px;
     }
+    .pdf-export {
+      position: fixed;
+      top: 20px;
+      right: 120px;
+      padding: 8px 12px;
+      cursor: pointer;
+      border: 1px solid var(--table-border);
+      background-color: var(--header-bg);
+      color: var(--text-color);
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
+  <button class="pdf-export" onclick="exportAsPDF()">PDF Export</button>
   <header>
     <h1>Bali-Cup 2025 - Live Ranking</h1>
   </header>
   <div class="ranking-container">
     <div class="update-counter" id="updateCounter">
       Letzte Aktualisierung: 0 Minuten, 0 Sekunden
+    </div>
+    <div class="controls">
+      <button onclick="filterRanking('all')">Alle</button>
+      <button onclick="filterRanking('normal')">Normale Gruppen</button>
+      <button onclick="filterRanking('kinder')">Kindergruppen</button>
+      <button onclick="sortByStations()">Sortiere nach Stationen</button>
     </div>
     <table>
       <thead>
@@ -121,8 +168,11 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    // PDF Export – jsPDF UMD Import
+    import jspdf from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    const { jsPDF } = jspdf;
 
-    // Firebase-Konfiguration – ersetze diese Werte durch deine eigenen
+    // Firebase-Konfiguration – ersetze ggf. deine Werte
     const firebaseConfig = {
       apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
       authDomain: "bali-cup2025.firebaseapp.com",
@@ -137,7 +187,7 @@
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Versionsnummer anzeigen
+    // Versionsanzeige
     const currentVersion = "1.0.1";
     document.getElementById("versionDisplay").textContent = "Version: " + currentVersion;
 
@@ -145,7 +195,7 @@
     let lastUpdateTime = new Date();
     let updateInterval;
 
-    // Startet den Zähler
+    // Startet den Aktualisierungszähler
     function startUpdateCounter() {
       clearInterval(updateInterval);
       lastUpdateTime = new Date();
@@ -159,18 +209,42 @@
       }, 1000);
     }
 
+    // Standardmäßig alle Teams anzeigen
+    let currentFilter = "all";
+    let currentSortByStations = false;
+    let latestTeams = [];
+
     // Aktualisiert das Ranking basierend auf den Daten aus Firestore
     function updateRanking(teams) {
-      teams.sort((a, b) => b.total - a.total);
+      latestTeams = teams;
+      renderRanking();
+      startUpdateCounter();
+    }
+
+    // Rendert die Rangliste anhand des aktuellen Filters und Sortier-Flags
+    function renderRanking() {
+      let teamsToShow = [...latestTeams];
+      // Filter anwenden
+      if (currentFilter === "normal") {
+        teamsToShow = teamsToShow.filter(team => team.teamType === "Normale Gruppe");
+      } else if (currentFilter === "kinder") {
+        teamsToShow = teamsToShow.filter(team => team.teamType === "Kindergruppe");
+      }
+      // Standard-Sortierung: nach Gesamtpunkten absteigend
+      teamsToShow.sort((a, b) => b.total - a.total);
+      // Alternativ: nach abgeschlossenen Stationen sortieren
+      if (currentSortByStations) {
+        teamsToShow.sort((a, b) => {
+          const compA = countCompleted(a);
+          const compB = countCompleted(b);
+          return compB - compA;
+        });
+      }
       const tbody = document.getElementById("rankingBody");
       tbody.innerHTML = "";
-      teams.forEach((team, index) => {
-        let completedStations = 0;
-        for (let i = 1; i <= 8; i++) {
-          if (team["station" + i] > 0) completedStations++;
-        }
+      teamsToShow.forEach((team, index) => {
+        const completedStations = countCompleted(team);
         const row = document.createElement("tr");
-        // Einfacher Fade-In-Effekt für jede neue Zeile:
         row.style.opacity = 0;
         row.innerHTML = `
           <td>${index + 1}</td>
@@ -183,6 +257,46 @@
       });
     }
 
+    function countCompleted(team) {
+      let count = 0;
+      for (let i = 1; i <= 8; i++) {
+        if (team["station" + i] > 0) count++;
+      }
+      return count;
+    }
+
+    // Filter-Funktionen
+    window.filterRanking = function(filter) {
+      currentFilter = filter;
+      renderRanking();
+    }
+
+    // Sortier-Funktion: Wechselt zwischen Standard-Sortierung und Sortierung nach abgeschlossenen Stationen
+    window.sortByStations = function() {
+      currentSortByStations = !currentSortByStations;
+      renderRanking();
+    }
+
+    // PDF Export Funktion
+    function exportAsPDF() {
+      const doc = new jsPDF("p", "pt", "a4");
+      // Wir exportieren den Bereich .ranking-container
+      doc.html(document.querySelector(".ranking-container"), {
+        callback: function (doc) {
+          doc.save("live_ranking.pdf");
+        },
+        margin: [20, 20, 20, 20],
+        x: 20,
+        y: 20
+      });
+    }
+    window.exportAsPDF = exportAsPDF;
+
+    // Light/Dark Mode Toggle
+    window.toggleMode = function() {
+      document.body.classList.toggle("dark");
+    }
+
     // Echtzeit-Listener: Abonniere die Collection "teams"
     onSnapshot(collection(db, "teams"), (snapshot) => {
       const teams = [];
@@ -190,14 +304,7 @@
         teams.push({ id: doc.id, ...doc.data() });
       });
       updateRanking(teams);
-      // Wenn Daten neu empfangen werden, starte den Aktualisierungszähler neu
-      startUpdateCounter();
     });
-
-    // Light/Dark Mode Toggle
-    window.toggleMode = function() {
-      document.body.classList.toggle("dark");
-    }
   </script>
 </body>
 </html>
