@@ -46,7 +46,7 @@
     .login-container input {
       width: 100%;
       padding: 10px;
-      max-margin: 50px 0;
+      margin-bottom: 10px;
       background-color: var(--input-bg);
       border: 1px solid var(--input-border);
       color: var(--text-color);
@@ -57,7 +57,7 @@
     .login-container button {
       width: 100%;
       padding: 10px;
-      max-margin: 50px 0;
+      margin-bottom: 10px;
       background-color: var(--button-bg);
       border: 1px solid var(--button-border);
       color: var(--text-color);
@@ -90,9 +90,9 @@
 </head>
 <body class="dark">
   <!-- Toggle-Button für Dark/Light Mode -->
-  <button class="toggle-mode" onclick="toggleMode()">Light/Dark Mode</button>
+  <button id="modeToggle" class="toggle-mode" onclick="toggleMode()">Wechsle auf Dark Mode</button>
   <div class="login-container">
-    <h2>Login</h2></h2>
+    <h2>Login</h2>
     <input type="text" id="username" placeholder="Benutzername" required>
     <input type="password" id="password" placeholder="Passwort">
     <button onclick="handleLogin()">Einloggen</button>
@@ -122,16 +122,18 @@
           alert("Falscher Benutzername oder Passwort!");
       }
     }
-    function toggleMode () {
-const body = document.body;
-body.classList.toggle("dark");
-// Aktualisiere den Button-Text basierend auf dem aktuellen Mor
-const toggleBtn = document.getElementById ("modeToggle");
-if(body.classList.contains("dark")) {
-toggleBtn.textContent = "Wechsle auf Light Mode";
-} else {
-toggleBtn.textContent = "Wechsle auf Dark Mode";
-}
+
+    function toggleMode() {
+      const body = document.body;
+      body.classList.toggle("dark");
+      // Aktualisiere den Button-Text basierend auf dem aktuellen Modus
+      const toggleBtn = document.getElementById("modeToggle");
+      if(body.classList.contains("dark")) {
+        toggleBtn.textContent = "Wechsle auf Light Mode";
+      } else {
+        toggleBtn.textContent = "Wechsle auf Dark Mode";
+      }
+    }
   </script>
 </body>
 </html>
