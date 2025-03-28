@@ -133,7 +133,7 @@
       border-color: #c62828;
       color: #fff;
     }
-    /* Grüne Markierung, wenn eine Schätzung abgegeben wurde – Punkte werden aber nicht angezeigt */
+    /* Grüne Markierung, wenn eine Schätzung abgegeben wurde – Punkte bleiben verborgen */
     .team-card.estimated {
       background: #388e3c;
       border-color: #2e7d32;
@@ -235,7 +235,9 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Falls bereits eine Schätzung vorliegt, wird das Team hier nicht mehr im Dropdown angezeigt
+        // Teams, die nur vorgemerkt sind, überspringen
+        if (data.vorgemerkt === true) return;
+        // Falls bereits eine Schätzung vorliegt, wird das Team hier nicht im Dropdown angezeigt
         if (data.guess_station1 && data.guess_station1 > 0) return;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
         if (!allowedGroups.dropdown.includes(teamType)) return;
@@ -288,8 +290,10 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
+        // Teams, die nur vorgemerkt sind, überspringen
+        if (data.vorgemerkt === true) return;
         const teamName = data.teamName;
-        // Wir zeigen hier die abgegebene Schätzung an, falls vorhanden – die errechneten Punkte werden nicht angezeigt
+        // Zeige hier die abgegebene Schätzung an, falls vorhanden
         const guess = data.guess_station1 || null;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
         if (!allowedGroups.teams.includes(teamType)) return;
@@ -312,7 +316,7 @@
         normalContainer.className = "group-container";
         normalTeams.forEach(team => {
           const card = document.createElement("div");
-          // Falls eine Schätzung vorliegt, grüne Karte; ansonsten rot
+          // Wenn eine Schätzung vorliegt, grün; ansonsten rot
           if (team.guess !== null) {
             card.classList.add("team-card", "estimated");
             card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.guess}`;
@@ -373,6 +377,8 @@
       const teams = [];
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
+        // Auch hier Teams, die nur vorgemerkt sind, überspringen
+        if(data.vorgemerkt === true) return;
         teams.push({ id: docSnap.id, guess: data.guess_station1, teamData: data });
       });
 
