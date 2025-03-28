@@ -107,7 +107,25 @@
       border-radius: 50%;
       margin-top: 5px;
     }
-
+    /* Timer und manueller Reset Button */
+    .reset-info {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+    .manual-reset-btn {
+      display: block;
+      margin: 0 auto 20px auto;
+      padding: 10px 20px;
+      background-color: var(--button-bg);
+      border: 1px solid var(--button-border);
+      color: var(--text-color);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .manual-reset-btn:hover {
+      background-color: var(--button-hover);
+    }
     /* Admin-Buttons */
     .admin-btn {
       padding: 10px 15px;
@@ -308,6 +326,11 @@
     <!-- NEUER BLOCK: Stationen-Übersicht unterhalb des Dashboards -->
     <div class="dashboard-stations" id="stationLoginOverview">
       <h2>Stationen</h2>
+      <!-- Timer und manueller Reset -->
+      <div class="reset-info">
+        Nächster Check in: <span id="countdown">60</span> Sekunden
+      </div>
+      <button class="manual-reset-btn" onclick="manualReset()">Manuelle Aktualisierung</button>
       <div class="stations-grid" id="stationsGrid">
         <!-- Dynamische Inhalte (renderStations) -->
       </div>
@@ -461,6 +484,10 @@
     let globalTeams = [];
     let globalStationSessions = {};
     let db;
+    
+    // Countdown-Variablen
+    let countdownTime = 60; // in Sekunden
+    let countdownInterval;
 
     /* --------------------- Login und Initialisierung --------------------- */
     function checkAdminPassword() {
@@ -510,7 +537,7 @@
         snapshot.forEach(docSnap => {
           globalStationSessions[docSnap.id] = docSnap.data();
         });
-        renderStations(); // Separate Funktion für die Stations-Übersicht
+        renderStations();
       });
 
       // Neues Team Formular
@@ -557,6 +584,9 @@
       window.confirmTeam = confirmTeam;
       window.renderRanking = renderRanking;
       window.exportTeamsCSV = exportTeamsCSV;
+
+      // Starte den Countdown für den Reset-Mechanismus
+      startCountdown();
     }
 
     /* --------------------- Dashboard aktualisieren --------------------- */
@@ -569,7 +599,6 @@
       const kinder = globalTeams.filter(team => team.teamType === "Kindergruppe").length;
       const normal = globalTeams.filter(team => team.teamType === "Normale Gruppe").length;
       
-      // Dashboard: Stat-Karten
       document.getElementById("dashboard").innerHTML = `
         <h2>Übersicht</h2>
         <div class="stat">Alle Teams: ${total}</div>
@@ -586,14 +615,11 @@
     function renderStations() {
       const stationsGrid = document.getElementById("stationsGrid");
       if (!stationsGrid) return;
-
       stationsGrid.innerHTML = "";
-
       for (let i = 1; i <= 8; i++) {
         const stationId = "station" + i;
         const session = globalStationSessions[stationId];
         const color = (session && session.loggedIn) ? "green" : "red";
-
         const stationBox = document.createElement("div");
         stationBox.className = "station-box";
         stationBox.innerHTML = `
@@ -605,14 +631,54 @@
     }
 
     /* --------------------- Zusätzliche Funktion: Reset aller 8 Stationen --------------------- */
-    // Setzt für alle 8 Stationen (station1 bis station8) alle 15 Sekunden loggedIn auf false
-    setInterval(() => {
+    // Setzt für alle 8 Stationen (station1 bis station8) den Wert loggedIn auf false
+    async function resetAllStations() {
       for (let i = 1; i <= 8; i++) {
         const stationId = "station" + i;
-        setDoc(doc(db, "stationSessions", stationId), { loggedIn: false }, { merge: true })
-          .catch(error => console.error("Fehler beim Zurücksetzen von " + stationId + ":", error));
+        try {
+          await setDoc(doc(db, "stationSessions", stationId), { loggedIn: false }, { merge: true });
+        } catch (error) {
+          console.error("Fehler beim Zurücksetzen von " + stationId + ":", error);
+        }
       }
-    }, 15000);
+    }
+
+    /* --------------------- Countdown und manueller Reset --------------------- */
+    function startCountdown() {
+      // Setze Countdown-Zeit auf 60 Sekunden
+      countdownTime = 60;
+      updateCountdownDisplay();
+
+      // Starte ein Intervall, das jede Sekunde den Countdown dekrementiert
+      countdownInterval = setInterval(async () => {
+        countdownTime--;
+        updateCountdownDisplay();
+        if (countdownTime <= 0) {
+          // Führe den Reset aus
+          await resetAllStations();
+          // Reset countdown
+          countdownTime = 60;
+          updateCountdownDisplay();
+        }
+      }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+      const countdownElem = document.getElementById("countdown");
+      if (countdownElem) {
+        countdownElem.textContent = countdownTime;
+      }
+    }
+
+    // Manuelle Reset-Funktion, ausgelöst durch den Button
+    async function manualReset() {
+      // Setze alle Stationen zurück
+      await resetAllStations();
+      // Setze den Countdown zurück
+      countdownTime = 60;
+      updateCountdownDisplay();
+    }
+    window.manualReset = manualReset;
 
     /* --------------------- Hilfsfunktionen --------------------- */
     function isCompleted(team) {
@@ -642,7 +708,6 @@
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
       tbody.innerHTML = "";
-
       teams.forEach(team => {
         const tr = document.createElement("tr");
         tr.setAttribute("data-team-id", team.id);
@@ -672,7 +737,6 @@
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
       tbody.innerHTML = "";
-
       teams.forEach(team => {
         const tr = document.createElement("tr");
         tr.setAttribute("data-team-id", team.id);
@@ -692,14 +756,11 @@
     function renderRanking() {
       const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe");
       const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe");
-
       normalTeams.sort((a, b) => b.total - a.total);
       kinderTeams.sort((a, b) => b.total - a.total);
-
       const normalTbody = document.getElementById("rankingNormalBody");
       const kinderTbody = document.getElementById("rankingKinderBody");
       if (!normalTbody || !kinderTbody) return;
-
       normalTbody.innerHTML = "";
       normalTeams.forEach((team, index) => {
         let completedStations = 0;
@@ -715,7 +776,6 @@
         `;
         normalTbody.appendChild(row);
       });
-
       kinderTbody.innerHTML = "";
       kinderTeams.forEach((team, index) => {
         let completedStations = 0;
@@ -737,10 +797,8 @@
     function editTeam(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
-
       const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
       if (!tr) return;
-
       tr.innerHTML = `
         <td>${team.teamName}</td>
         <td>${team.teamType || "-"}</td>
@@ -810,7 +868,6 @@
       let csvContent = "data:text/csv;charset=utf-8,";
       const headers = ["Team Name","Team Typ","Station1","Station2","Station3","Station4","Station5","Station6","Station7","Station8","Gesamtpunkte","Status"];
       csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
-
       globalTeams.forEach(team => {
         const status = team.confirmed ? (isCompleted(team) ? "Abgeschlossen" : "Offen") : "Vormerkung";
         const row = [
@@ -829,7 +886,6 @@
         ].map(cell => `"${cell}"`).join(",");
         csvContent += row + "\n";
       });
-
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
