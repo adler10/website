@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Ergebnisse für Station <span id="stationLabel"></span> – Bali-Cup 2025</title>
+  <title>Ergebnisse für Station <span id="stationId"></span> - <span id="stationLabel"></span> erfassen – Bali-Cup 2025</title>
   <style>
     :root {
       /* Standard Farben für Dark Mode */
@@ -17,11 +17,10 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background: #222; /* Dark Mode */
+      background: #222;
       color: #fff;
       transition: background 0.3s, color 0.3s;
     }
-    /* Light Mode Styles */
     body.light-mode {
       background: #f5f5f5;
       color: #333;
@@ -34,7 +33,7 @@
       max-width: 400px;
       margin: 0 auto;
       padding: 20px;
-      background: #333; /* Dark Mode: Container-Hintergrund */
+      background: #333;
       border: 1px solid #444;
       border-radius: 4px;
     }
@@ -86,7 +85,6 @@
       background-color: #f44336;
       color: #fff;
     }
-    /* Toggle-Button: kleiner, oben rechts */
     .toggle-mode {
       position: fixed;
       top: 10px;
@@ -110,7 +108,6 @@
     body.light-mode .toggle-mode:hover {
       background: var(--btn-hover-light);
     }
-    /* Teamübersicht – Bereiche für Gruppen */
     .teams-info {
       margin-top: 20px;
     }
@@ -128,31 +125,30 @@
       border: 1px solid;
       text-align: center;
     }
-    /* Farben in Abhängigkeit vom Status */
     body:not(.light-mode) .team-card.participated {
-      background: #388e3c; /* Dunkelgrün */
+      background: #388e3c;
       border-color: #2e7d32;
       color: #fff;
     }
     body:not(.light-mode) .team-card.not-participated {
-      background: #d32f2f; /* Dunkelrot */
+      background: #d32f2f;
       border-color: #c62828;
       color: #fff;
     }
     body.light-mode .team-card.participated {
-      background: #81c784; /* Hellgrün */
+      background: #81c784;
       border-color: #66bb6a;
       color: #333;
     }
     body.light-mode .team-card.not-participated {
-      background: #e57373; /* Hellrot */
+      background: #e57373;
       border-color: #ef5350;
       color: #333;
     }
   </style>
 </head>
 <body>
-  <!-- Toggle Button zum Wechseln zwischen Dark und Light Mode -->
+  <!-- Toggle Button -->
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
@@ -165,14 +161,15 @@
         <option value="" disabled selected>Bitte wähle ein Team</option>
       </select>
       
-      <label for="points">Punkte:</label>
-      <input type="number" id="points" placeholder="Punkte" min="0" required>
+      <!-- Hier wird statt einer Punkteingabe die Schätzung eingegeben -->
+      <label for="guess">Schätzung eingeben:</label>
+      <input type="number" id="guess" placeholder="Schätzung" min="0" required>
       
       <button type="submit">Ergebnis speichern</button>
     </form>
     <div id="feedback"></div>
     
-    <!-- Kreative Teamübersicht, getrennt nach Gruppen -->
+    <!-- Teamübersicht -->
     <div class="teams-info" id="teamsInfo"></div>
   </div>
 
@@ -180,14 +177,12 @@
     // Konfiguration: Stationsname, Stationsnummer und erlaubte Gruppen
     const stationName = "Schätzspiel";   // Name der Station
     const stationNumber = 1;             // Nummer der Station
-    // Erlaubte Gruppen: Hier können die anzuzeigenden Gruppen festgelegt werden.
-    // Die Werte sollten in Kleinbuchstaben vorliegen.
     const allowedGroups = {
       dropdown: ["normale gruppe", "kindergruppe"],
       teams: ["normale gruppe", "kindergruppe"]
     };
 
-    // Setze den Stationsnamen in der Überschrift und im Title
+    // Setze Stations-ID und -Label
     document.getElementById("stationLabel").textContent = stationName;
     document.getElementById("stationId").textContent = stationNumber;
 
@@ -230,7 +225,6 @@
           }
         }
       } else {
-        // Dokument erstellen, falls noch nicht vorhanden.
         await setStationStatus("station" + stationNumber, true);
       }
     });
@@ -247,10 +241,9 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Überspringe Teams, die bereits einen Eintrag für diese Station haben
-        if (data["station" + stationNumber] && data["station" + stationNumber] > 0) return;
+        // Überspringe Teams, die bereits eine Schätzung abgegeben haben (optional)
+        if (data["guess_station1"] && data["guess_station1"] > 0) return;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
-        // Nur erlaubte Gruppen berücksichtigen
         if (!allowedGroups.dropdown.includes(teamType)) return;
         const teamObj = { id: docSnap.id, name: data.teamName };
         if (teamType === "kindergruppe") {
@@ -304,7 +297,6 @@
         const teamName = data.teamName;
         const points = data["station" + stationNumber] || 0;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
-        // Nur erlaubte Gruppen berücksichtigen
         if (!allowedGroups.teams.includes(teamType)) return;
         const teamObj = { name: teamName, points: points };
         if (teamType === "kindergruppe") {
@@ -328,10 +320,10 @@
           card.classList.add("team-card");
           if (team.points > 0) {
             card.classList.add("participated");
-            card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
+            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.points} Punkte`;
           } else {
             card.classList.add("not-participated");
-            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung ausgewertet</em>`;
           }
           normalContainer.appendChild(card);
         });
@@ -349,10 +341,10 @@
           card.classList.add("team-card");
           if (team.points > 0) {
             card.classList.add("participated");
-            card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
+            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.points} Punkte`;
           } else {
             card.classList.add("not-participated");
-            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung ausgewertet</em>`;
           }
           kinderContainer.appendChild(card);
         });
@@ -370,11 +362,65 @@
       setTimeout(() => { feedback.style.display = "none"; }, 3000);
     }
 
-    // Ergebnisformular absenden
+    // Nach jeder Eingabe: Neuberechnung der Punkte für Station 1
+    async function recalcStation1Scores() {
+      // Lese den Richtwert aus der Collection "stationTargets", Dokument "station1"
+      const targetDoc = await getDoc(doc(db, "stationTargets", "station1"));
+      if (!targetDoc.exists()) {
+        console.error("Kein Richtwert für Station 1 gefunden!");
+        return;
+      }
+      const target = targetDoc.data().target;
+
+      // Hole alle Teams, die eine Schätzung abgegeben haben
+      const teamsRef = collection(db, "teams");
+      const q = query(teamsRef, where("guess_station1", ">", 0));
+      const querySnapshot = await getDocs(q);
+      const teams = [];
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        teams.push({ id: docSnap.id, guess: data.guess_station1, current: data["station" + stationNumber] || 0, teamData: data });
+      });
+
+      if (teams.length === 0) return;
+
+      // Berechne den absoluten Unterschied der Schätzungen zum Zielwert
+      teams.forEach(team => {
+        team.diff = Math.abs(team.guess - target);
+      });
+      // Sortiere Teams nach Differenz (aufsteigend: am nächsten = bester Rang)
+      teams.sort((a, b) => a.diff - b.diff);
+
+      // Punktevergabe: Bestes Team erhält teams.length Punkte, danach absteigend
+      teams.forEach((team, index) => {
+        team.newPoints = teams.length - index;
+      });
+
+      // Aktualisiere jedes Team-Dokument: Setze station1 auf den errechneten Wert und berechne das neue Total
+      for (const team of teams) {
+        // Berechne Gesamtpunkte anhand der Stationen 1 bis 8 (falls ein Feld fehlt, wird 0 angenommen)
+        let newTotal = 0;
+        for (let i = 1; i <= 8; i++) {
+          if (i === stationNumber) {
+            newTotal += team.newPoints;
+          } else {
+            newTotal += team.teamData["station" + i] || 0;
+          }
+        }
+        const updateData = {
+          ["station" + stationNumber]: team.newPoints,
+          total: newTotal
+        };
+        await updateDoc(doc(db, "teams", team.id), updateData);
+      }
+      loadTeamsInfo();
+    }
+
+    // Ergebnisformular absenden: Speichert die Schätzung und löst dann die Neuberechnung aus
     document.getElementById("resultForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const teamId = document.getElementById("teamSelect").value;
-      const points = parseInt(document.getElementById("points").value, 10);
+      const guessValue = parseInt(document.getElementById("guess").value, 10);
       if (!teamId) {
         showFeedback("Bitte wähle ein Team aus!", false);
         return;
@@ -390,42 +436,41 @@
         }
       });
       
-      if (teamData && teamData["station" + stationNumber] && teamData["station" + stationNumber] !== 0) {
-        if (!confirm("Für dieses Team ist bereits ein Wert eingetragen. Möchtest du den bestehenden Eintrag überschreiben?")) {
+      // Wenn bereits eine Schätzung vorliegt, frage nach Bestätigung zum Überschreiben
+      if (teamData && teamData.guess_station1 && teamData.guess_station1 > 0) {
+        if (!confirm("Für dieses Team wurde bereits eine Schätzung abgegeben. Möchtest du den bestehenden Eintrag überschreiben?")) {
           showFeedback("Eintrag nicht überschrieben.", false);
           return;
         }
       }
       
       try {
+        // Aktualisiere das Team-Dokument mit der neuen Schätzung
+        // Wir speichern die Schätzung in "guess_station1"
         if (!teamData) {
           let newTeamData = {
             teamName: "Unbekannt",
+            guess_station1: guessValue,
             station1: 0, station2: 0, station3: 0, station4: 0,
             station5: 0, station6: 0, station7: 0, station8: 0,
             total: 0
           };
-          newTeamData["station" + stationNumber] = points;
-          newTeamData.total = points;
           await addDoc(teamsRef, newTeamData);
         } else {
-          let newTotal = 0;
-          for (let i = 1; i <= 8; i++) {
-            newTotal += (i === stationNumber ? points : (teamData["station" + i] || 0));
-          }
-          const updateData = {};
-          updateData["station" + stationNumber] = points;
-          updateData.total = newTotal;
+          const updateData = {
+            guess_station1: guessValue
+          };
           await updateDoc(doc(db, "teams", teamId), updateData);
         }
-        showFeedback("Ergebnis erfolgreich gespeichert!");
+        showFeedback("Schätzung erfolgreich gespeichert!");
+        // Nach der Speicherung alle Punkte neu berechnen
+        recalcStation1Scores();
       } catch (error) {
-        console.error("Fehler beim Speichern des Ergebnisses:", error);
+        console.error("Fehler beim Speichern der Schätzung:", error);
         showFeedback("Fehler beim Speichern!", false);
       }
       document.getElementById("resultForm").reset();
       loadTeamsDropdown();
-      loadTeamsInfo();
     });
     
     // Toggle zwischen Dark und Light Mode
