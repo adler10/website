@@ -108,6 +108,7 @@
     body.light-mode .toggle-mode:hover {
       background: var(--btn-hover-light);
     }
+    /* Teamübersicht – Bereiche für Gruppen */
     .teams-info {
       margin-top: 20px;
     }
@@ -124,31 +125,24 @@
       border-radius: 4px;
       border: 1px solid;
       text-align: center;
+      transition: background 0.3s, border-color 0.3s;
     }
-    body:not(.light-mode) .team-card.participated {
-      background: #388e3c;
-      border-color: #2e7d32;
-      color: #fff;
-    }
-    body:not(.light-mode) .team-card.not-participated {
+    /* Standardanzeige, falls noch keine Schätzung vorliegt */
+    .team-card.not-estimated {
       background: #d32f2f;
       border-color: #c62828;
       color: #fff;
     }
-    body.light-mode .team-card.participated {
-      background: #81c784;
-      border-color: #66bb6a;
-      color: #333;
-    }
-    body.light-mode .team-card.not-participated {
-      background: #e57373;
-      border-color: #ef5350;
-      color: #333;
+    /* Grüne Markierung, wenn eine Schätzung abgegeben wurde – Punkte werden aber nicht angezeigt */
+    .team-card.estimated {
+      background: #388e3c;
+      border-color: #2e7d32;
+      color: #fff;
     }
   </style>
 </head>
 <body>
-  <!-- Toggle Button -->
+  <!-- Toggle Button zum Wechseln zwischen Dark und Light Mode -->
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
@@ -161,15 +155,15 @@
         <option value="" disabled selected>Bitte wähle ein Team</option>
       </select>
       
-      <!-- Hier wird statt einer Punkteingabe die Schätzung eingegeben -->
+      <!-- Eingabe für die Schätzung -->
       <label for="guess">Schätzung eingeben:</label>
       <input type="number" id="guess" placeholder="Schätzung" min="0" required>
       
-      <button type="submit">Ergebnis speichern</button>
+      <button type="submit">Schätzung speichern</button>
     </form>
     <div id="feedback"></div>
     
-    <!-- Teamübersicht -->
+    <!-- Übersicht der Teams -->
     <div class="teams-info" id="teamsInfo"></div>
   </div>
 
@@ -188,7 +182,7 @@
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, setDoc } 
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, setDoc, getDoc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
     import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
@@ -207,7 +201,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Funktion zum Aktualisieren des Station-Status in Firestore
+    // Funktion zum Aktualisieren des Stationsstatus in Firestore
     function setStationStatus(stationId, status) {
       setDoc(doc(db, "stationSessions", stationId), { loggedIn: status }, { merge: true });
     }
@@ -241,8 +235,8 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Überspringe Teams, die bereits eine Schätzung abgegeben haben (optional)
-        if (data["guess_station1"] && data["guess_station1"] > 0) return;
+        // Falls bereits eine Schätzung vorliegt, wird das Team hier nicht mehr im Dropdown angezeigt
+        if (data.guess_station1 && data.guess_station1 > 0) return;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
         if (!allowedGroups.dropdown.includes(teamType)) return;
         const teamObj = { id: docSnap.id, name: data.teamName };
@@ -295,10 +289,11 @@
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
         const teamName = data.teamName;
-        const points = data["station" + stationNumber] || 0;
+        // Wir zeigen hier die abgegebene Schätzung an, falls vorhanden – die errechneten Punkte werden nicht angezeigt
+        const guess = data.guess_station1 || null;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
         if (!allowedGroups.teams.includes(teamType)) return;
-        const teamObj = { name: teamName, points: points };
+        const teamObj = { name: teamName, guess: guess };
         if (teamType === "kindergruppe") {
           kinderTeams.push(teamObj);
         } else {
@@ -317,13 +312,13 @@
         normalContainer.className = "group-container";
         normalTeams.forEach(team => {
           const card = document.createElement("div");
-          card.classList.add("team-card");
-          if (team.points > 0) {
-            card.classList.add("participated");
-            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.points} Punkte`;
+          // Falls eine Schätzung vorliegt, grüne Karte; ansonsten rot
+          if (team.guess !== null) {
+            card.classList.add("team-card", "estimated");
+            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.guess}`;
           } else {
-            card.classList.add("not-participated");
-            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung ausgewertet</em>`;
+            card.classList.add("team-card", "not-estimated");
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung</em>`;
           }
           normalContainer.appendChild(card);
         });
@@ -338,13 +333,12 @@
         kinderContainer.className = "group-container";
         kinderTeams.forEach(team => {
           const card = document.createElement("div");
-          card.classList.add("team-card");
-          if (team.points > 0) {
-            card.classList.add("participated");
-            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.points} Punkte`;
+          if (team.guess !== null) {
+            card.classList.add("team-card", "estimated");
+            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.guess}`;
           } else {
-            card.classList.add("not-participated");
-            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung ausgewertet</em>`;
+            card.classList.add("team-card", "not-estimated");
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung</em>`;
           }
           kinderContainer.appendChild(card);
         });
@@ -362,9 +356,9 @@
       setTimeout(() => { feedback.style.display = "none"; }, 3000);
     }
 
-    // Nach jeder Eingabe: Neuberechnung der Punkte für Station 1
+    // Funktion zur Neuberechnung der Punkte für Station 1 basierend auf der abgegebenen Schätzung
     async function recalcStation1Scores() {
-      // Lese den Richtwert aus der Collection "stationTargets", Dokument "station1"
+      // Hole den Richtwert aus der Collection "stationTargets", Dokument "station1"
       const targetDoc = await getDoc(doc(db, "stationTargets", "station1"));
       if (!targetDoc.exists()) {
         console.error("Kein Richtwert für Station 1 gefunden!");
@@ -379,27 +373,27 @@
       const teams = [];
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        teams.push({ id: docSnap.id, guess: data.guess_station1, current: data["station" + stationNumber] || 0, teamData: data });
+        teams.push({ id: docSnap.id, guess: data.guess_station1, teamData: data });
       });
 
       if (teams.length === 0) return;
 
-      // Berechne den absoluten Unterschied der Schätzungen zum Zielwert
+      // Berechne für jedes Team den absoluten Unterschied zur Zielzahl
       teams.forEach(team => {
         team.diff = Math.abs(team.guess - target);
       });
-      // Sortiere Teams nach Differenz (aufsteigend: am nächsten = bester Rang)
+      // Sortiere Teams: Je kleiner die Differenz, desto besser
       teams.sort((a, b) => a.diff - b.diff);
 
-      // Punktevergabe: Bestes Team erhält teams.length Punkte, danach absteigend
+      // Punktevergabe: Das beste Team erhält teams.length Punkte, danach absteigend
       teams.forEach((team, index) => {
         team.newPoints = teams.length - index;
       });
 
-      // Aktualisiere jedes Team-Dokument: Setze station1 auf den errechneten Wert und berechne das neue Total
+      // Aktualisiere die Dokumente der Teams: Speichere die errechneten Punkte in station1
       for (const team of teams) {
-        // Berechne Gesamtpunkte anhand der Stationen 1 bis 8 (falls ein Feld fehlt, wird 0 angenommen)
         let newTotal = 0;
+        // Berechne Gesamtpunkte anhand der Stationen 1 bis 8
         for (let i = 1; i <= 8; i++) {
           if (i === stationNumber) {
             newTotal += team.newPoints;
@@ -413,10 +407,11 @@
         };
         await updateDoc(doc(db, "teams", team.id), updateData);
       }
+      // Nach der Neuberechnung die Anzeige aktualisieren
       loadTeamsInfo();
     }
 
-    // Ergebnisformular absenden: Speichert die Schätzung und löst dann die Neuberechnung aus
+    // Ergebnisformular absenden: Speichert die Schätzung und löst die automatische Punktevergabe aus
     document.getElementById("resultForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const teamId = document.getElementById("teamSelect").value;
@@ -436,7 +431,7 @@
         }
       });
       
-      // Wenn bereits eine Schätzung vorliegt, frage nach Bestätigung zum Überschreiben
+      // Falls bereits eine Schätzung vorliegt, Bestätigung zum Überschreiben einholen
       if (teamData && teamData.guess_station1 && teamData.guess_station1 > 0) {
         if (!confirm("Für dieses Team wurde bereits eine Schätzung abgegeben. Möchtest du den bestehenden Eintrag überschreiben?")) {
           showFeedback("Eintrag nicht überschrieben.", false);
@@ -445,8 +440,7 @@
       }
       
       try {
-        // Aktualisiere das Team-Dokument mit der neuen Schätzung
-        // Wir speichern die Schätzung in "guess_station1"
+        // Speichere die Schätzung im Team-Dokument unter "guess_station1"
         if (!teamData) {
           let newTeamData = {
             teamName: "Unbekannt",
@@ -457,13 +451,11 @@
           };
           await addDoc(teamsRef, newTeamData);
         } else {
-          const updateData = {
-            guess_station1: guessValue
-          };
+          const updateData = { guess_station1: guessValue };
           await updateDoc(doc(db, "teams", teamId), updateData);
         }
         showFeedback("Schätzung erfolgreich gespeichert!");
-        // Nach der Speicherung alle Punkte neu berechnen
+        // Nach erfolgreicher Speicherung sofort die Punktevergabe auslösen
         recalcStation1Scores();
       } catch (error) {
         console.error("Fehler beim Speichern der Schätzung:", error);
