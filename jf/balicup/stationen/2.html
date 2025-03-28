@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Ergebnisse für Station <span id="stationLabel"></span> – Bali-Cup 2025</title>
+  <title>Ergebnisse für Station – Bali-Cup 2025</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,11 +45,11 @@
     }
     button {
       cursor: pointer;
-      background: #e7e7e7;
+      background: ##616161;
       border: 1px solid #ccc;
     }
     button:hover {
-      background: #d7d7d7;
+      background: ##525050;
     }
     #feedback {
       margin-top: 15px;
@@ -129,6 +129,7 @@
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
+    <!-- Der Stationsname wird hier über eine Variable gesetzt -->
     <h1>Ergebnisse für Station <span id="stationLabel"></span> erfassen</h1>
   </header>
   <div class="container">
@@ -150,9 +151,12 @@
   </div>
 
   <script type="module">
-    // Für diese Station-Seite: stationNumber auf 1 setzen
+    // Variablen, um den Stationsnamen und die Stationsnummer im Code festzulegen
     const stationNumber = 2;
-    document.getElementById("stationLabel").textContent = stationNumber;
+    const stationName = "Limbo-Tanz"; // Hier den gewünschten Stationsnamen eintragen
+
+    // Den Stationsnamen in der Website einsetzen:
+    document.getElementById("stationLabel").textContent = stationName;
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
