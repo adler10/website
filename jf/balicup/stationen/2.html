@@ -7,11 +7,10 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background: #222; /* Standard: Dark Mode */
+      background: #222;
       color: #fff;
       transition: background 0.3s, color 0.3s;
     }
-    /* Light Mode Styles */
     body.light-mode {
       background: #f5f5f5;
       color: #333;
@@ -21,10 +20,10 @@
       margin-bottom: 20px;
     }
     .container {
-      max-width: 400px;
+      max-width: 500px;
       margin: 0 auto;
       padding: 20px;
-      background: #333; /* Dark Mode: Container-Hintergrund */
+      background: #333;
       border: 1px solid #444;
       border-radius: 4px;
     }
@@ -36,21 +35,101 @@
       display: block;
       margin-top: 10px;
     }
-    select, input, button {
+    select, input {
       font-size: 1em;
       padding: 10px;
       margin-top: 5px;
       width: 100%;
       box-sizing: border-box;
     }
+    /* Angepasste Button-Farben für Dark und Light Mode */
     button {
+      font-size: 1em;
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
       cursor: pointer;
-      background: ##616161;
-      border: 1px solid #ccc;
+      border: 1px solid;
+      border-radius: 4px;
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+    }
+    body:not(.light-mode) button {
+      background: #555;
+      border-color: #777;
+      color: #fff;
+    }
+    body.light-mode button {
+      background: #e0e0e0;
+      border-color: #ccc;
+      color: #333;
     }
     button:hover {
-      background: ##525050;
+      opacity: 0.9;
     }
+    /* Toggle-Button – kleiner, oben rechts */
+    .toggle-mode {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 6px 10px;
+      font-size: 0.9em;
+      cursor: pointer;
+      border: 1px solid;
+      border-radius: 4px;
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+      white-space: nowrap;
+    }
+    body:not(.light-mode) .toggle-mode {
+      background: #555;
+      border-color: #777;
+      color: #fff;
+    }
+    body.light-mode .toggle-mode {
+      background: #e0e0e0;
+      border-color: #ccc;
+      color: #333;
+    }
+    /* Teamkarten */
+    .teams-info {
+      margin-top: 20px;
+    }
+    .teams-info h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .group-container {
+      margin-bottom: 20px;
+    }
+    .team-card {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid;
+      text-align: center;
+    }
+    /* Statusabhängige Farben */
+    body:not(.light-mode) .team-card.participated {
+      background: #388e3c;
+      border-color: #2e7d32;
+      color: #fff;
+    }
+    body:not(.light-mode) .team-card.not-participated {
+      background: #d32f2f;
+      border-color: #c62828;
+      color: #fff;
+    }
+    body.light-mode .team-card.participated {
+      background: #81c784;
+      border-color: #66bb6a;
+      color: #333;
+    }
+    body.light-mode .team-card.not-participated {
+      background: #e57373;
+      border-color: #ef5350;
+      color: #333;
+    }
+    /* Feedback */
     #feedback {
       margin-top: 15px;
       padding: 10px;
@@ -66,101 +145,49 @@
       background-color: #f44336;
       color: #fff;
     }
-    /* Toggle-Button: kleiner, oben rechts */
-    .toggle-mode {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      padding: 4px 6px;
-      font-size: 0.9em;
-      cursor: pointer;
-      border: 1px solid #ccc;
-      background: #e7e7e7;
-      transition: background 0.3s;
-      width: auto;
-      white-space: nowrap;
-    }
-    .toggle-mode:hover {
-      background: #d7d7d7;
-    }
-    /* Teamübersicht – Bereiche für Gruppen */
-    .teams-info {
-      margin-top: 20px;
-    }
-    .teams-info h2 {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    .group-container {
-      margin-bottom: 20px;
-    }
-    .team-card {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 4px;
-      border: 1px solid;
-      text-align: center;
-    }
-    /* Farben in Abhängigkeit vom Status */
-    body:not(.light-mode) .team-card.participated {
-      background: #388e3c; /* Dunkelgrün */
-      border-color: #2e7d32;
-      color: #fff;
-    }
-    body:not(.light-mode) .team-card.not-participated {
-      background: #d32f2f; /* Dunkelrot */
-      border-color: #c62828;
-      color: #fff;
-    }
-    body.light-mode .team-card.participated {
-      background: #81c784; /* Hellgrün */
-      border-color: #66bb6a;
-      color: #333;
-    }
-    body.light-mode .team-card.not-participated {
-      background: #e57373; /* Hellrot */
-      border-color: #ef5350;
-      color: #333;
-    }
   </style>
 </head>
 <body>
-  <!-- Toggle Button zum Wechseln zwischen Dark und Light Mode -->
+  <!-- Toggle Button -->
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
-    <!-- Der Stationsname wird hier über eine Variable gesetzt -->
-    <h1>Ergebnisse für Station <span id="stationLabel"></span> erfassen</h1>
+    <!-- Der Stationsname und -nummer werden hier über Variablen gesetzt -->
+    <h1>Ergebnisse für Station <span id="stationNumberLabel"></span> – <span id="stationNameLabel"></span> erfassen</h1>
   </header>
   <div class="container">
-    <form id="resultForm">
+    <form id="teamForm">
       <label for="teamSelect">Team auswählen:</label>
       <select id="teamSelect" required>
         <option value="" disabled selected>Bitte wähle ein Team</option>
       </select>
-      
-      <label for="points">Punkte:</label>
-      <input type="number" id="points" placeholder="Punkte" min="0" required>
-      
-      <button type="submit">Ergebnis speichern</button>
+      <button type="submit">Team bestätigen</button>
     </form>
     <div id="feedback"></div>
-    
-    <!-- Kreative Teamübersicht, getrennt nach Gruppen -->
+
     <div class="teams-info" id="teamsInfo"></div>
   </div>
 
   <script type="module">
-    // Variablen, um den Stationsnamen und die Stationsnummer im Code festzulegen
+    /****************************************************************
+     * Konfiguration: Stationseinstellungen und Gruppentypen         *
+     ****************************************************************/
+    // Stationseinstellungen: Nummer und Name können hier festgelegt werden.
     const stationNumber = 2;
-    const stationName = "Limbo-Tanz"; // Hier den gewünschten Stationsnamen eintragen
+    const stationName = "Limbo-Tanz";
 
-    // Den Stationsnamen in der Website einsetzen:
-    document.getElementById("stationLabel").textContent = stationName;
+    // Gruppentypen, die im Dropdown und in den Teamkarten angezeigt werden sollen.
+    // Werte sollten in Kleinbuchstaben angegeben werden.
+    const groupTypesDropdown = ["normale gruppe", "kindergruppe"];
+    const groupTypesTeamCard = ["normale gruppe", "kindergruppe"];
+
+    // Setze die Stationseinstellungen in den HTML-Elementen ein.
+    document.getElementById("stationNumberLabel").textContent = stationNumber;
+    document.getElementById("stationNameLabel").textContent = stationName;
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, getDoc, setDoc } 
+    import { getFirestore, collection, getDocs, updateDoc, doc, addDoc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
     // Firebase-Konfiguration
@@ -178,149 +205,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Funktion zum Aktualisieren des Station-Status in Firestore
-    // setDoc mit { merge: true } erstellt oder aktualisiert das Dokument
-    function setStationStatus(stationId, status) {
-      setDoc(doc(db, "stationSessions", stationId), { loggedIn: status }, { merge: true });
-    }
-
-    // Statt eines Pollings alle 10 Sekunden nutzen wir einen Echtzeit-Listener:
-    // Sobald festgestellt wird, dass der Wert in der Datenbank auf false steht, wird er wieder auf true gesetzt.
-    const stationRef = doc(db, "stationSessions", "station" + stationNumber);
-    import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-    onSnapshot(stationRef, async (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        if (data.loggedIn === false) {
-          try {
-            await setStationStatus("station" + stationNumber, true);
-          } catch (error) {
-            console.error("Fehler beim Aktualisieren des Status:", error);
-          }
-        }
-      } else {
-        // Falls das Dokument noch nicht existiert, wird es erstellt.
-        await setStationStatus("station" + stationNumber, true);
-      }
-    });
-
-    // Dropdown mit Teams befüllen:
-    async function loadTeamsDropdown() {
-      const teamsRef = collection(db, "teams");
-      const querySnapshot = await getDocs(teamsRef);
-      const teamSelect = document.getElementById("teamSelect");
-      teamSelect.innerHTML = '<option value="" disabled selected>Bitte wähle ein Team</option>';
-      
-      const normalTeams = [];
-      const kinderTeams = [];
-      
-      querySnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data["station" + stationNumber] && data["station" + stationNumber] > 0) return;
-        const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
-        const teamObj = { id: docSnap.id, name: data.teamName };
-        if (teamType === "kindergruppe") {
-          kinderTeams.push(teamObj);
-        } else {
-          normalTeams.push(teamObj);
-        }
-      });
-      
-      normalTeams.sort((a, b) => a.name.localeCompare(b.name));
-      kinderTeams.sort((a, b) => a.name.localeCompare(b.name));
-      
-      if (normalTeams.length > 0) {
-        const normalOptGroup = document.createElement("optgroup");
-        normalOptGroup.label = "Normale Gruppe";
-        normalTeams.forEach(team => {
-          const option = document.createElement("option");
-          option.value = team.id;
-          option.textContent = team.name;
-          normalOptGroup.appendChild(option);
-        });
-        teamSelect.appendChild(normalOptGroup);
-      }
-      
-      if (kinderTeams.length > 0) {
-        const kinderOptGroup = document.createElement("optgroup");
-        kinderOptGroup.label = "Kindergruppe";
-        kinderTeams.forEach(team => {
-          const option = document.createElement("option");
-          option.value = team.id;
-          option.textContent = team.name;
-          kinderOptGroup.appendChild(option);
-        });
-        teamSelect.appendChild(kinderOptGroup);
-      }
-    }
-    loadTeamsDropdown();
-    
-    // Darstellung der Teams in der Übersicht
-    async function loadTeamsInfo() {
-      const teamsRef = collection(db, "teams");
-      const querySnapshot = await getDocs(teamsRef);
-      const teamsInfoDiv = document.getElementById("teamsInfo");
-      teamsInfoDiv.innerHTML = "";
-      
-      const normalTeams = [];
-      const kinderTeams = [];
-      
-      querySnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const teamName = data.teamName;
-        const points = data["station" + stationNumber] || 0;
-        const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
-        const teamObj = { name: teamName, points: points };
-        if (teamType === "kindergruppe") {
-          kinderTeams.push(teamObj);
-        } else {
-          normalTeams.push(teamObj);
-        }
-      });
-      
-      normalTeams.sort((a, b) => a.name.localeCompare(b.name));
-      kinderTeams.sort((a, b) => a.name.localeCompare(b.name));
-      
-      const normalHeading = document.createElement("h2");
-      normalHeading.textContent = "Normale Gruppe";
-      teamsInfoDiv.appendChild(normalHeading);
-      const normalContainer = document.createElement("div");
-      normalContainer.className = "group-container";
-      normalTeams.forEach(team => {
-        const card = document.createElement("div");
-        card.classList.add("team-card");
-        if (team.points > 0) {
-          card.classList.add("participated");
-          card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
-        } else {
-          card.classList.add("not-participated");
-          card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
-        }
-        normalContainer.appendChild(card);
-      });
-      teamsInfoDiv.appendChild(normalContainer);
-      
-      const kinderHeading = document.createElement("h2");
-      kinderHeading.textContent = "Kindergruppe";
-      teamsInfoDiv.appendChild(kinderHeading);
-      const kinderContainer = document.createElement("div");
-      kinderContainer.className = "group-container";
-      kinderTeams.forEach(team => {
-        const card = document.createElement("div");
-        card.classList.add("team-card");
-        if (team.points > 0) {
-          card.classList.add("participated");
-          card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
-        } else {
-          card.classList.add("not-participated");
-          card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
-        }
-        kinderContainer.appendChild(card);
-      });
-      teamsInfoDiv.appendChild(kinderContainer);
-    }
-    loadTeamsInfo();
-
     // Feedback-Funktion
     function showFeedback(message, isSuccess = true) {
       const feedback = document.getElementById("feedback");
@@ -330,64 +214,102 @@
       setTimeout(() => { feedback.style.display = "none"; }, 3000);
     }
 
-    // Ergebnisformular absenden
-    document.getElementById("resultForm").addEventListener("submit", async (e) => {
+    // Teams im Dropdown anzeigen (nur die Teams, deren Gruppentyp in groupTypesDropdown enthalten ist)
+    async function loadTeamsDropdown() {
+      const teamsRef = collection(db, "teams");
+      const querySnapshot = await getDocs(teamsRef);
+      const teamSelect = document.getElementById("teamSelect");
+      teamSelect.innerHTML = '<option value="" disabled selected>Bitte wähle ein Team</option>';
+
+      // Teams in optgroups nach Gruppentyp sortieren
+      const teamsByType = { "normale gruppe": [], "kindergruppe": [] };
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const teamType = (data.teamType || "normale gruppe").toLowerCase();
+        if (groupTypesDropdown.includes(teamType)) {
+          teamsByType[teamType].push({ id: docSnap.id, name: data.teamName });
+        }
+      });
+
+      for (const type in teamsByType) {
+        if (teamsByType[type].length > 0) {
+          teamsByType[type].sort((a, b) => a.name.localeCompare(b.name));
+          const optGroup = document.createElement("optgroup");
+          optGroup.label = type.charAt(0).toUpperCase() + type.slice(1);
+          teamsByType[type].forEach(team => {
+            const option = document.createElement("option");
+            option.value = team.id;
+            option.textContent = team.name;
+            optGroup.appendChild(option);
+          });
+          teamSelect.appendChild(optGroup);
+        }
+      }
+    }
+    loadTeamsDropdown();
+
+    // Teamkarten in der Übersicht anzeigen (nur Teams mit Gruppentyp in groupTypesTeamCard)
+    async function loadTeamsInfo() {
+      const teamsRef = collection(db, "teams");
+      const querySnapshot = await getDocs(teamsRef);
+      const teamsInfoDiv = document.getElementById("teamsInfo");
+      teamsInfoDiv.innerHTML = "";
+
+      // Teams nach Gruppentypen sortieren
+      const teamsByType = { "normale gruppe": [], "kindergruppe": [] };
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const teamType = (data.teamType || "normale gruppe").toLowerCase();
+        if (groupTypesTeamCard.includes(teamType)) {
+          teamsByType[teamType].push({ 
+            name: data.teamName, 
+            points: data.total || 0 
+          });
+        }
+      });
+
+      for (const type in teamsByType) {
+        if (teamsByType[type].length > 0) {
+          teamsByType[type].sort((a, b) => a.name.localeCompare(b.name));
+          const heading = document.createElement("h2");
+          heading.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+          teamsInfoDiv.appendChild(heading);
+
+          const container = document.createElement("div");
+          container.className = "group-container";
+          teamsByType[type].forEach(team => {
+            const card = document.createElement("div");
+            card.classList.add("team-card");
+            if (team.points > 0) {
+              card.classList.add("participated");
+              card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
+            } else {
+              card.classList.add("not-participated");
+              card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
+            }
+            container.appendChild(card);
+          });
+          teamsInfoDiv.appendChild(container);
+        }
+      }
+    }
+    loadTeamsInfo();
+
+    // Formularverhalten: Team bestätigen (dieses Beispiel kann erweitert werden)
+    document.getElementById("teamForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const teamId = document.getElementById("teamSelect").value;
-      const points = parseInt(document.getElementById("points").value, 10);
       if (!teamId) {
         showFeedback("Bitte wähle ein Team aus!", false);
         return;
       }
-      
-      const teamsRef = collection(db, "teams");
-      const q = query(teamsRef, where("teamName", "!=", ""));
-      const querySnapshot = await getDocs(q);
-      let teamData;
-      querySnapshot.forEach(docSnap => {
-        if (docSnap.id === teamId) {
-          teamData = docSnap.data();
-        }
-      });
-      
-      if (teamData && teamData["station" + stationNumber] && teamData["station" + stationNumber] !== 0) {
-        if (!confirm("Für dieses Team ist bereits ein Wert eingetragen. Möchtest du den bestehenden Eintrag überschreiben?")) {
-          showFeedback("Eintrag nicht überschrieben.", false);
-          return;
-        }
-      }
-      
-      try {
-        if (!teamData) {
-          let newTeamData = {
-            teamName: "Unbekannt",
-            station1: 0, station2: 0, station3: 0, station4: 0,
-            station5: 0, station6: 0, station7: 0, station8: 0,
-            total: 0
-          };
-          newTeamData["station" + stationNumber] = points;
-          newTeamData.total = points;
-          await addDoc(teamsRef, newTeamData);
-        } else {
-          let newTotal = 0;
-          for (let i = 1; i <= 8; i++) {
-            newTotal += (i === stationNumber ? points : (teamData["station" + i] || 0));
-          }
-          const updateData = {};
-          updateData["station" + stationNumber] = points;
-          updateData.total = newTotal;
-          await updateDoc(doc(db, "teams", teamId), updateData);
-        }
-        showFeedback("Ergebnis erfolgreich gespeichert!");
-      } catch (error) {
-        console.error("Fehler beim Speichern des Ergebnisses:", error);
-        showFeedback("Fehler beim Speichern!", false);
-      }
-      document.getElementById("resultForm").reset();
+      // Hier könnte man weitere Aktualisierungen vornehmen, z. B. den Status ändern.
+      showFeedback("Team wurde bestätigt!");
+      // Nach der Bestätigung Dropdown und Übersicht neu laden:
       loadTeamsDropdown();
       loadTeamsInfo();
     });
-    
+
     // Toggle zwischen Dark und Light Mode
     function toggleMode() {
       document.body.classList.toggle("light-mode");
