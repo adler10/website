@@ -127,7 +127,7 @@
       text-align: center;
       transition: background 0.3s, border-color 0.3s;
     }
-    /* Standardanzeige, falls noch keine Schätzung vorliegt */
+    /* Falls noch keine Schätzung vorliegt */
     .team-card.not-estimated {
       background: #d32f2f;
       border-color: #c62828;
@@ -235,6 +235,8 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
+        // Teams, die nicht bestätigt wurden, überspringen
+        if (data.confirmed !== true) return;
         // Teams, die nur vorgemerkt sind, überspringen
         if (data.vorgemerkt === true) return;
         // Falls bereits eine Schätzung vorliegt, wird das Team hier nicht im Dropdown angezeigt
@@ -290,7 +292,8 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Teams, die nur vorgemerkt sind, überspringen
+        // Nur bestätigte Teams, die nicht vorgemerkt sind, anzeigen
+        if (data.confirmed !== true) return;
         if (data.vorgemerkt === true) return;
         const teamName = data.teamName;
         // Zeige hier die abgegebene Schätzung an, falls vorhanden
@@ -316,7 +319,7 @@
         normalContainer.className = "group-container";
         normalTeams.forEach(team => {
           const card = document.createElement("div");
-          // Wenn eine Schätzung vorliegt, grün; ansonsten rot
+          // Wenn eine Schätzung vorliegt, grüne Karte; ansonsten rot
           if (team.guess !== null) {
             card.classList.add("team-card", "estimated");
             card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.guess}`;
@@ -370,15 +373,16 @@
       }
       const target = targetDoc.data().target;
 
-      // Hole alle Teams, die eine Schätzung abgegeben haben
+      // Hole alle Teams, die eine Schätzung abgegeben haben und confirmed sind
       const teamsRef = collection(db, "teams");
       const q = query(teamsRef, where("guess_station1", ">", 0));
       const querySnapshot = await getDocs(q);
       const teams = [];
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Auch hier Teams, die nur vorgemerkt sind, überspringen
-        if(data.vorgemerkt === true) return;
+        // Nur Teams, die confirmed und nicht vorgemerkt sind
+        if (data.confirmed !== true) return;
+        if (data.vorgemerkt === true) return;
         teams.push({ id: docSnap.id, guess: data.guess_station1, teamData: data });
       });
 
@@ -450,6 +454,7 @@
         if (!teamData) {
           let newTeamData = {
             teamName: "Unbekannt",
+            confirmed: true,  // Neue Teams müssen hier als confirmed angelegt sein
             guess_station1: guessValue,
             station1: 0, station2: 0, station3: 0, station4: 0,
             station5: 0, station6: 0, station7: 0, station8: 0,
