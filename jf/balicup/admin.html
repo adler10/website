@@ -347,19 +347,19 @@
     <div class="table-section">
       <h2>Bestätigte Teams – Normale Gruppen</h2>
       <input type="text" id="searchNormal" class="search-input" placeholder="Suche in normalen Gruppen...">
+      <!-- 
+        Für Normale Gruppen nur Stationen 3, 4, 5, 6 anzeigen 
+        (da laut Vorgabe 1,2,7,8 nur Kindergruppen sind)
+      -->
       <table id="confirmedNormalTable">
         <thead>
           <tr>
             <th>Team Name</th>
             <th>Typ</th>
-            <th>Station 1</th>
-            <th>Station 2</th>
             <th>Station 3</th>
             <th>Station 4</th>
             <th>Station 5</th>
             <th>Station 6</th>
-            <th>Station 7</th>
-            <th>Station 8</th>
             <th>Gesamtpunkte</th>
             <th>Status</th>
             <th>Aktionen</th>
@@ -374,6 +374,10 @@
     <div class="table-section">
       <h2>Bestätigte Teams – Kindergruppen</h2>
       <input type="text" id="searchKinder" class="search-input" placeholder="Suche in Kindergruppen...">
+      <!-- 
+        Für Kindergruppen alle Stationen 1 bis 8, 
+        da 1,2,7,8 nur Kinder und 3,4,5,6 für beide. 
+      -->
       <table id="confirmedKinderTable">
         <thead>
           <tr>
@@ -551,6 +555,8 @@
             teamName: teamName,
             teamType: teamType,
             confirmed: false,
+            // Wir legen standardmäßig alle Stationen an, 
+            // wobei sie ggf. für die jeweilige Gruppe 0 bleiben
             station1: 0, station2: 0, station3: 0, station4: 0,
             station5: 0, station6: 0, station7: 0, station8: 0,
             total: 0
@@ -594,7 +600,9 @@
       const total = globalTeams.length;
       const confirmed = globalTeams.filter(team => team.confirmed).length;
       const pending = total - confirmed;
-      const avg = total > 0 ? (globalTeams.reduce((sum, team) => sum + (team.total || 0), 0) / total).toFixed(1) : 0;
+      const avg = total > 0 
+        ? (globalTeams.reduce((sum, team) => sum + (team.total || 0), 0) / total).toFixed(1) 
+        : 0;
       const completed = globalTeams.filter(team => isCompleted(team)).length;
       const kinder = globalTeams.filter(team => team.teamType === "Kindergruppe").length;
       const normal = globalTeams.filter(team => team.teamType === "Normale Gruppe").length;
@@ -631,7 +639,6 @@
     }
 
     /* --------------------- Zusätzliche Funktion: Reset aller 8 Stationen --------------------- */
-    // Setzt für alle 8 Stationen (station1 bis station8) den Wert loggedIn auf false
     async function resetAllStations() {
       for (let i = 1; i <= 8; i++) {
         const stationId = "station" + i;
@@ -682,12 +689,27 @@
 
     /* --------------------- Hilfsfunktionen --------------------- */
     function isCompleted(team) {
-      for (let i = 1; i <= 8; i++) {
-        if (!team["station" + i] || team["station" + i] === 0) {
-          return false;
+      // Team gilt als "abgeschlossen", wenn alle relevanten Stationen
+      // für SEINE Gruppe einen Wert > 0 haben.
+      // Da wir im DB-Eintrag alle 8 Stationen haben, prüfen wir:
+      // - Kindergruppe: Stationen 1..8
+      // - Normale Gruppe: Stationen 3..6
+      if (team.teamType === "Kindergruppe") {
+        for (let i = 1; i <= 8; i++) {
+          if (!team["station" + i] || team["station" + i] === 0) {
+            return false;
+          }
         }
+        return true;
+      } else {
+        // Normale Gruppe
+        for (let i of [3,4,5,6]) {
+          if (!team["station" + i] || team["station" + i] === 0) {
+            return false;
+          }
+        }
+        return true;
       }
-      return true;
     }
 
     /* --------------------- Tabellen rendern --------------------- */
@@ -695,16 +717,45 @@
       const confirmed = globalTeams.filter(team => team.confirmed);
       const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
       const confirmedKinder = confirmed.filter(team => team.teamType === "Kindergruppe");
+      // Sortierung: zuerst nach "nicht abgeschlossen" vs. "abgeschlossen", dann nach Punkten
       confirmedNormal.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
       confirmedKinder.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
+
       const tentative = globalTeams.filter(team => !team.confirmed);
 
-      renderTable("confirmedNormalTable", confirmedNormal, true);
-      renderTable("confirmedKinderTable", confirmedKinder, true);
+      renderNormalTable("confirmedNormalTable", confirmedNormal, true);
+      renderKinderTable("confirmedKinderTable", confirmedKinder, true);
       renderTentativeTable("tentativeTable", tentative);
     }
 
-    function renderTable(tableId, teams, canEdit) {
+    // Für Normale Gruppen nur Stationen 3..6 anzeigen
+    function renderNormalTable(tableId, teams, canEdit) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>${team.station3 || 0}</td>
+          <td>${team.station4 || 0}</td>
+          <td>${team.station5 || 0}</td>
+          <td>${team.station6 || 0}</td>
+          <td>${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Für Kindergruppen Stationen 1..8 anzeigen
+    function renderKinderTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
       tbody.innerHTML = "";
@@ -754,19 +805,26 @@
 
     /* --------------------- Ranking rendern --------------------- */
     function renderRanking() {
-      const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe");
-      const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe");
+      // Ranking Normale Gruppen
+      const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe" && team.confirmed);
       normalTeams.sort((a, b) => b.total - a.total);
+
+      // Ranking Kindergruppen
+      const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe" && team.confirmed);
       kinderTeams.sort((a, b) => b.total - a.total);
+
       const normalTbody = document.getElementById("rankingNormalBody");
       const kinderTbody = document.getElementById("rankingKinderBody");
       if (!normalTbody || !kinderTbody) return;
+
+      // Normale Gruppen
       normalTbody.innerHTML = "";
       normalTeams.forEach((team, index) => {
+        // Zähle abgeschlossene Stationen für Normale Gruppe (3..6)
         let completedStations = 0;
-        for (let i = 1; i <= 8; i++) {
+        [3,4,5,6].forEach(i => {
           if (team["station" + i] > 0) completedStations++;
-        }
+        });
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${index + 1}</td>
@@ -776,8 +834,11 @@
         `;
         normalTbody.appendChild(row);
       });
+
+      // Kindergruppen
       kinderTbody.innerHTML = "";
       kinderTeams.forEach((team, index) => {
+        // Zähle abgeschlossene Stationen für Kindergruppe (1..8)
         let completedStations = 0;
         for (let i = 1; i <= 8; i++) {
           if (team["station" + i] > 0) completedStations++;
@@ -797,49 +858,101 @@
     function editTeam(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
+
+      // Finde die passende Tabellenzeile
       const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
       if (!tr) return;
-      tr.innerHTML = `
-        <td>${team.teamName}</td>
-        <td>${team.teamType || "-"}</td>
-        <td><input type="number" min="0" value="${team.station1 || 0}" id="edit-st1-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station2 || 0}" id="edit-st2-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station3 || 0}" id="edit-st3-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station7 || 0}" id="edit-st7-${teamId}" style="width:60px;"></td>
-        <td><input type="number" min="0" value="${team.station8 || 0}" id="edit-st8-${teamId}" style="width:60px;"></td>
-        <td id="total-${teamId}">${team.total || 0}</td>
-        <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
-        <td>
-          <button onclick="saveTeam('${team.id}')">Speichern</button>
-          <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
-        </td>
-      `;
-      for (let i = 1; i <= 8; i++) {
-        document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
-          updateRowTotal(teamId);
+
+      // Abhängig vom teamType generieren wir die passenden Eingabefelder
+      if (team.teamType === "Normale Gruppe") {
+        // Nur Stationen 3..6 bearbeiten
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td><input type="number" min="0" value="${team.station3 || 0}" id="edit-st3-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
+          <td id="total-${teamId}">${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            <button onclick="saveTeam('${team.id}')">Speichern</button>
+            <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
+          </td>
+        `;
+        // Event-Listener zum Neuberechnen der Zeilen-Gesamtpunkte
+        [3,4,5,6].forEach(i => {
+          document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
+            updateRowTotal(teamId, "Normale Gruppe");
+          });
         });
+      } else {
+        // Kindergruppe => Stationen 1..8
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td><input type="number" min="0" value="${team.station1 || 0}" id="edit-st1-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station2 || 0}" id="edit-st2-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station3 || 0}" id="edit-st3-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station7 || 0}" id="edit-st7-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station8 || 0}" id="edit-st8-${teamId}" style="width:60px;"></td>
+          <td id="total-${teamId}">${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            <button onclick="saveTeam('${team.id}')">Speichern</button>
+            <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
+          </td>
+        `;
+        // Event-Listener zum Neuberechnen der Zeilen-Gesamtpunkte
+        for (let i = 1; i <= 8; i++) {
+          document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
+            updateRowTotal(teamId, "Kindergruppe");
+          });
+        }
       }
     }
     window.editTeam = editTeam;
 
-    function updateRowTotal(teamId) {
+    function updateRowTotal(teamId, groupType) {
       let total = 0;
-      for (let i = 1; i <= 8; i++) {
-        total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+      if (groupType === "Normale Gruppe") {
+        [3,4,5,6].forEach(i => {
+          total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        });
+      } else {
+        for (let i = 1; i <= 8; i++) {
+          total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        }
       }
       document.getElementById(`total-${teamId}`).textContent = total;
     }
 
     async function saveTeam(teamId) {
+      const team = globalTeams.find(t => t.id === teamId);
+      if (!team) return;
+
       const newData = {};
-      for (let i = 1; i <= 8; i++) {
-        newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+      if (team.teamType === "Normale Gruppe") {
+        // Nur Stationen 3..6
+        [3,4,5,6].forEach(i => {
+          newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        });
+        newData.total = (newData.station3 || 0) + (newData.station4 || 0) +
+                        (newData.station5 || 0) + (newData.station6 || 0);
+      } else {
+        // Kindergruppe => Stationen 1..8
+        for (let i = 1; i <= 8; i++) {
+          newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        }
+        newData.total = 0;
+        for (let i = 1; i <= 8; i++) {
+          newData.total += newData["station" + i];
+        }
       }
-      newData.total = newData.station1 + newData.station2 + newData.station3 + newData.station4 +
-                      newData.station5 + newData.station6 + newData.station7 + newData.station8;
+
       await updateDoc(doc(db, "teams", teamId), newData);
     }
     window.saveTeam = saveTeam;
@@ -866,10 +979,17 @@
     /* --------------------- CSV Export und Theme Toggle --------------------- */
     function exportTeamsCSV() {
       let csvContent = "data:text/csv;charset=utf-8,";
-      const headers = ["Team Name","Team Typ","Station1","Station2","Station3","Station4","Station5","Station6","Station7","Station8","Gesamtpunkte","Status"];
+      const headers = [
+        "Team Name","Team Typ",
+        "Station1","Station2","Station3","Station4",
+        "Station5","Station6","Station7","Station8",
+        "Gesamtpunkte","Status"
+      ];
       csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
       globalTeams.forEach(team => {
-        const status = team.confirmed ? (isCompleted(team) ? "Abgeschlossen" : "Offen") : "Vormerkung";
+        const status = team.confirmed 
+          ? (isCompleted(team) ? "Abgeschlossen" : "Offen") 
+          : "Vormerkung";
         const row = [
           team.teamName,
           team.teamType || "-",
@@ -899,6 +1019,7 @@
     function toggleTheme() {
       const root = document.documentElement;
       if (root.style.getPropertyValue("--bg-color") === "#121212" || !root.style.getPropertyValue("--bg-color")) {
+        // Wechsle zu Light Mode
         root.style.setProperty("--bg-color", "#f5f5f5");
         root.style.setProperty("--text-color", "#333");
         root.style.setProperty("--header-bg", "#ddd");
@@ -909,6 +1030,7 @@
         root.style.setProperty("--input-bg", "#fff");
         root.style.setProperty("--input-border", "#ccc");
       } else {
+        // Wechsle zu Dark Mode
         root.style.setProperty("--bg-color", "#121212");
         root.style.setProperty("--text-color", "#e0e0e0");
         root.style.setProperty("--header-bg", "#1e1e1e");
