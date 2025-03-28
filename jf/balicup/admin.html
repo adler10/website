@@ -342,38 +342,6 @@
     <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
     <button class="admin-btn" onclick="toggleTheme()">Dark/Light Mode</button>
     <button class="admin-btn clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
-
-    <!-- Bereich zum Vergeben von Stationen-Namen -->
-    <div class="table-section">
-      <h2>Stationen-Einstellungen</h2>
-      <form id="stationNamesForm">
-        <label for="stationName1">Name für Station 1</label>
-        <input type="text" id="stationName1" placeholder="Station 1">
-
-        <label for="stationName2">Name für Station 2</label>
-        <input type="text" id="stationName2" placeholder="Station 2">
-
-        <label for="stationName3">Name für Station 3</label>
-        <input type="text" id="stationName3" placeholder="Station 3">
-
-        <label for="stationName4">Name für Station 4</label>
-        <input type="text" id="stationName4" placeholder="Station 4">
-
-        <label for="stationName5">Name für Station 5</label>
-        <input type="text" id="stationName5" placeholder="Station 5">
-
-        <label for="stationName6">Name für Station 6</label>
-        <input type="text" id="stationName6" placeholder="Station 6">
-
-        <label for="stationName7">Name für Station 7</label>
-        <input type="text" id="stationName7" placeholder="Station 7">
-
-        <label for="stationName8">Name für Station 8</label>
-        <input type="text" id="stationName8" placeholder="Station 8">
-
-        <button type="submit">Namen speichern</button>
-      </form>
-    </div>
     
     <!-- Tabellen: Bestätigte Teams (Normal/Kinder) & Vormerkungen -->
     <div class="table-section">
@@ -522,16 +490,16 @@
     let countdownTime = 60; // in Sekunden
     let countdownInterval;
 
-    // Stationennamen (Standardwerte), können per Formular geändert werden
-    let stationNames = [
-      "Station 1",
-      "Station 2",
-      "Station 3",
-      "Station 4",
-      "Station 5",
-      "Station 6",
-      "Station 7",
-      "Station 8"
+    // Stationennamen werden NUR im Code festgelegt (keine Änderung über Website):
+    const stationNames = [
+      "Schatzstapeln",   // Station 1
+      "Limbo-Tanz",      // Station 2
+      "Floßbau",         // Station 3
+      "Puzzle am See",   // Station 4
+      "Aqua-Memory",     // Station 5
+      "Piratenjagd",     // Station 6
+      "Piratenstaffel",  // Station 7
+      "Sandburgen bauen" // Station 8
     ];
 
     /* --------------------- Login und Initialisierung --------------------- */
@@ -615,41 +583,6 @@
         }
       });
 
-      // Stationen-Namen-Formular
-      document.getElementById("stationNamesForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        for (let i = 1; i <= 8; i++) {
-          const inputVal = document.getElementById("stationName" + i).value.trim();
-          if (inputVal) {
-            stationNames[i - 1] = inputVal;
-          }
-        }
-        updateStationHeaders();
-        alert("Stationennamen aktualisiert!");
-      });
-
-      // Datenbank leeren
-      window.clearDatabase = async function clearDatabase() {
-        if (confirm("Wirklich die gesamte Datenbank leeren?")) {
-          const teamsSnap = await getDocs(collection(db, "teams"));
-          const promises = [];
-          teamsSnap.forEach(docSnap => {
-            promises.push(deleteDoc(doc(db, "teams", docSnap.id)));
-          });
-          await Promise.all(promises);
-          alert("Datenbank geleert.");
-        }
-      };
-      
-      // Globale Funktionen
-      window.editTeam = editTeam;
-      window.saveTeam = saveTeam;
-      window.cancelEdit = cancelEdit;
-      window.deleteTeam = deleteTeam;
-      window.confirmTeam = confirmTeam;
-      window.renderRanking = renderRanking;
-      window.exportTeamsCSV = exportTeamsCSV;
-
       // Überschriften der Tabellen anpassen
       updateStationHeaders();
       // Starte den Countdown für den Reset-Mechanismus
@@ -658,7 +591,7 @@
 
     /* --------------------- Stationen-Namen in Tabellen-Header einsetzen --------------------- */
     function updateStationHeaders() {
-      // Normale Gruppen (1..6)
+      // Normale Gruppen (Stationen 1..6)
       document.getElementById("thNormalSt1").textContent = stationNames[0];
       document.getElementById("thNormalSt2").textContent = stationNames[1];
       document.getElementById("thNormalSt3").textContent = stationNames[2];
@@ -666,7 +599,7 @@
       document.getElementById("thNormalSt5").textContent = stationNames[4];
       document.getElementById("thNormalSt6").textContent = stationNames[5];
 
-      // Kindergruppen (1,2,5,7,8)
+      // Kindergruppen (Stationen 1,2,5,7,8)
       document.getElementById("thKinderSt1").textContent = stationNames[0];
       document.getElementById("thKinderSt2").textContent = stationNames[1];
       document.getElementById("thKinderSt5").textContent = stationNames[4];
