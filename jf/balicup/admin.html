@@ -342,24 +342,57 @@
     <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
     <button class="admin-btn" onclick="toggleTheme()">Dark/Light Mode</button>
     <button class="admin-btn clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
+
+    <!-- Bereich zum Vergeben von Stationen-Namen -->
+    <div class="table-section">
+      <h2>Stationen-Einstellungen</h2>
+      <form id="stationNamesForm">
+        <label for="stationName1">Name für Station 1</label>
+        <input type="text" id="stationName1" placeholder="Station 1">
+
+        <label for="stationName2">Name für Station 2</label>
+        <input type="text" id="stationName2" placeholder="Station 2">
+
+        <label for="stationName3">Name für Station 3</label>
+        <input type="text" id="stationName3" placeholder="Station 3">
+
+        <label for="stationName4">Name für Station 4</label>
+        <input type="text" id="stationName4" placeholder="Station 4">
+
+        <label for="stationName5">Name für Station 5</label>
+        <input type="text" id="stationName5" placeholder="Station 5">
+
+        <label for="stationName6">Name für Station 6</label>
+        <input type="text" id="stationName6" placeholder="Station 6">
+
+        <label for="stationName7">Name für Station 7</label>
+        <input type="text" id="stationName7" placeholder="Station 7">
+
+        <label for="stationName8">Name für Station 8</label>
+        <input type="text" id="stationName8" placeholder="Station 8">
+
+        <button type="submit">Namen speichern</button>
+      </form>
+    </div>
     
     <!-- Tabellen: Bestätigte Teams (Normal/Kinder) & Vormerkungen -->
     <div class="table-section">
       <h2>Bestätigte Teams – Normale Gruppen</h2>
       <input type="text" id="searchNormal" class="search-input" placeholder="Suche in normalen Gruppen...">
       <!-- 
-        Für Normale Gruppen nur Stationen 3, 4, 5, 6 anzeigen 
-        (da laut Vorgabe 1,2,7,8 nur Kindergruppen sind)
+        Für Normale Gruppen: Stationen 1..6
       -->
       <table id="confirmedNormalTable">
         <thead>
           <tr>
             <th>Team Name</th>
             <th>Typ</th>
-            <th>Station 3</th>
-            <th>Station 4</th>
-            <th>Station 5</th>
-            <th>Station 6</th>
+            <th id="thNormalSt1">Station 1</th>
+            <th id="thNormalSt2">Station 2</th>
+            <th id="thNormalSt3">Station 3</th>
+            <th id="thNormalSt4">Station 4</th>
+            <th id="thNormalSt5">Station 5</th>
+            <th id="thNormalSt6">Station 6</th>
             <th>Gesamtpunkte</th>
             <th>Status</th>
             <th>Aktionen</th>
@@ -375,22 +408,18 @@
       <h2>Bestätigte Teams – Kindergruppen</h2>
       <input type="text" id="searchKinder" class="search-input" placeholder="Suche in Kindergruppen...">
       <!-- 
-        Für Kindergruppen alle Stationen 1 bis 8, 
-        da 1,2,7,8 nur Kinder und 3,4,5,6 für beide. 
+        Für Kindergruppen: Stationen 1,2,5,7,8
       -->
       <table id="confirmedKinderTable">
         <thead>
           <tr>
             <th>Team Name</th>
             <th>Typ</th>
-            <th>Station 1</th>
-            <th>Station 2</th>
-            <th>Station 3</th>
-            <th>Station 4</th>
-            <th>Station 5</th>
-            <th>Station 6</th>
-            <th>Station 7</th>
-            <th>Station 8</th>
+            <th id="thKinderSt1">Station 1</th>
+            <th id="thKinderSt2">Station 2</th>
+            <th id="thKinderSt5">Station 5</th>
+            <th id="thKinderSt7">Station 7</th>
+            <th id="thKinderSt8">Station 8</th>
             <th>Gesamtpunkte</th>
             <th>Status</th>
             <th>Aktionen</th>
@@ -493,6 +522,18 @@
     let countdownTime = 60; // in Sekunden
     let countdownInterval;
 
+    // Stationennamen (Standardwerte), können per Formular geändert werden
+    let stationNames = [
+      "Station 1",
+      "Station 2",
+      "Station 3",
+      "Station 4",
+      "Station 5",
+      "Station 6",
+      "Station 7",
+      "Station 8"
+    ];
+
     /* --------------------- Login und Initialisierung --------------------- */
     function checkAdminPassword() {
       const input = document.getElementById("loginPassword").value;
@@ -551,14 +592,19 @@
         const teamType = document.getElementById("teamType").value;
         if (!teamName || !teamType) return;
         try {
+          // Alle Stationen als 0 anlegen
           await addDoc(collection(db, "teams"), {
             teamName: teamName,
             teamType: teamType,
             confirmed: false,
-            // Wir legen standardmäßig alle Stationen an, 
-            // wobei sie ggf. für die jeweilige Gruppe 0 bleiben
-            station1: 0, station2: 0, station3: 0, station4: 0,
-            station5: 0, station6: 0, station7: 0, station8: 0,
+            station1: 0,
+            station2: 0,
+            station3: 0,
+            station4: 0,
+            station5: 0,
+            station6: 0,
+            station7: 0,
+            station8: 0,
             total: 0
           });
           document.getElementById("newTeamForm").reset();
@@ -567,6 +613,19 @@
           console.error("Fehler beim Hinzufügen des Teams:", error);
           document.getElementById("newTeamFeedback").textContent = "Fehler beim Hinzufügen!";
         }
+      });
+
+      // Stationen-Namen-Formular
+      document.getElementById("stationNamesForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        for (let i = 1; i <= 8; i++) {
+          const inputVal = document.getElementById("stationName" + i).value.trim();
+          if (inputVal) {
+            stationNames[i - 1] = inputVal;
+          }
+        }
+        updateStationHeaders();
+        alert("Stationennamen aktualisiert!");
       });
 
       // Datenbank leeren
@@ -591,8 +650,28 @@
       window.renderRanking = renderRanking;
       window.exportTeamsCSV = exportTeamsCSV;
 
+      // Überschriften der Tabellen anpassen
+      updateStationHeaders();
       // Starte den Countdown für den Reset-Mechanismus
       startCountdown();
+    }
+
+    /* --------------------- Stationen-Namen in Tabellen-Header einsetzen --------------------- */
+    function updateStationHeaders() {
+      // Normale Gruppen (1..6)
+      document.getElementById("thNormalSt1").textContent = stationNames[0];
+      document.getElementById("thNormalSt2").textContent = stationNames[1];
+      document.getElementById("thNormalSt3").textContent = stationNames[2];
+      document.getElementById("thNormalSt4").textContent = stationNames[3];
+      document.getElementById("thNormalSt5").textContent = stationNames[4];
+      document.getElementById("thNormalSt6").textContent = stationNames[5];
+
+      // Kindergruppen (1,2,5,7,8)
+      document.getElementById("thKinderSt1").textContent = stationNames[0];
+      document.getElementById("thKinderSt2").textContent = stationNames[1];
+      document.getElementById("thKinderSt5").textContent = stationNames[4];
+      document.getElementById("thKinderSt7").textContent = stationNames[6];
+      document.getElementById("thKinderSt8").textContent = stationNames[7];
     }
 
     /* --------------------- Dashboard aktualisieren --------------------- */
@@ -688,23 +767,21 @@
     window.manualReset = manualReset;
 
     /* --------------------- Hilfsfunktionen --------------------- */
+    // Prüft, ob ein Team alle relevanten Stationen > 0 hat
+    // Normale Gruppe: Stationen 1..6
+    // Kindergruppe: Stationen 1,2,5,7,8
     function isCompleted(team) {
-      // Team gilt als "abgeschlossen", wenn alle relevanten Stationen
-      // für SEINE Gruppe einen Wert > 0 haben.
-      // Da wir im DB-Eintrag alle 8 Stationen haben, prüfen wir:
-      // - Kindergruppe: Stationen 1..8
-      // - Normale Gruppe: Stationen 3..6
-      if (team.teamType === "Kindergruppe") {
-        for (let i = 1; i <= 8; i++) {
+      if (team.teamType === "Normale Gruppe") {
+        for (let i = 1; i <= 6; i++) {
           if (!team["station" + i] || team["station" + i] === 0) {
             return false;
           }
         }
         return true;
       } else {
-        // Normale Gruppe
-        for (let i of [3,4,5,6]) {
-          if (!team["station" + i] || team["station" + i] === 0) {
+        // Kindergruppe => 1,2,5,7,8
+        for (let st of [1,2,5,7,8]) {
+          if (!team["station" + st] || team["station" + st] === 0) {
             return false;
           }
         }
@@ -728,34 +805,8 @@
       renderTentativeTable("tentativeTable", tentative);
     }
 
-    // Für Normale Gruppen nur Stationen 3..6 anzeigen
+    // Normale Gruppen: Stationen 1..6
     function renderNormalTable(tableId, teams, canEdit) {
-      const tbody = document.querySelector(`#${tableId} tbody`);
-      if (!tbody) return;
-      tbody.innerHTML = "";
-      teams.forEach(team => {
-        const tr = document.createElement("tr");
-        tr.setAttribute("data-team-id", team.id);
-        tr.innerHTML = `
-          <td>${team.teamName}</td>
-          <td>${team.teamType || "-"}</td>
-          <td>${team.station3 || 0}</td>
-          <td>${team.station4 || 0}</td>
-          <td>${team.station5 || 0}</td>
-          <td>${team.station6 || 0}</td>
-          <td>${team.total || 0}</td>
-          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
-          <td>
-            ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
-            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Für Kindergruppen Stationen 1..8 anzeigen
-    function renderKinderTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
       tbody.innerHTML = "";
@@ -771,6 +822,31 @@
           <td>${team.station4 || 0}</td>
           <td>${team.station5 || 0}</td>
           <td>${team.station6 || 0}</td>
+          <td>${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Kindergruppen: Stationen 1,2,5,7,8
+    function renderKinderTable(tableId, teams, canEdit) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>${team.station1 || 0}</td>
+          <td>${team.station2 || 0}</td>
+          <td>${team.station5 || 0}</td>
           <td>${team.station7 || 0}</td>
           <td>${team.station8 || 0}</td>
           <td>${team.total || 0}</td>
@@ -805,11 +881,10 @@
 
     /* --------------------- Ranking rendern --------------------- */
     function renderRanking() {
-      // Ranking Normale Gruppen
+      // Ranking nur für bestätigte Teams
       const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe" && team.confirmed);
       normalTeams.sort((a, b) => b.total - a.total);
 
-      // Ranking Kindergruppen
       const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe" && team.confirmed);
       kinderTeams.sort((a, b) => b.total - a.total);
 
@@ -817,14 +892,13 @@
       const kinderTbody = document.getElementById("rankingKinderBody");
       if (!normalTbody || !kinderTbody) return;
 
-      // Normale Gruppen
+      // Normale Gruppen => Stationen 1..6
       normalTbody.innerHTML = "";
       normalTeams.forEach((team, index) => {
-        // Zähle abgeschlossene Stationen für Normale Gruppe (3..6)
         let completedStations = 0;
-        [3,4,5,6].forEach(i => {
+        for (let i = 1; i <= 6; i++) {
           if (team["station" + i] > 0) completedStations++;
-        });
+        }
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${index + 1}</td>
@@ -835,14 +909,13 @@
         normalTbody.appendChild(row);
       });
 
-      // Kindergruppen
+      // Kindergruppen => Stationen 1,2,5,7,8
       kinderTbody.innerHTML = "";
       kinderTeams.forEach((team, index) => {
-        // Zähle abgeschlossene Stationen für Kindergruppe (1..8)
         let completedStations = 0;
-        for (let i = 1; i <= 8; i++) {
-          if (team["station" + i] > 0) completedStations++;
-        }
+        [1,2,5,7,8].forEach(st => {
+          if (team["station" + st] > 0) completedStations++;
+        });
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${index + 1}</td>
@@ -863,31 +936,8 @@
       const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
       if (!tr) return;
 
-      // Abhängig vom teamType generieren wir die passenden Eingabefelder
       if (team.teamType === "Normale Gruppe") {
-        // Nur Stationen 3..6 bearbeiten
-        tr.innerHTML = `
-          <td>${team.teamName}</td>
-          <td>${team.teamType || "-"}</td>
-          <td><input type="number" min="0" value="${team.station3 || 0}" id="edit-st3-${teamId}" style="width:60px;"></td>
-          <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
-          <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
-          <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
-          <td id="total-${teamId}">${team.total || 0}</td>
-          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
-          <td>
-            <button onclick="saveTeam('${team.id}')">Speichern</button>
-            <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
-          </td>
-        `;
-        // Event-Listener zum Neuberechnen der Zeilen-Gesamtpunkte
-        [3,4,5,6].forEach(i => {
-          document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
-            updateRowTotal(teamId, "Normale Gruppe");
-          });
-        });
-      } else {
-        // Kindergruppe => Stationen 1..8
+        // Stationen 1..6
         tr.innerHTML = `
           <td>${team.teamName}</td>
           <td>${team.teamType || "-"}</td>
@@ -897,6 +947,26 @@
           <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
+          <td id="total-${teamId}">${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            <button onclick="saveTeam('${team.id}')">Speichern</button>
+            <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
+          </td>
+        `;
+        [1,2,3,4,5,6].forEach(i => {
+          document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
+            updateRowTotal(teamId, "Normale Gruppe");
+          });
+        });
+      } else {
+        // Kindergruppe => Stationen 1,2,5,7,8
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td><input type="number" min="0" value="${team.station1 || 0}" id="edit-st1-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station2 || 0}" id="edit-st2-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station7 || 0}" id="edit-st7-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station8 || 0}" id="edit-st8-${teamId}" style="width:60px;"></td>
           <td id="total-${teamId}">${team.total || 0}</td>
@@ -906,12 +976,11 @@
             <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
           </td>
         `;
-        // Event-Listener zum Neuberechnen der Zeilen-Gesamtpunkte
-        for (let i = 1; i <= 8; i++) {
-          document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
+        [1,2,5,7,8].forEach(st => {
+          document.getElementById(`edit-st${st}-${teamId}`).addEventListener("input", () => {
             updateRowTotal(teamId, "Kindergruppe");
           });
-        }
+        });
       }
     }
     window.editTeam = editTeam;
@@ -919,13 +988,13 @@
     function updateRowTotal(teamId, groupType) {
       let total = 0;
       if (groupType === "Normale Gruppe") {
-        [3,4,5,6].forEach(i => {
+        [1,2,3,4,5,6].forEach(i => {
           total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
         });
       } else {
-        for (let i = 1; i <= 8; i++) {
-          total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
-        }
+        [1,2,5,7,8].forEach(st => {
+          total += parseInt(document.getElementById(`edit-st${st}-${teamId}`).value, 10) || 0;
+        });
       }
       document.getElementById(`total-${teamId}`).textContent = total;
     }
@@ -936,21 +1005,23 @@
 
       const newData = {};
       if (team.teamType === "Normale Gruppe") {
-        // Nur Stationen 3..6
-        [3,4,5,6].forEach(i => {
+        // Stationen 1..6
+        [1,2,3,4,5,6].forEach(i => {
           newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
         });
-        newData.total = (newData.station3 || 0) + (newData.station4 || 0) +
-                        (newData.station5 || 0) + (newData.station6 || 0);
-      } else {
-        // Kindergruppe => Stationen 1..8
-        for (let i = 1; i <= 8; i++) {
-          newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
-        }
         newData.total = 0;
-        for (let i = 1; i <= 8; i++) {
+        [1,2,3,4,5,6].forEach(i => {
           newData.total += newData["station" + i];
-        }
+        });
+      } else {
+        // Kindergruppe => 1,2,5,7,8
+        [1,2,5,7,8].forEach(st => {
+          newData["station" + st] = parseInt(document.getElementById(`edit-st${st}-${teamId}`).value, 10) || 0;
+        });
+        newData.total = 0;
+        [1,2,5,7,8].forEach(st => {
+          newData.total += newData["station" + st];
+        });
       }
 
       await updateDoc(doc(db, "teams", teamId), newData);
@@ -979,6 +1050,8 @@
     /* --------------------- CSV Export und Theme Toggle --------------------- */
     function exportTeamsCSV() {
       let csvContent = "data:text/csv;charset=utf-8,";
+      // Wir listen alle 8 Stationen in der CSV, 
+      // der Wert kann 0 sein, falls für diese Gruppe nicht relevant
       const headers = [
         "Team Name","Team Typ",
         "Station1","Station2","Station3","Station4",
