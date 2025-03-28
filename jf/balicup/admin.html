@@ -17,6 +17,7 @@
       --delete-hover: #b71c1c;
       --input-bg: #222;
       --input-border: #555;
+      /* Zusätzliche Variablen für Dashboard-Karten */
       --card-bg: #1e1e1e;
       --card-shadow: rgba(0, 0, 0, 0.3);
     }
@@ -455,7 +456,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
-    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
     let globalTeams = [];
     let globalStationSessions = {};
@@ -563,11 +564,11 @@
       const total = globalTeams.length;
       const confirmed = globalTeams.filter(team => team.confirmed).length;
       const pending = total - confirmed;
-      const avg = total > 0 ? (globalTeams.reduce((sum, t) => sum + (t.total || 0), 0) / total).toFixed(1) : 0;
-      const completed = globalTeams.filter(isCompleted).length;
-      const kinder = globalTeams.filter(t => t.teamType === "Kindergruppe").length;
-      const normal = globalTeams.filter(t => t.teamType === "Normale Gruppe").length;
-
+      const avg = total > 0 ? (globalTeams.reduce((sum, team) => sum + (team.total || 0), 0) / total).toFixed(1) : 0;
+      const completed = globalTeams.filter(team => isCompleted(team)).length;
+      const kinder = globalTeams.filter(team => team.teamType === "Kindergruppe").length;
+      const normal = globalTeams.filter(team => team.teamType === "Normale Gruppe").length;
+      
       // Dashboard: Stat-Karten
       document.getElementById("dashboard").innerHTML = `
         <h2>Übersicht</h2>
@@ -584,16 +585,15 @@
     /* --------------------- Stationen separat rendern --------------------- */
     function renderStations() {
       const stationsGrid = document.getElementById("stationsGrid");
-      if (!stationsGrid) return; // Falls das Element nicht da ist
+      if (!stationsGrid) return;
 
-      stationsGrid.innerHTML = ""; // Vor dem Neuaufbau leeren
+      stationsGrid.innerHTML = "";
 
       for (let i = 1; i <= 8; i++) {
         const stationId = "station" + i;
         const session = globalStationSessions[stationId];
         const color = (session && session.loggedIn) ? "green" : "red";
 
-        // Kleine Box für jede Station
         const stationBox = document.createElement("div");
         stationBox.className = "station-box";
         stationBox.innerHTML = `
@@ -603,6 +603,16 @@
         stationsGrid.appendChild(stationBox);
       }
     }
+
+    /* --------------------- Zusätzliche Funktion: Reset aller 8 Stationen --------------------- */
+    // Setzt für alle 8 Stationen (station1 bis station8) alle 15 Sekunden loggedIn auf false
+    setInterval(() => {
+      for (let i = 1; i <= 8; i++) {
+        const stationId = "station" + i;
+        setDoc(doc(db, "stationSessions", stationId), { loggedIn: false }, { merge: true })
+          .catch(error => console.error("Fehler beim Zurücksetzen von " + stationId + ":", error));
+      }
+    }, 15000);
 
     /* --------------------- Hilfsfunktionen --------------------- */
     function isCompleted(team) {
@@ -616,12 +626,12 @@
 
     /* --------------------- Tabellen rendern --------------------- */
     function renderTables() {
-      const confirmed = globalTeams.filter(t => t.confirmed);
-      const confirmedNormal = confirmed.filter(t => t.teamType === "Normale Gruppe");
-      const confirmedKinder = confirmed.filter(t => t.teamType === "Kindergruppe");
+      const confirmed = globalTeams.filter(team => team.confirmed);
+      const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
+      const confirmedKinder = confirmed.filter(team => team.teamType === "Kindergruppe");
       confirmedNormal.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
       confirmedKinder.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
-      const tentative = globalTeams.filter(t => !t.confirmed);
+      const tentative = globalTeams.filter(team => !team.confirmed);
 
       renderTable("confirmedNormalTable", confirmedNormal, true);
       renderTable("confirmedKinderTable", confirmedKinder, true);
@@ -680,8 +690,8 @@
 
     /* --------------------- Ranking rendern --------------------- */
     function renderRanking() {
-      const normalTeams = globalTeams.filter(t => t.teamType === "Normale Gruppe");
-      const kinderTeams = globalTeams.filter(t => t.teamType === "Kindergruppe");
+      const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe");
+      const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe");
 
       normalTeams.sort((a, b) => b.total - a.total);
       kinderTeams.sort((a, b) => b.total - a.total);
