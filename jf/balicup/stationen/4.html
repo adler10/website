@@ -4,10 +4,20 @@
   <meta charset="UTF-8">
   <title>Ergebnisse für Station <span id="stationLabel"></span> – Bali-Cup 2025</title>
   <style>
+    :root {
+      /* Standard Farben für Dark Mode */
+      --btn-bg-dark: #555;
+      --btn-border-dark: #666;
+      --btn-hover-dark: #444;
+      /* Farben für Light Mode */
+      --btn-bg-light: #e7e7e7;
+      --btn-border-light: #ccc;
+      --btn-hover-light: #d7d7d7;
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background: #222; /* Standard: Dark Mode */
+      background: #222; /* Dark Mode */
       color: #fff;
       transition: background 0.3s, color 0.3s;
     }
@@ -45,11 +55,21 @@
     }
     button {
       cursor: pointer;
-      background: #e7e7e7;
-      border: 1px solid #ccc;
+      background: var(--btn-bg-dark);
+      border: 1px solid var(--btn-border-dark);
+      color: #fff;
+      transition: background 0.3s;
     }
     button:hover {
-      background: #d7d7d7;
+      background: var(--btn-hover-dark);
+    }
+    body.light-mode button {
+      background: var(--btn-bg-light);
+      border: 1px solid var(--btn-border-light);
+      color: #333;
+    }
+    body.light-mode button:hover {
+      background: var(--btn-hover-light);
     }
     #feedback {
       margin-top: 15px;
@@ -74,14 +94,21 @@
       padding: 4px 6px;
       font-size: 0.9em;
       cursor: pointer;
-      border: 1px solid #ccc;
-      background: #e7e7e7;
+      border: 1px solid var(--btn-border-dark);
+      background: var(--btn-bg-dark);
       transition: background 0.3s;
       width: auto;
       white-space: nowrap;
     }
     .toggle-mode:hover {
-      background: #d7d7d7;
+      background: var(--btn-hover-dark);
+    }
+    body.light-mode .toggle-mode {
+      border: 1px solid var(--btn-border-light);
+      background: var(--btn-bg-light);
+    }
+    body.light-mode .toggle-mode:hover {
+      background: var(--btn-hover-light);
     }
     /* Teamübersicht – Bereiche für Gruppen */
     .teams-info {
@@ -129,7 +156,7 @@
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
-    <h1>Ergebnisse für Station <span id="stationLabel"></span> erfassen</h1>
+    <h1>Ergebnisse für Station <span id="stationId"></span> - <span id="stationLabel"></span> erfassen</h1>
   </header>
   <div class="container">
     <form id="resultForm">
@@ -150,14 +177,25 @@
   </div>
 
   <script type="module">
-    // Für diese Station-Seite: stationNumber auf 1 setzen
-    const stationNumber = 4;
-    document.getElementById("stationLabel").textContent = stationNumber;
+    // Konfiguration: Stationsname, Stationsnummer und erlaubte Gruppen
+    const stationName = "Puzzel auf dem See";   // Name der Station
+    const stationNumber = 4;             // Nummer der Station
+    // Erlaubte Gruppen: Hier können die anzuzeigenden Gruppen festgelegt werden.
+    // Die Werte sollten in Kleinbuchstaben vorliegen.
+    const allowedGroups = {
+      dropdown: ["normale gruppe"],
+      teams: ["normale gruppe"]
+    };
+
+    // Setze den Stationsnamen in der Überschrift und im Title
+    document.getElementById("stationLabel").textContent = stationName;
+    document.getElementById("stationId").textContent = stationNumber;
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, getDoc, setDoc } 
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, setDoc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
     // Firebase-Konfiguration
     const firebaseConfig = {
@@ -175,15 +213,12 @@
     const db = getFirestore(app);
 
     // Funktion zum Aktualisieren des Station-Status in Firestore
-    // setDoc mit { merge: true } erstellt oder aktualisiert das Dokument
     function setStationStatus(stationId, status) {
       setDoc(doc(db, "stationSessions", stationId), { loggedIn: status }, { merge: true });
     }
 
-    // Statt eines Pollings alle 10 Sekunden nutzen wir einen Echtzeit-Listener:
-    // Sobald festgestellt wird, dass der Wert in der Datenbank auf false steht, wird er wieder auf true gesetzt.
+    // Echtzeit-Listener für den Stationsstatus
     const stationRef = doc(db, "stationSessions", "station" + stationNumber);
-    import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
     onSnapshot(stationRef, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
@@ -195,7 +230,7 @@
           }
         }
       } else {
-        // Falls das Dokument noch nicht existiert, wird es erstellt.
+        // Dokument erstellen, falls noch nicht vorhanden.
         await setStationStatus("station" + stationNumber, true);
       }
     });
@@ -212,8 +247,11 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
+        // Überspringe Teams, die bereits einen Eintrag für diese Station haben
         if (data["station" + stationNumber] && data["station" + stationNumber] > 0) return;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
+        // Nur erlaubte Gruppen berücksichtigen
+        if (!allowedGroups.dropdown.includes(teamType)) return;
         const teamObj = { id: docSnap.id, name: data.teamName };
         if (teamType === "kindergruppe") {
           kinderTeams.push(teamObj);
@@ -266,6 +304,8 @@
         const teamName = data.teamName;
         const points = data["station" + stationNumber] || 0;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
+        // Nur erlaubte Gruppen berücksichtigen
+        if (!allowedGroups.teams.includes(teamType)) return;
         const teamObj = { name: teamName, points: points };
         if (teamType === "kindergruppe") {
           kinderTeams.push(teamObj);
@@ -277,43 +317,47 @@
       normalTeams.sort((a, b) => a.name.localeCompare(b.name));
       kinderTeams.sort((a, b) => a.name.localeCompare(b.name));
       
-      const normalHeading = document.createElement("h2");
-      normalHeading.textContent = "Normale Gruppe";
-      teamsInfoDiv.appendChild(normalHeading);
-      const normalContainer = document.createElement("div");
-      normalContainer.className = "group-container";
-      normalTeams.forEach(team => {
-        const card = document.createElement("div");
-        card.classList.add("team-card");
-        if (team.points > 0) {
-          card.classList.add("participated");
-          card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
-        } else {
-          card.classList.add("not-participated");
-          card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
-        }
-        normalContainer.appendChild(card);
-      });
-      teamsInfoDiv.appendChild(normalContainer);
+      if (normalTeams.length > 0) {
+        const normalHeading = document.createElement("h2");
+        normalHeading.textContent = "Normale Gruppe";
+        teamsInfoDiv.appendChild(normalHeading);
+        const normalContainer = document.createElement("div");
+        normalContainer.className = "group-container";
+        normalTeams.forEach(team => {
+          const card = document.createElement("div");
+          card.classList.add("team-card");
+          if (team.points > 0) {
+            card.classList.add("participated");
+            card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
+          } else {
+            card.classList.add("not-participated");
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
+          }
+          normalContainer.appendChild(card);
+        });
+        teamsInfoDiv.appendChild(normalContainer);
+      }
       
-      const kinderHeading = document.createElement("h2");
-      kinderHeading.textContent = "Kindergruppe";
-      teamsInfoDiv.appendChild(kinderHeading);
-      const kinderContainer = document.createElement("div");
-      kinderContainer.className = "group-container";
-      kinderTeams.forEach(team => {
-        const card = document.createElement("div");
-        card.classList.add("team-card");
-        if (team.points > 0) {
-          card.classList.add("participated");
-          card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
-        } else {
-          card.classList.add("not-participated");
-          card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
-        }
-        kinderContainer.appendChild(card);
-      });
-      teamsInfoDiv.appendChild(kinderContainer);
+      if (kinderTeams.length > 0) {
+        const kinderHeading = document.createElement("h2");
+        kinderHeading.textContent = "Kindergruppe";
+        teamsInfoDiv.appendChild(kinderHeading);
+        const kinderContainer = document.createElement("div");
+        kinderContainer.className = "group-container";
+        kinderTeams.forEach(team => {
+          const card = document.createElement("div");
+          card.classList.add("team-card");
+          if (team.points > 0) {
+            card.classList.add("participated");
+            card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
+          } else {
+            card.classList.add("not-participated");
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
+          }
+          kinderContainer.appendChild(card);
+        });
+        teamsInfoDiv.appendChild(kinderContainer);
+      }
     }
     loadTeamsInfo();
 
