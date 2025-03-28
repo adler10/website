@@ -150,16 +150,16 @@
   </div>
 
   <script type="module">
-    // Passe diese Variable an: für jede Station-Seite einen anderen Wert (1 bis 8)
-    const stationNumber = 2; // Beispiel: Seite für Station 1
+    // Für diese Station-Seite: stationNumber auf 1 setzen
+    const stationNumber = 3;
     document.getElementById("stationLabel").textContent = stationNumber;
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc } 
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, getDoc, setDoc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
-    // Firebase-Konfiguration (ersetze diese Werte durch deine eigenen)
+    // Firebase-Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
       authDomain: "bali-cup2025.firebaseapp.com",
@@ -170,12 +170,37 @@
       measurementId: "G-484CZNKVQ1"
     };
 
+    // Firebase initialisieren
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Funktion zum Aktualisieren des Station-Status in Firestore
+    // setDoc mit { merge: true } erstellt oder aktualisiert das Dokument
+    function setStationStatus(stationId, status) {
+      setDoc(doc(db, "stationSessions", stationId), { loggedIn: status }, { merge: true });
+    }
+
+    // Statt eines Pollings alle 10 Sekunden nutzen wir einen Echtzeit-Listener:
+    // Sobald festgestellt wird, dass der Wert in der Datenbank auf false steht, wird er wieder auf true gesetzt.
+    const stationRef = doc(db, "stationSessions", "station" + stationNumber);
+    import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    onSnapshot(stationRef, async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.loggedIn === false) {
+          try {
+            await setStationStatus("station" + stationNumber, true);
+          } catch (error) {
+            console.error("Fehler beim Aktualisieren des Status:", error);
+          }
+        }
+      } else {
+        // Falls das Dokument noch nicht existiert, wird es erstellt.
+        await setStationStatus("station" + stationNumber, true);
+      }
+    });
+
     // Dropdown mit Teams befüllen:
-    // Es werden nur Teams angezeigt, die für diese Station noch keinen Eintrag haben.
-    // Dabei wird nach teamType ("Normale Gruppe" bzw. "Kindergruppe") unterschieden und alphabetisch sortiert.
     async function loadTeamsDropdown() {
       const teamsRef = collection(db, "teams");
       const querySnapshot = await getDocs(teamsRef);
@@ -187,10 +212,7 @@
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Überspringe Teams, die bereits teilgenommen haben (Wert > 0)
         if (data["station" + stationNumber] && data["station" + stationNumber] > 0) return;
-        
-        // Nehme den teamType, Standard: "Normale Gruppe"
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
         const teamObj = { id: docSnap.id, name: data.teamName };
         if (teamType === "kindergruppe") {
@@ -200,11 +222,9 @@
         }
       });
       
-      // Sortiere beide Gruppen alphabetisch nach Teamnamen
       normalTeams.sort((a, b) => a.name.localeCompare(b.name));
       kinderTeams.sort((a, b) => a.name.localeCompare(b.name));
       
-      // Erstelle optgroup für Normale Gruppe
       if (normalTeams.length > 0) {
         const normalOptGroup = document.createElement("optgroup");
         normalOptGroup.label = "Normale Gruppe";
@@ -217,7 +237,6 @@
         teamSelect.appendChild(normalOptGroup);
       }
       
-      // Erstelle optgroup für Kindergruppe
       if (kinderTeams.length > 0) {
         const kinderOptGroup = document.createElement("optgroup");
         kinderOptGroup.label = "Kindergruppe";
@@ -232,15 +251,13 @@
     }
     loadTeamsDropdown();
     
-    // Kreative Darstellung der Teams in der Übersicht, getrennt nach Gruppen:
-    // Die Karten werden alphabetisch sortiert nach Teamnamen in den jeweiligen Bereichen.
+    // Darstellung der Teams in der Übersicht
     async function loadTeamsInfo() {
       const teamsRef = collection(db, "teams");
       const querySnapshot = await getDocs(teamsRef);
       const teamsInfoDiv = document.getElementById("teamsInfo");
       teamsInfoDiv.innerHTML = "";
       
-      // Arrays für die beiden Gruppen
       const normalTeams = [];
       const kinderTeams = [];
       
@@ -248,7 +265,6 @@
         const data = docSnap.data();
         const teamName = data.teamName;
         const points = data["station" + stationNumber] || 0;
-        // teamType: Standard: "Normale Gruppe"
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
         const teamObj = { name: teamName, points: points };
         if (teamType === "kindergruppe") {
@@ -258,11 +274,9 @@
         }
       });
       
-      // Sortiere beide Arrays alphabetisch nach Teamnamen
       normalTeams.sort((a, b) => a.name.localeCompare(b.name));
       kinderTeams.sort((a, b) => a.name.localeCompare(b.name));
       
-      // Erstelle Container für Normale Gruppe
       const normalHeading = document.createElement("h2");
       normalHeading.textContent = "Normale Gruppe";
       teamsInfoDiv.appendChild(normalHeading);
@@ -282,7 +296,6 @@
       });
       teamsInfoDiv.appendChild(normalContainer);
       
-      // Erstelle Container für Kindergruppe
       const kinderHeading = document.createElement("h2");
       kinderHeading.textContent = "Kindergruppe";
       teamsInfoDiv.appendChild(kinderHeading);
@@ -304,7 +317,7 @@
     }
     loadTeamsInfo();
 
-    // Feedback anzeigen
+    // Feedback-Funktion
     function showFeedback(message, isSuccess = true) {
       const feedback = document.getElementById("feedback");
       feedback.textContent = message;
@@ -313,7 +326,7 @@
       setTimeout(() => { feedback.style.display = "none"; }, 3000);
     }
 
-    // Formular absenden
+    // Ergebnisformular absenden
     document.getElementById("resultForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const teamId = document.getElementById("teamSelect").value;
@@ -367,8 +380,8 @@
         showFeedback("Fehler beim Speichern!", false);
       }
       document.getElementById("resultForm").reset();
-      loadTeamsDropdown(); // Dropdown aktualisieren
-      loadTeamsInfo();     // Teamübersicht aktualisieren
+      loadTeamsDropdown();
+      loadTeamsInfo();
     });
     
     // Toggle zwischen Dark und Light Mode
