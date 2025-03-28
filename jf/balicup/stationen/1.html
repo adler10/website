@@ -175,29 +175,30 @@
     const db = getFirestore(app);
 
     // Funktion zum Aktualisieren des Station-Status in Firestore
-    // Hier verwenden wir setDoc mit { merge: true }, sodass das Dokument auch automatisch erstellt wird, falls es noch nicht existiert.
+    // setDoc mit { merge: true } erstellt oder aktualisiert das Dokument
     function setStationStatus(stationId, status) {
       setDoc(doc(db, "stationSessions", stationId), { loggedIn: status }, { merge: true });
     }
 
-    // Heartbeat: Alle 10 Sekunden den Status überprüfen und ggf. auf true setzen
-    setInterval(async () => {
-      try {
-        const stationRef = doc(db, "stationSessions", "station" + stationNumber);
-        const snapshot = await getDoc(stationRef);
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          if (!data.loggedIn) {
+    // Statt eines Pollings alle 10 Sekunden nutzen wir einen Echtzeit-Listener:
+    // Sobald festgestellt wird, dass der Wert in der Datenbank auf false steht, wird er wieder auf true gesetzt.
+    const stationRef = doc(db, "stationSessions", "station" + stationNumber);
+    import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    onSnapshot(stationRef, async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.loggedIn === false) {
+          try {
             await setStationStatus("station" + stationNumber, true);
+          } catch (error) {
+            console.error("Fehler beim Aktualisieren des Status:", error);
           }
-        } else {
-          // Falls das Dokument noch nicht existiert, erstellen wir es direkt
-          await setStationStatus("station" + stationNumber, true);
         }
-      } catch (error) {
-        console.error("Fehler beim Heartbeat:", error);
+      } else {
+        // Falls das Dokument noch nicht existiert, wird es erstellt.
+        await setStationStatus("station" + stationNumber, true);
       }
-    }, 10000);
+    });
 
     // Dropdown mit Teams befüllen:
     async function loadTeamsDropdown() {
