@@ -156,7 +156,7 @@
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
-    <h1>Ergebnisse für Station <span id="stationLabel"></span> erfassen</h1>
+    <h1>Ergebnisse für Station <span id="stationId"></span> - <span id="stationLabel"></span> erfassen</h1>
   </header>
   <div class="container">
     <form id="resultForm">
@@ -189,6 +189,7 @@
 
     // Setze den Stationsnamen in der Überschrift und im Title
     document.getElementById("stationLabel").textContent = stationName;
+    document.getElementById("stationId").textContent = stationNumber;
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
