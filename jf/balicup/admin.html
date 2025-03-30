@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <title>Admin Panel – Bali-Cup 2025</title>
   <style>
-    /* ------------------ Eigene Anpassungen für Bearbeitung der Schätzung und automatische Punkteberechnung ------------------ */
-    /* Die farbliche Gestaltung erfolgt über die folgenden CSS-Variablen (Dark Mode Standard) */
+    /* ------------------ Dark Mode Standard – CSS Variablen ------------------ */
     :root {
       --bg-color: #121212;
       --text-color: #e0e0e0;
@@ -47,6 +46,7 @@
       padding: 20px;
       max-width: 1200px;
       margin: 0 auto;
+      background-color: var(--container-bg);
     }
     /* Dashboard-Übersicht (Stat-Karten) */
     .dashboard {
@@ -260,13 +260,15 @@
       margin: 0 auto;
       display: block;
     }
-    /* Modal Popup (für Ranking und Neues Team) */
+    /* Modal Popup (Ranking, Neues Team) */
     .modal-popup {
       display: none;
       position: fixed;
       z-index: 100;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
       overflow: auto;
       background-color: rgba(0,0,0,0.5);
     }
@@ -473,7 +475,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
     import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, setDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-
+    
     let globalTeams = [];
     let globalStationSessions = {};
     let db;
@@ -691,16 +693,87 @@
       renderTentativeTable("tentativeTable", tentative);
     }
     
-    // In der Bearbeitung können für Station 2 bis 8 Eingaben geändert werden.
-    // Für Station 1 wird der Wert anhand der Schätzung (guess_station1) berechnet.
-    function editTeam(teamId) {
+    // Für Normale Gruppen: Station 1 (nur Schätzung) und Stationen 2-6 editierbar
+    function renderNormalTable(tableId, teams, canEdit) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>${team.station1 || 0}</td>
+          <td>${team.station2 || 0}</td>
+          <td>${team.station3 || 0}</td>
+          <td>${team.station4 || 0}</td>
+          <td>${team.station5 || 0}</td>
+          <td>${team.station6 || 0}</td>
+          <td>${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            ${canEdit ? `<button onclick="editGuess('${team.id}')">Schätzung bearbeiten</button>` : ""}
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    // Für Kindergruppen: Station 1 (nur Schätzung) und Stationen 2,5,7,8 editierbar
+    function renderKinderTable(tableId, teams, canEdit) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>${team.station1 || 0}</td>
+          <td>${team.station2 || 0}</td>
+          <td>${team.station5 || 0}</td>
+          <td>${team.station7 || 0}</td>
+          <td>${team.station8 || 0}</td>
+          <td>${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            ${canEdit ? `<button onclick="editGuess('${team.id}')">Schätzung bearbeiten</button>` : ""}
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function renderTentativeTable(tableId, teams) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      teams.forEach(team => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-team-id", team.id);
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td>
+            <button onclick="confirmTeam('${team.id}')">Bestätigen</button>
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    /* --------------------- Nur Schätzung für Station 1 editieren --------------------- */
+    function editGuess(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
       const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
       if (!tr) return;
-      // Zeige in der Zeile ein Formular an:
-      // Station 1: Zeige das Feld für die Schätzung als readOnly-Input und einen "Bearbeiten"-Button, der es aktiviert.
-      // Stationen 2 bis 8: normale Eingabefelder
+      // Zeige in der Zeile ein Formular an: Für Station 1 erscheint ein Input für guess_station1, der standardmäßig readOnly ist, mit Button zum Freischalten.
       if (team.teamType === "Normale Gruppe") {
         tr.innerHTML = `
           <td>${team.teamName}</td>
@@ -714,23 +787,19 @@
           <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
-          <td>
-            <span id="total-${teamId}">${team.total || 0}</span>
-          </td>
+          <td><span id="total-${teamId}">${team.total || 0}</span></td>
           <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
           <td>
             <button onclick="saveTeam('${team.id}')">Speichern</button>
             <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
           </td>
         `;
-        // Bei Änderung der Station 2-6 Felder wird der Total neu berechnet (station1 wird über recalcStation1Scores gesetzt)
         [2,3,4,5,6].forEach(i => {
           document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
             updateRowTotal(teamId, "Normale Gruppe");
           });
         });
       } else {
-        // Kindergruppe: Editierbare Felder für Stationen 2,5,7,8; Station 1 wie oben
         tr.innerHTML = `
           <td>${team.teamName}</td>
           <td>${team.teamType || "-"}</td>
@@ -742,9 +811,7 @@
           <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station7 || 0}" id="edit-st7-${teamId}" style="width:60px;"></td>
           <td><input type="number" min="0" value="${team.station8 || 0}" id="edit-st8-${teamId}" style="width:60px;"></td>
-          <td>
-            <span id="total-${teamId}">${team.total || 0}</span>
-          </td>
+          <td><span id="total-${teamId}">${team.total || 0}</span></td>
           <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
           <td>
             <button onclick="saveTeam('${team.id}')">Speichern</button>
@@ -758,9 +825,8 @@
         });
       }
     }
-    window.editTeam = editTeam;
+    window.editGuess = editGuess;
     
-    // Mit diesem Button wird das guess-Feld für Station 1 schaltbar gemacht
     function toggleGuessEdit(teamId) {
       const input = document.getElementById(`edit-guess-${teamId}`);
       if (!input) return;
@@ -769,10 +835,9 @@
     }
     window.toggleGuessEdit = toggleGuessEdit;
     
-    // Aktualisiere den Total-Wert in der Zeile (nur für station2-8, station1 wird später neu berechnet)
     function updateRowTotal(teamId, groupType) {
       let total = 0;
-      // station1 wird über recalcStation1Scores berechnet, daher nicht hier summieren
+      // Station 1 wird über recalcStation1Scores neu berechnet, daher nicht mitgezählt.
       if (groupType === "Normale Gruppe") {
         [2,3,4,5,6].forEach(i => {
           total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
@@ -788,11 +853,8 @@
     async function saveTeam(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
-    
-      // Hole den bearbeiteten Guess-Wert
       const guessInput = document.getElementById(`edit-guess-${teamId}`);
       const newGuess = parseInt(guessInput.value, 10) || 0;
-    
       const newData = { guess_station1: newGuess };
       if (team.teamType === "Normale Gruppe") {
         [2,3,4,5,6].forEach(i => {
@@ -803,10 +865,8 @@
           newData["station" + st] = parseInt(document.getElementById(`edit-st${st}-${teamId}`).value, 10) || 0;
         });
       }
-      // Zuerst speichern wir die neuen Werte (ohne station1 und total)
       try {
         await updateDoc(doc(db, "teams", teamId), newData);
-        // Anschließend wird recalcStation1Scores() aufgerufen, das alle Teams (in der jeweiligen Gruppe) neu bewertet.
         recalcStation1Scores();
       } catch (err) {
         console.error("Fehler beim Speichern:", err);
@@ -842,12 +902,10 @@
         }
       });
     
-      // Für Normale Gruppen:
       normalTeams.forEach(team => { team.diff = Math.abs(team.guess - target); });
       normalTeams.sort((a, b) => a.diff - b.diff);
       normalTeams.forEach((team, index) => { team.newPoints = normalTeams.length - index; });
     
-      // Für Kindergruppen:
       kinderTeams.forEach(team => { team.diff = Math.abs(team.guess - target); });
       kinderTeams.sort((a, b) => a.diff - b.diff);
       kinderTeams.forEach((team, index) => { team.newPoints = kinderTeams.length - index; });
@@ -910,7 +968,7 @@
       });
     }
     
-    /* --------------------- CRUD-Funktionen (Teams) --------------------- */
+    /* --------------------- CRUD-Funktionen --------------------- */
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
         await deleteDoc(doc(db, "teams", teamId));
@@ -968,7 +1026,6 @@
     function toggleTheme() {
       const root = document.documentElement;
       if (root.style.getPropertyValue("--bg-color") === "#121212") {
-        // Wechsel zu Light Mode
         root.style.setProperty("--bg-color", "#f5f5f5");
         root.style.setProperty("--text-color", "#333");
         root.style.setProperty("--header-bg", "#ddd");
@@ -979,7 +1036,6 @@
         root.style.setProperty("--input-bg", "#fff");
         root.style.setProperty("--input-border", "#ccc");
       } else {
-        // Wechsel zu Dark Mode
         root.style.setProperty("--bg-color", "#121212");
         root.style.setProperty("--text-color", "#e0e0e0");
         root.style.setProperty("--header-bg", "#1e1e1e");
