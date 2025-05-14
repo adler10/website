@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel – Bali-Cup 2025</title>
+  <style>
+    /* ------------------ Dark Mode Standard – CSS Variablen ------------------ */
+    :root {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --header-bg: #1e1e1e;
+      --container-bg: #1e1e1e;
+      --button-bg: #333;
+      --button-border: #444;
+      --button-hover: #555;
+      --delete-bg: #d32f2f;
+      --delete-hover: #b71c1c;
+      --input-bg: #222;
+      --input-border: #555;
+      --card-bg: #1e1e1e;
+      --card-shadow: rgba(0, 0, 0, 0.3);
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background-color: var(--header-bg);
+      border-bottom: 1px solid var(--button-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 { margin: 0; font-size: 2.5em; }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: var(--container-bg);
+    }
+    .dashboard { padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px var(--card-shadow); margin-bottom: 20px; }
+    .dashboard-row { display: flex; justify-content: space-between; gap: 10px; }
+    .dashboard-row .stat {
+      background-color: var(--card-bg);
+      border: 1px solid var(--button-border);
+      border-radius: 6px;
+      padding: 15px; text-align: center; font-size: 0.9em; color: var(--text-color); flex: 1;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: var(--container-bg); }
+    th, td { border: 1px solid var(--button-border); padding: 10px; text-align: center; }
+    th { background-color: var(--button-bg); }
+    button {
+      padding: 6px 10px; margin: 2px;
+      border: 1px solid var(--button-border);
+      background-color: var(--button-bg);
+      color: var(--text-color); cursor: pointer; border-radius: 4px;
+    }
+    button:hover { background-color: var(--button-hover); }
+    .delete-btn { background-color: var(--delete-bg); border: none; color: white; }
+    .delete-btn:hover { background-color: var(--delete-hover); }
+    .table-section { margin-bottom: 40px; }
+    .table-section h2 { margin-top: 40px; }
+    .admin-btn { padding: 10px 15px; background-color: var(--button-bg); border: 1px solid var(--button-border); color: var(--text-color); cursor: pointer; border-radius: 4px; margin-right: 10px; margin-bottom: 20px; }
+    .admin-btn:hover { background-color: var(--button-hover); }
+    .clear-db-btn { background-color: var(--delete-bg); border: 1px solid var(--button-border); color: white; }
+    .clear-db-btn:hover { background-color: var(--delete-hover); }
+    .search-input {
+      width: 300px; padding: 6px; margin-bottom: 10px;
+      background-color: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color);
+    }
+    /* Modals */
+    .modal-popup { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+    .modal-content {
+      background-color: var(--container-bg);
+      margin: 10% auto; padding: 20px;
+      border: 1px solid var(--button-border);
+      width: 90%; max-width: 600px; border-radius: 4px; position: relative;
+    }
+    .close-modal { position: absolute; top: 10px; right: 10px; cursor: pointer; font-size: 1.2em; border: none; background: none; color: var(--text-color); }
+    #loginModal .modal-content { max-width: 400px; margin: 20% auto; text-align: center; }
+    #loginModal input { width: 80%; padding: 10px; margin: 10px auto; display: block; background-color: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); }
+    #newTeamModal input, #newTeamModal select, #newTeamModal button, #newTeamModal label { display: block; width: 100%; margin-bottom: 10px; }
+    #newTeamModal input, #newTeamModal select { padding: 8px; background-color: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); box-sizing: border-box; }
+    #newTeamModal button { width: auto; margin: 0 auto; display: block; }
+    footer { text-align: center; padding: 10px; border-top: 1px solid var(--button-border); margin-top: 20px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal-popup" style="display: block;">
+    <div class="modal-content">
+      <h2>Bitte Passwort eingeben</h2>
+      <input type="password" id="loginPassword" placeholder="Passwort" required>
+      <button onclick="checkAdminPassword()">Einloggen</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>Admin Panel – Bali-Cup 2025</h1>
+  </header>
+
+  <div class="container">
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard"></div>
+
+    <!-- Admin-Funktionen -->
+    <button class="admin-btn" onclick="exportTeamsCSV()">Export als CSV</button>
+    <button class="admin-btn" onclick="openNewTeamModal()">Neues Team hinzufügen</button>
+    <button class="admin-btn" onclick="openRankingModal()">Ranking anzeigen</button>
+    <button class="admin-btn" onclick="toggleTheme()">Dark/Light Mode</button>
+    <button class="admin-btn clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
+
+    <!-- Tabellen -->
+    <div class="table-section">
+      <h2>Bestätigte Teams – Normale Gruppen</h2>
+      <input type="text" id="searchNormal" class="search-input" placeholder="Suche in normalen Gruppen...">
+      <table id="confirmedNormalTable">
+        <thead>
+          <tr>
+            <th>Team Name</th><th>Typ</th><th>Station 1</th><th>Station 2</th><th>Station 3</th>
+            <th>Station 4</th><th>Station 5</th><th>Station 6</th><th>Gesamtpunkte</th><th>Status</th><th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="table-section">
+      <h2>Bestätigte Teams – Kindergruppen</h2>
+      <input type="text" id="searchKinder" class="search-input" placeholder="Suche in Kindergruppen...">
+      <table id="confirmedKinderTable">
+        <thead>
+          <tr>
+            <th>Team Name</th><th>Typ</th><th>Station 1</th><th>Station 2</th><th>Station 5</th>
+            <th>Station 7</th><th>Station 8</th><th>Gesamtpunkte</th><th>Status</th><th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="table-section">
+      <h2>Vormerkungen (Nicht bestätigt)</h2>
+      <input type="text" id="searchTentative" class="search-input" placeholder="Suche in Vormerkungen...">
+      <table id="tentativeTable">
+        <thead>
+          <tr><th>Team Name</th><th>Typ</th><th>Aktionen</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ranking Modal -->
+  <div id="rankingModal" class="modal-popup">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeRankingModal()">✖</button>
+      <h2>Top Ranking – Normale Gruppen</h2>
+      <table>
+        <thead><tr><th>Platz</th><th>Team</th><th>Punkte</th><th>Abgeschlossene Stationen</th></tr></thead>
+        <tbody id="rankingNormalBody"></tbody>
+      </table>
+      <h2>Top Ranking – Kindergruppen</h2>
+      <table>
+        <thead><tr><th>Platz</th><th>Team</th><th>Punkte</th><th>Abgeschlossene Stationen</th></tr></thead>
+        <tbody id="rankingKinderBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Neues Team Modal -->
+  <div id="newTeamModal" class="modal-popup">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeNewTeamModal()">✖</button>
+      <h2>Neues Team hinzufügen</h2>
+      <form id="newTeamForm">
+        <label for="teamName">Team Name</label>
+        <input type="text" id="teamName" placeholder="Team Name" required>
+        <label for="teamType">Team Typ</label>
+        <select id="teamType" required>
+          <option value="" disabled selected>Bitte wählen</option>
+          <option value="Kindergruppe">Kindergruppe</option>
+          <option value="Normale Gruppe">Normale Gruppe</option>
+        </select>
+        <button type="submit">Team hinzufügen</button>
+      </form>
+      <div id="newTeamFeedback"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p id="versionDisplay">Version: 1.0.3</p>
+  </footer>
+
+  <!-- Realtime Database–Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      push,
+      update,
+      remove
+    } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-database.js";
+
+    // Firebase-Konfiguration
+    const firebaseConfig = {
+      apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
+      authDomain: "bali-cup2025.firebaseapp.com",
+      databaseURL: "https://bali-cup2025-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "bali-cup2025",
+      storageBucket: "bali-cup2025.appspot.com",
+      messagingSenderId: "867421335336",
+      appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
+      measurementId: "G-484CZNKVQ1"
+    };
+
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const teamsRef = ref(db, 'teams');
+    let globalTeams = [];
+    const stationNames = [
+      "Schätzspiel","Limbo Tanz","Floßbau","Puzzle auf dem See",
+      "Aqua Memory","Piratenplanke","Piratenschatz","Sandburg bauen"
+    ];
+
+    // Login
+    function checkAdminPassword() {
+      if (document.getElementById("loginPassword").value === "112") {
+        document.getElementById("loginModal").style.display = "none";
+        updateStationHeaders();
+      } else {
+        alert("Falsches Passwort!");
+      }
+    }
+    window.checkAdminPassword = checkAdminPassword;
+
+    // CRUD – Live-Daten
+    onValue(teamsRef, snapshot => {
+      globalTeams = [];
+      snapshot.forEach(snap => {
+        globalTeams.push({ id: snap.key, ...snap.val() });
+      });
+      renderTables();
+      renderRanking();
+      updateDashboard();
+    });
+
+    // Add
+    async function addTeam(name, type) {
+      await push(teamsRef, {
+        teamName: name, teamType: type, confirmed: false,
+        station1:0,station2:0,station3:0,station4:0,
+        station5:0,station6:0,station7:0,station8:0,
+        total:0
+      });
+    }
+
+    // Update
+    async function updateTeam(id, data) {
+      await update(ref(db, `teams/${id}`), data);
+    }
+
+    // Delete
+    async function deleteTeam(id) {
+      if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
+        await remove(ref(db, `teams/${id}`));
+      }
+    }
+    window.deleteTeam = deleteTeam;
+
+    // Confirm
+    async function confirmTeam(id) {
+      if (confirm("Dieses Team bestätigen?")) {
+        await updateTeam(id, { confirmed: true });
+      }
+    }
+    window.confirmTeam = confirmTeam;
+
+    // Helpers
+    function isCompleted(team) {
+      const keys = team.teamType === "Normale Gruppe"
+        ? [1,2,3,4,5,6]
+        : [1,2,5,7,8];
+      return keys.every(i => (team[`station${i}`]||0) > 0);
+    }
+
+    function updateStationHeaders() {
+      // normale
+      ["th","th","th","th","th","th","th","th"].forEach((_,i) => {
+        document.querySelectorAll("#confirmedNormalTable thead th")[2+i].textContent = stationNames[i];
+      });
+      // kinder (1,2,5,7,8)
+      [0,1,4,6,7].forEach((si, idx) => {
+        document.querySelectorAll("#confirmedKinderTable thead th")[2+idx].textContent = stationNames[si];
+      });
+    }
+
+    function updateDashboard() {
+      const total = globalTeams.length;
+      const confirmed = globalTeams.filter(t=>t.confirmed).length;
+      const pending = total - confirmed;
+      const completed = globalTeams.filter(isCompleted).length;
+      const kinder = globalTeams.filter(t=>t.teamType==="Kindergruppe").length;
+      const normal = globalTeams.filter(t=>t.teamType==="Normale Gruppe").length;
+      document.getElementById("dashboard").innerHTML = `
+        <div class="dashboard-row">
+          <span class="stat">Alle Teams: ${total}</span>
+          <span class="stat">Bestätigt: ${confirmed}</span>
+          <span class="stat">Nicht angemeldet: ${pending}</span>
+          <span class="stat">Fertig: ${completed}</span>
+          <span class="stat">Kindergruppen: ${kinder}</span>
+          <span class="stat">Normale Gruppen: ${normal}</span>
+        </div>`;
+    }
+
+    // Rendering Tables
+    function renderTables() {
+      const confirmed = globalTeams.filter(t=>t.confirmed);
+      const normal = confirmed.filter(t=>t.teamType==="Normale Gruppe").sort((a,b)=>b.total-a.total);
+      const kinder = confirmed.filter(t=>t.teamType==="Kindergruppe").sort((a,b)=>b.total-a.total);
+      const tentative = globalTeams.filter(t=>!t.confirmed);
+      renderNormal("confirmedNormalTable", normal);
+      renderKinder("confirmedKinderTable", kinder);
+      renderTentative("tentativeTable", tentative);
+    }
+
+    function renderNormal(id, teams) {
+      const tbody = document.querySelector(`#${id} tbody`); tbody.innerHTML="";
+      teams.forEach(team=>{
+        const tr = document.createElement("tr"); tr.dataset.teamId=team.id;
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType}</td>
+          <td>${team.station1}</td><td>${team.station2}</td><td>${team.station3}</td>
+          <td>${team.station4}</td><td>${team.station5}</td><td>${team.station6}</td>
+          <td>${team.total}</td>
+          <td>${isCompleted(team)?"done":"open"}</td>
+          <td>
+            <button onclick="editTeam('${team.id}')">Bearbeiten</button>
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderKinder(id, teams) {
+      const tbody = document.querySelector(`#${id} tbody`); tbody.innerHTML="";
+      teams.forEach(team=>{
+        const tr = document.createElement("tr"); tr.dataset.teamId=team.id;
+        tr.innerHTML=`
+          <td>${team.teamName}</td><td>${team.teamType}</td>
+          <td>${team.station1}</td><td>${team.station2}</td><td>${team.station5}</td>
+          <td>${team.station7}</td><td>${team.station8}</td>
+          <td>${team.total}</td>
+          <td>${isCompleted(team)?"done":"open"}</td>
+          <td>
+            <button onclick="editTeam('${team.id}')">Bearbeiten</button>
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderTentative(id, teams) {
+      const tbody = document.querySelector(`#${id} tbody`); tbody.innerHTML="";
+      teams.forEach(team=>{
+        const tr=document.createElement("tr"); tr.dataset.teamId=team.id;
+        tr.innerHTML=`
+          <td>${team.teamName}</td><td>${team.teamType}</td>
+          <td>
+            <button onclick="confirmTeam('${team.id}')">Bestätigen</button>
+            <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Editieren
+    function editTeam(id) {
+      const team = globalTeams.find(t=>t.id===id);
+      const tr = document.querySelector(`tr[data-team-id='${id}']`);
+      if (!team||!tr) return;
+      const keys = team.teamType==="Normale Gruppe" ? [1,2,3,4,5,6] : [1,2,5,7,8];
+      tr.innerHTML = `
+        <td>${team.teamName}</td>
+        <td>${team.teamType}</td>
+        ${keys.map(i=>`<td><input type="number" min="0" id="st${i}-${id}" value="${team['station'+i]}" style="width:60px"></td>`).join("")}
+        <td><span id="total-${id}">${team.total}</span></td>
+        <td>${isCompleted(team)?"done":"open"}</td>
+        <td>
+          <button onclick="saveTeam('${id}')">Speichern</button>
+          <button onclick="cancelEdit()">Abbrechen</button>
+        </td>`;
+      keys.forEach(i=>{
+        document.getElementById(`st${i}-${id}`)
+          .addEventListener("input",()=>updateRowTotal(id, team.teamType, keys));
+      });
+    }
+    window.editTeam = editTeam;
+
+    function updateRowTotal(id, type, keys) {
+      let sum=0;
+      keys.forEach(i=>{
+        sum += parseInt(document.getElementById(`st${i}-${id}`).value)||0;
+      });
+      document.getElementById(`total-${id}`).textContent = sum;
+    }
+
+    async function saveTeam(id) {
+      const team = globalTeams.find(t=>t.id===id);
+      const keys = team.teamType==="Normale Gruppe" ? [1,2,3,4,5,6] : [1,2,5,7,8];
+      const data = {};
+      let sum=0;
+      for (let i=1;i<=8;i++){
+        if (keys.includes(i)) {
+          const v = parseInt(document.getElementById(`st${i}-${id}`).value)||0;
+          data[`station${i}`] = v;
+          sum += v;
+        }
+      }
+      data.total = sum;
+      await updateTeam(id, data);
+    }
+    window.saveTeam = saveTeam;
+
+    function cancelEdit() {
+      renderTables();
+    }
+    window.cancelEdit = cancelEdit;
+
+    // Ranking
+    function renderRanking() {
+      const norm = globalTeams.filter(t=>t.confirmed&&t.teamType==="Normale Gruppe").sort((a,b)=>b.total-a.total);
+      const kind = globalTeams.filter(t=>t.confirmed&&t.teamType==="Kindergruppe").sort((a,b)=>b.total-a.total);
+      const nb = document.getElementById("rankingNormalBody");
+      const kb = document.getElementById("rankingKinderBody");
+      nb.innerHTML=""; kb.innerHTML="";
+      norm.forEach((t,i)=> {
+        const done = [1,2,3,4,5,6].filter(n=>t[`station${n}`]>0).length;
+        nb.innerHTML += `<tr><td>${i+1}</td><td>${t.teamName}</td><td>${t.total}</td><td>${done}</td></tr>`;
+      });
+      kind.forEach((t,i)=> {
+        const done = [1,2,5,7,8].filter(n=>t[`station${n}`]>0).length;
+        kb.innerHTML += `<tr><td>${i+1}</td><td>${t.teamName}</td><td>${t.total}</td><td>${done}</td></tr>`;
+      });
+    }
+
+    // CSV Export & Theme
+    function exportTeamsCSV() {
+      let csv = "Team Name,Team Typ,St1,St2,St3,St4,St5,St6,St7,St8,Gesamt,Status\n";
+      globalTeams.forEach(t=>{
+        const status = t.confirmed ? (isCompleted(t)?"done":"open") : "Vormerkung";
+        csv += [
+          t.teamName, t.teamType,
+          t.station1,t.station2,t.station3,t.station4,
+          t.station5,t.station6,t.station7,t.station8,
+          t.total, status
+        ].join(",") + "\n";
+      });
+      const link = document.createElement("a");
+      link.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      link.download = "teams_export.csv";
+      link.click();
+    }
+
+    function toggleTheme() {
+      const r = document.documentElement;
+      if (r.style.getPropertyValue("--bg-color")==="#121212") {
+        r.style.setProperty("--bg-color","#f5f5f5");
+        r.style.setProperty("--text-color","#333");
+        r.style.setProperty("--header-bg","#ddd");
+        r.style.setProperty("--container-bg","#fff");
+        r.style.setProperty("--button-bg","#ccc");
+        r.style.setProperty("--button-border","#bbb");
+        r.style.setProperty("--button-hover","#aaa");
+        r.style.setProperty("--input-bg","#fff");
+        r.style.setProperty("--input-border","#ccc");
+        r.style.setProperty("--card-bg","#fff");
+      } else {
+        r.style.setProperty("--bg-color","#121212");
+        r.style.setProperty("--text-color","#e0e0e0");
+        r.style.setProperty("--header-bg","#1e1e1e");
+        r.style.setProperty("--container-bg","#1e1e1e");
+        r.style.setProperty("--button-bg","#333");
+        r.style.setProperty("--button-border","#444");
+        r.style.setProperty("--button-hover","#555");
+        r.style.setProperty("--input-bg","#222");
+        r.style.setProperty("--input-border","#555");
+        r.style.setProperty("--card-bg","#1e1e1e");
+      }
+    }
+
+    // Modals
+    function openRankingModal() { document.getElementById("rankingModal").style.display="block"; }
+    function closeRankingModal(){ document.getElementById("rankingModal").style.display="none"; }
+    function openNewTeamModal(){ document.getElementById("newTeamModal").style.display="block"; }
+    function closeNewTeamModal(){ document.getElementById("newTeamModal").style.display="none"; }
+    window.openRankingModal = openRankingModal;
+    window.closeRankingModal = closeRankingModal;
+    window.openNewTeamModal = openNewTeamModal;
+    window.closeNewTeamModal = closeNewTeamModal;
+
+    async function clearDatabase() {
+      if (!confirm("Wirklich ALLE Teams löschen?")) return;
+      const snapshot = await teamsRef.get();
+      snapshot.forEach(snap => remove(ref(db, `teams/${snap.key}`)));
+    }
+    window.clearDatabase = clearDatabase;
+
+    // Neues Team-Formular
+    document.getElementById("newTeamForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const name = document.getElementById("teamName").value.trim();
+      const type = document.getElementById("teamType").value;
+      if (!name||!type) return;
+      try {
+        await addTeam(name, type);
+        document.getElementById("newTeamForm").reset();
+        document.getElementById("newTeamFeedback").textContent = "Team erfolgreich hinzugefügt!";
+      } catch {
+        document.getElementById("newTeamFeedback").textContent = "Fehler beim Hinzufügen!";
+      }
+    });
+
+  </script>
+</body>
+</html>
