@@ -4,11 +4,7 @@
   <meta charset="UTF-8">
   <title>Admin Panel – Bali-Cup 2025</title>
   <style>
-    /* ------------------ Eigene Anpassungen für Bearbeitung der Schätzung und automatische Punkteberechnung ------------------ */
-    /* Hier wurden z. B. keine zusätzlichen Styles benötigt – die Funktionalität wird per JavaScript gesteuert.
-       Alle farblichen Anpassungen erfolgen über die nachfolgenden CSS-Variablen. */
-    
-    /* ------------------ Füge den folgenden CSS Code ein (Dark Mode Standard – CSS Variablen) ------------------ */
+    /* Dark Mode Standard – CSS Variablen */
     :root {
       --bg-color: #121212;
       --text-color: #e0e0e0;
@@ -334,7 +330,7 @@
       <div class="reset-info">
         Nächster Check in: <span id="countdown">60</span> Sekunden
       </div>
-      <button class="manual-reset-btn admin-btn" onclick="manualReset()">Manuelle Aktualisierung</button>
+      <button class="manual-reset-btn" onclick="manualReset()">Manuelle Aktualisierung</button>
       <div class="stations-grid" id="stationsGrid">
         <!-- Dynamische Inhalte (renderStations) -->
       </div>
@@ -351,6 +347,9 @@
     <div class="table-section">
       <h2>Bestätigte Teams – Normale Gruppen</h2>
       <input type="text" id="searchNormal" class="search-input" placeholder="Suche in normalen Gruppen...">
+      <!-- 
+        Für Normale Gruppen: Stationen 1..6
+      -->
       <table id="confirmedNormalTable">
         <thead>
           <tr>
@@ -376,6 +375,9 @@
     <div class="table-section">
       <h2>Bestätigte Teams – Kindergruppen</h2>
       <input type="text" id="searchKinder" class="search-input" placeholder="Suche in Kindergruppen...">
+      <!-- 
+        Für Kindergruppen: Stationen 1,2,5,7,8
+      -->
       <table id="confirmedKinderTable">
         <thead>
           <tr>
@@ -478,7 +480,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
-    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
     let globalTeams = [];
     let globalStationSessions = {};
@@ -488,22 +490,22 @@
     let countdownTime = 60; // in Sekunden
     let countdownInterval;
 
-    // Stationennamen (fest im Code)
+    // Stationennamen werden NUR im Code festgelegt (keine Änderung über Website):
     const stationNames = [
-      "Schätzspiel",    // Station 1
-      "Limbo-Tanz",     // Station 2
-      "Floßbau",        // Station 3
-      "Puzzle auf dem See", // Station 4
-      "Aqua-Memory",    // Station 5
-      "Piratenplanke",  // Station 6
+      "Schätzspiel",   // Station 1
+      "Limbo-Tanz",      // Station 2
+      "Floßbau",         // Station 3
+      "Puzzle auf dem See",   // Station 4
+      "Aqua-Memory",     // Station 5
+      "Piratenplanke",     // Station 6
       "Piratenschatz",  // Station 7
-      "Sandburgen bauen"// Station 8
+      "Sandburgen bauen" // Station 8
     ];
 
     /* --------------------- Login und Initialisierung --------------------- */
     function checkAdminPassword() {
       const input = document.getElementById("loginPassword").value;
-      // Passwort: "112"
+      // Passwort ist "112"
       if (input === "112") {
         document.getElementById("loginModal").style.display = "none";
         initAdminPanel();
@@ -558,6 +560,7 @@
         const teamType = document.getElementById("teamType").value;
         if (!teamName || !teamType) return;
         try {
+          // Alle Stationen als 0 anlegen
           await addDoc(collection(db, "teams"), {
             teamName: teamName,
             teamType: teamType,
@@ -570,8 +573,7 @@
             station6: 0,
             station7: 0,
             station8: 0,
-            total: 0,
-            guess_station1: 0
+            total: 0
           });
           document.getElementById("newTeamForm").reset();
           document.getElementById("newTeamFeedback").textContent = "Team erfolgreich hinzugefügt!";
@@ -581,12 +583,15 @@
         }
       });
 
+      // Überschriften der Tabellen anpassen
       updateStationHeaders();
+      // Starte den Countdown für den Reset-Mechanismus
       startCountdown();
     }
 
     /* --------------------- Stationen-Namen in Tabellen-Header einsetzen --------------------- */
     function updateStationHeaders() {
+      // Normale Gruppen (Stationen 1..6)
       document.getElementById("thNormalSt1").textContent = stationNames[0];
       document.getElementById("thNormalSt2").textContent = stationNames[1];
       document.getElementById("thNormalSt3").textContent = stationNames[2];
@@ -594,6 +599,7 @@
       document.getElementById("thNormalSt5").textContent = stationNames[4];
       document.getElementById("thNormalSt6").textContent = stationNames[5];
 
+      // Kindergruppen (Stationen 1,2,5,7,8)
       document.getElementById("thKinderSt1").textContent = stationNames[0];
       document.getElementById("thKinderSt2").textContent = stationNames[1];
       document.getElementById("thKinderSt5").textContent = stationNames[4];
@@ -644,7 +650,7 @@
       }
     }
 
-    /* --------------------- Reset aller 8 Stationen --------------------- */
+    /* --------------------- Zusätzliche Funktion: Reset aller 8 Stationen --------------------- */
     async function resetAllStations() {
       for (let i = 1; i <= 8; i++) {
         const stationId = "station" + i;
@@ -658,13 +664,18 @@
 
     /* --------------------- Countdown und manueller Reset --------------------- */
     function startCountdown() {
+      // Setze Countdown-Zeit auf 60 Sekunden
       countdownTime = 60;
       updateCountdownDisplay();
+
+      // Starte ein Intervall, das jede Sekunde den Countdown dekrementiert
       countdownInterval = setInterval(async () => {
         countdownTime--;
         updateCountdownDisplay();
         if (countdownTime <= 0) {
+          // Führe den Reset aus
           await resetAllStations();
+          // Reset countdown
           countdownTime = 60;
           updateCountdownDisplay();
         }
@@ -678,14 +689,20 @@
       }
     }
 
+    // Manuelle Reset-Funktion, ausgelöst durch den Button
     async function manualReset() {
+      // Setze alle Stationen zurück
       await resetAllStations();
+      // Setze den Countdown zurück
       countdownTime = 60;
       updateCountdownDisplay();
     }
     window.manualReset = manualReset;
 
     /* --------------------- Hilfsfunktionen --------------------- */
+    // Prüft, ob ein Team alle relevanten Stationen > 0 hat
+    // Normale Gruppe: Stationen 1..6
+    // Kindergruppe: Stationen 1,2,5,7,8
     function isCompleted(team) {
       if (team.teamType === "Normale Gruppe") {
         for (let i = 1; i <= 6; i++) {
@@ -695,6 +712,7 @@
         }
         return true;
       } else {
+        // Kindergruppe => 1,2,5,7,8
         for (let st of [1,2,5,7,8]) {
           if (!team["station" + st] || team["station" + st] === 0) {
             return false;
@@ -709,14 +727,18 @@
       const confirmed = globalTeams.filter(team => team.confirmed);
       const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
       const confirmedKinder = confirmed.filter(team => team.teamType === "Kindergruppe");
+      // Sortierung: zuerst nach "nicht abgeschlossen" vs. "abgeschlossen", dann nach Punkten
       confirmedNormal.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
       confirmedKinder.sort((a, b) => (isCompleted(a) - isCompleted(b)) || (b.total - a.total));
+
       const tentative = globalTeams.filter(team => !team.confirmed);
+
       renderNormalTable("confirmedNormalTable", confirmedNormal, true);
       renderKinderTable("confirmedKinderTable", confirmedKinder, true);
       renderTentativeTable("tentativeTable", tentative);
     }
 
+    // Normale Gruppen: Stationen 1..6
     function renderNormalTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
@@ -736,7 +758,7 @@
           <td>${team.total || 0}</td>
           <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
           <td>
-            ${canEdit ? `<button onclick="editGuess('${team.id}')">Schätzung bearbeiten</button>` : ""}
+            ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
             <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
           </td>
         `;
@@ -744,6 +766,7 @@
       });
     }
 
+    // Kindergruppen: Stationen 1,2,5,7,8
     function renderKinderTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
@@ -762,7 +785,7 @@
           <td>${team.total || 0}</td>
           <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
           <td>
-            ${canEdit ? `<button onclick="editGuess('${team.id}')">Schätzung bearbeiten</button>` : ""}
+            ${canEdit ? `<button onclick="editTeam('${team.id}')">Bearbeiten</button>` : ""}
             <button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button>
           </td>
         `;
@@ -789,110 +812,12 @@
       });
     }
 
-    /* --------------------- Nur Schätzung (guess_station1) editieren --------------------- */
-    function editGuess(teamId) {
-      const team = globalTeams.find(t => t.id === teamId);
-      if (!team) return;
-      const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
-      if (!tr) return;
-      tr.innerHTML = `
-        <td>${team.teamName}</td>
-        <td>${team.teamType || "-"}</td>
-        <td colspan="7">
-          <label>Schätzung für Station 1:</label>
-          <input type="number" min="0" value="${team.guess_station1 || 0}" id="edit-guess-${teamId}" style="width:80px;">
-          <span> (Station 1 wird automatisch ausgerechnet)</span>
-        </td>
-        <td>
-          <button onclick="saveGuess('${team.id}')">Speichern</button>
-          <button onclick="cancelGuessEdit()">Abbrechen</button>
-        </td>
-      `;
-    }
-    window.editGuess = editGuess;
-
-    async function saveGuess(teamId) {
-      const input = document.getElementById(`edit-guess-${teamId}`);
-      if (!input) return;
-      const guessValue = parseInt(input.value, 10) || 0;
-      // Update guess_station1 – Punkte werden über recalcStation1Scores neu berechnet
-      try {
-        await updateDoc(doc(db, "teams", teamId), { guess_station1: guessValue });
-        // Nach dem Speichern sofort die Punkte neu berechnen
-        recalcStation1Scores();
-      } catch (err) {
-        console.error("Fehler beim Speichern der Schätzung:", err);
-      }
-    }
-    window.saveGuess = saveGuess;
-    window.cancelGuessEdit = function() { renderTables(); };
-
-    /* --------------------- Punkte-Neuberechnung für Station 1 --------------------- */
-    async function recalcStation1Scores() {
-      // Hole den Zielwert aus der Collection "stationTargets", Dokument "station1"
-      const targetDoc = await getDoc(doc(db, "stationTargets", "station1"));
-      if (!targetDoc.exists()) {
-        console.error("Kein Richtwert für Station 1 gefunden!");
-        return;
-      }
-      const target = targetDoc.data().target;
-
-      const teamsRef = collection(db, "teams");
-      // Hole alle bestätigten Teams, die eine Schätzung abgegeben haben (guess_station1 > 0)
-      const qConfirmed = await getDocs(query(teamsRef, where("confirmed", "==", true), where("guess_station1", ">", 0)));
-      
-      const normalTeams = [];
-      const kinderTeams = [];
-      
-      qConfirmed.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.teamType === "Normale Gruppe") {
-          normalTeams.push({ id: docSnap.id, guess: data.guess_station1, teamData: data });
-        } else if (data.teamType === "Kindergruppe") {
-          kinderTeams.push({ id: docSnap.id, guess: data.guess_station1, teamData: data });
-        }
-      });
-
-      // Für Normale Gruppen getrennt berechnen
-      normalTeams.forEach(team => {
-        team.diff = Math.abs(team.guess - target);
-      });
-      normalTeams.sort((a, b) => a.diff - b.diff);
-      normalTeams.forEach((team, index) => {
-        team.newPoints = normalTeams.length - index;
-      });
-
-      // Für Kindergruppen getrennt berechnen
-      kinderTeams.forEach(team => {
-        team.diff = Math.abs(team.guess - target);
-      });
-      kinderTeams.sort((a, b) => a.diff - b.diff);
-      kinderTeams.forEach((team, index) => {
-        team.newPoints = kinderTeams.length - index;
-      });
-
-      // Aktualisiere alle Teams (nur Station 1 und total)
-      const allTeams = normalTeams.concat(kinderTeams);
-      for (const team of allTeams) {
-        const teamData = team.teamData;
-        teamData["station1"] = team.newPoints;
-        let newTotal = 0;
-        for (let i = 1; i <= 8; i++) {
-          newTotal += teamData["station" + i] || 0;
-        }
-        const updateData = {
-          ["station1"]: team.newPoints,
-          total: newTotal
-        };
-        await updateDoc(doc(db, "teams", team.id), updateData);
-      }
-      renderTables();
-    }
-
     /* --------------------- Ranking rendern --------------------- */
     function renderRanking() {
+      // Ranking nur für bestätigte Teams
       const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe" && team.confirmed);
       normalTeams.sort((a, b) => b.total - a.total);
+
       const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe" && team.confirmed);
       kinderTeams.sort((a, b) => b.total - a.total);
 
@@ -900,6 +825,7 @@
       const kinderTbody = document.getElementById("rankingKinderBody");
       if (!normalTbody || !kinderTbody) return;
 
+      // Normale Gruppen => Stationen 1..6
       normalTbody.innerHTML = "";
       normalTeams.forEach((team, index) => {
         let completedStations = 0;
@@ -916,6 +842,7 @@
         normalTbody.appendChild(row);
       });
 
+      // Kindergruppen => Stationen 1,2,5,7,8
       kinderTbody.innerHTML = "";
       kinderTeams.forEach((team, index) => {
         let completedStations = 0;
@@ -934,6 +861,111 @@
     }
 
     /* --------------------- CRUD-Funktionen (Teams) --------------------- */
+    function editTeam(teamId) {
+      const team = globalTeams.find(t => t.id === teamId);
+      if (!team) return;
+
+      // Finde die passende Tabellenzeile
+      const tr = document.querySelector(`tr[data-team-id='${teamId}']`);
+      if (!tr) return;
+
+      if (team.teamType === "Normale Gruppe") {
+        // Stationen 1..6
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td><input type="number" min="0" value="${team.station1 || 0}" id="edit-st1-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station2 || 0}" id="edit-st2-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station3 || 0}" id="edit-st3-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station4 || 0}" id="edit-st4-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station6 || 0}" id="edit-st6-${teamId}" style="width:60px;"></td>
+          <td id="total-${teamId}">${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            <button onclick="saveTeam('${team.id}')">Speichern</button>
+            <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
+          </td>
+        `;
+        [1,2,3,4,5,6].forEach(i => {
+          document.getElementById(`edit-st${i}-${teamId}`).addEventListener("input", () => {
+            updateRowTotal(teamId, "Normale Gruppe");
+          });
+        });
+      } else {
+        // Kindergruppe => Stationen 1,2,5,7,8
+        tr.innerHTML = `
+          <td>${team.teamName}</td>
+          <td>${team.teamType || "-"}</td>
+          <td><input type="number" min="0" value="${team.station1 || 0}" id="edit-st1-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station2 || 0}" id="edit-st2-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station5 || 0}" id="edit-st5-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station7 || 0}" id="edit-st7-${teamId}" style="width:60px;"></td>
+          <td><input type="number" min="0" value="${team.station8 || 0}" id="edit-st8-${teamId}" style="width:60px;"></td>
+          <td id="total-${teamId}">${team.total || 0}</td>
+          <td>${isCompleted(team) ? "<span class='completed'>Abgeschlossen</span>" : "offen"}</td>
+          <td>
+            <button onclick="saveTeam('${team.id}')">Speichern</button>
+            <button onclick="cancelEdit('${team.id}')">Abbrechen</button>
+          </td>
+        `;
+        [1,2,5,7,8].forEach(st => {
+          document.getElementById(`edit-st${st}-${teamId}`).addEventListener("input", () => {
+            updateRowTotal(teamId, "Kindergruppe");
+          });
+        });
+      }
+    }
+    window.editTeam = editTeam;
+
+    function updateRowTotal(teamId, groupType) {
+      let total = 0;
+      if (groupType === "Normale Gruppe") {
+        [1,2,3,4,5,6].forEach(i => {
+          total += parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        });
+      } else {
+        [1,2,5,7,8].forEach(st => {
+          total += parseInt(document.getElementById(`edit-st${st}-${teamId}`).value, 10) || 0;
+        });
+      }
+      document.getElementById(`total-${teamId}`).textContent = total;
+    }
+
+    async function saveTeam(teamId) {
+      const team = globalTeams.find(t => t.id === teamId);
+      if (!team) return;
+
+      const newData = {};
+      if (team.teamType === "Normale Gruppe") {
+        // Stationen 1..6
+        [1,2,3,4,5,6].forEach(i => {
+          newData["station" + i] = parseInt(document.getElementById(`edit-st${i}-${teamId}`).value, 10) || 0;
+        });
+        newData.total = 0;
+        [1,2,3,4,5,6].forEach(i => {
+          newData.total += newData["station" + i];
+        });
+      } else {
+        // Kindergruppe => 1,2,5,7,8
+        [1,2,5,7,8].forEach(st => {
+          newData["station" + st] = parseInt(document.getElementById(`edit-st${st}-${teamId}`).value, 10) || 0;
+        });
+        newData.total = 0;
+        [1,2,5,7,8].forEach(st => {
+          newData.total += newData["station" + st];
+        });
+      }
+
+      await updateDoc(doc(db, "teams", teamId), newData);
+    }
+    window.saveTeam = saveTeam;
+
+    function cancelEdit(teamId) {
+      renderTables();
+    }
+    window.cancelEdit = cancelEdit;
+
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
         await deleteDoc(doc(db, "teams", teamId));
@@ -951,6 +983,8 @@
     /* --------------------- CSV Export und Theme Toggle --------------------- */
     function exportTeamsCSV() {
       let csvContent = "data:text/csv;charset=utf-8,";
+      // Wir listen alle 8 Stationen in der CSV, 
+      // der Wert kann 0 sein, falls für diese Gruppe nicht relevant
       const headers = [
         "Team Name","Team Typ",
         "Station1","Station2","Station3","Station4",
@@ -990,9 +1024,8 @@
 
     function toggleTheme() {
       const root = document.documentElement;
-      // Prüfe, ob wir bereits im Dark Mode sind (--bg-color wird gesetzt)
-      if (root.style.getPropertyValue("--bg-color") === "#121212") {
-        // Wechsel zu Light Mode
+      if (root.style.getPropertyValue("--bg-color") === "#121212" || !root.style.getPropertyValue("--bg-color")) {
+        // Wechsle zu Light Mode
         root.style.setProperty("--bg-color", "#f5f5f5");
         root.style.setProperty("--text-color", "#333");
         root.style.setProperty("--header-bg", "#ddd");
@@ -1003,7 +1036,7 @@
         root.style.setProperty("--input-bg", "#fff");
         root.style.setProperty("--input-border", "#ccc");
       } else {
-        // Wechsel zu Dark Mode
+        // Wechsle zu Dark Mode
         root.style.setProperty("--bg-color", "#121212");
         root.style.setProperty("--text-color", "#e0e0e0");
         root.style.setProperty("--header-bg", "#1e1e1e");
@@ -1037,15 +1070,6 @@
     window.openNewTeamModal = openNewTeamModal;
     window.closeNewTeamModal = closeNewTeamModal;
 
-    /* --------------------- Funktion zum Leeren der Datenbank --------------------- */
-    async function clearDatabase() {
-      if (!confirm("Wirklich ALLE Teams löschen?")) return;
-      const snapshot = await getDocs(collection(db, "teams"));
-      snapshot.forEach(async (docSnap) => {
-        await deleteDoc(doc(db, "teams", docSnap.id));
-      });
-    }
-    window.clearDatabase = clearDatabase;
   </script>
 </body>
 </html>
