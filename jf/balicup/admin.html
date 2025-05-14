@@ -56,7 +56,6 @@
       box-shadow: 0 2px 6px var(--card-shadow);
       margin-bottom: 20px;
     }
-    /* Neuer Container, der die Statistiken in einer Zeile anzeigt */
     .dashboard-row {
       display: flex;
       justify-content: space-between;
@@ -114,7 +113,6 @@
     .table-section h2 {
       margin-top: 40px;
     }
-    /* Admin-Buttons */
     .admin-btn {
       padding: 10px 15px;
       background-color: var(--button-bg);
@@ -136,7 +134,6 @@
     .clear-db-btn:hover {
       background-color: var(--delete-hover);
     }
-    /* Suchfelder */
     .search-input {
       width: 300px;
       padding: 6px;
@@ -165,16 +162,18 @@
       border-radius: 4px;
       text-align: center;
     }
-    #loginModal input {
-      width: 80%;
-      padding: 10px;
-      margin: 10px auto;
-      display: block;
-      background-color: var(--input-bg);
-      border: 1px solid var(--input-border);
-      color: var(--text-color);
-    }
     /* Neues Team Modal */
+    #newTeamModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 1001; /* oberhalb login */
+    }
     #newTeamModal .modal-content {
       background-color: var(--container-bg);
       margin: 10% auto;
@@ -185,29 +184,8 @@
       border-radius: 4px;
       position: relative;
     }
-    #newTeamModal label,
-    #newTeamModal input,
-    #newTeamModal select,
-    #newTeamModal button {
-      display: block;
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    #newTeamModal input,
-    #newTeamModal select {
-      padding: 8px;
-      box-sizing: border-box;
-      background-color: var(--input-bg);
-      border: 1px solid var(--input-border);
-      color: var(--text-color);
-    }
-    #newTeamModal button {
-      width: auto;
-      margin: 0 auto;
-      display: block;
-    }
-    /* Modal Popup (Ranking, Neues Team) */
-    .modal-popup {
+    /* Ranking Modal */
+    #rankingModal {
       display: none;
       position: fixed;
       z-index: 100;
@@ -218,7 +196,7 @@
       overflow: auto;
       background-color: rgba(0,0,0,0.5);
     }
-    .modal-popup .modal-content {
+    #rankingModal .modal-content {
       background-color: var(--container-bg);
       margin: 10% auto;
       padding: 20px;
@@ -266,9 +244,7 @@
 
   <div class="container">
     <!-- Dashboard -->
-    <div class="dashboard" id="dashboard">
-      <!-- Dynamische Inhalte -->
-    </div>
+    <div class="dashboard" id="dashboard"></div>
 
     <!-- Admin-Funktionen -->
     <button class="admin-btn" onclick="exportTeamsCSV()">Export als CSV</button>
@@ -346,7 +322,7 @@
   </div>
 
   <!-- Ranking Modal -->
-  <div id="rankingModal" class="modal-popup">
+  <div id="rankingModal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeRankingModal()">✖</button>
       <h2>Top Ranking – Normale Gruppen</h2>
@@ -381,7 +357,7 @@
   </div>
 
   <!-- Neues Team Modal -->
-  <div id="newTeamModal" class="modal-popup">
+  <div id="newTeamModal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeNewTeamModal()">✖</button>
       <h2>Neues Team hinzufügen</h2>
@@ -408,13 +384,22 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-analytics.js";
-    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, setDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-    
+    import {
+      getFirestore,
+      collection,
+      onSnapshot,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
     let globalTeams = [];
     let db;
-    
+
     const stationNames = [
-      "Schätzspiel",  // ehemals Schätzspiel
+      "Schätzspiel",
       "Limbo Tanz",
       "Floßbau",
       "Puzzle auf dem See",
@@ -423,7 +408,7 @@
       "Piratenschatz",
       "Sandburg bauen"
     ];
-    
+
     /* --------------------- Login und Initialisierung --------------------- */
     function checkAdminPassword() {
       const input = document.getElementById("loginPassword").value;
@@ -435,7 +420,7 @@
       }
     }
     window.checkAdminPassword = checkAdminPassword;
-    
+
     function initAdminPanel() {
       const firebaseConfig = {
         apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
@@ -447,10 +432,9 @@
         measurementId: "G-484CZNKVQ1"
       };
       const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
+      getAnalytics(app);
       db = getFirestore(app);
-      document.getElementById("versionDisplay").textContent = "Version: 1.0.3";
-    
+
       onSnapshot(collection(db, "teams"), (snapshot) => {
         globalTeams = [];
         snapshot.forEach((docSnap) => {
@@ -460,12 +444,15 @@
         renderRanking();
         updateDashboard();
       });
-    
+
       document.getElementById("newTeamForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
         const teamName = document.getElementById("teamName").value.trim();
         const teamType = document.getElementById("teamType").value;
-        if (!teamName || !teamType) return;
+        if (!teamName || !teamType) {
+          document.getElementById("newTeamFeedback").textContent = "Bitte alle Felder ausfüllen.";
+          return;
+        }
+        e.preventDefault();
         try {
           await addDoc(collection(db, "teams"), {
             teamName: teamName,
@@ -483,31 +470,31 @@
           });
           document.getElementById("newTeamForm").reset();
           document.getElementById("newTeamFeedback").textContent = "Team erfolgreich hinzugefügt!";
+          closeNewTeamModal();
         } catch (error) {
           console.error("Fehler beim Hinzufügen des Teams:", error);
           document.getElementById("newTeamFeedback").textContent = "Fehler beim Hinzufügen!";
         }
       });
-    
+
       updateStationHeaders();
     }
-    
+
     function updateStationHeaders() {
-      // Verwende stattdessen statische Bezeichnungen
       document.querySelectorAll("#confirmedNormalTable thead th")[2].textContent = stationNames[0];
       document.querySelectorAll("#confirmedNormalTable thead th")[3].textContent = stationNames[1];
       document.querySelectorAll("#confirmedNormalTable thead th")[4].textContent = stationNames[2];
       document.querySelectorAll("#confirmedNormalTable thead th")[5].textContent = stationNames[3];
       document.querySelectorAll("#confirmedNormalTable thead th")[6].textContent = stationNames[4];
       document.querySelectorAll("#confirmedNormalTable thead th")[7].textContent = stationNames[5];
-    
+
       document.querySelectorAll("#confirmedKinderTable thead th")[2].textContent = stationNames[0];
       document.querySelectorAll("#confirmedKinderTable thead th")[3].textContent = stationNames[1];
       document.querySelectorAll("#confirmedKinderTable thead th")[4].textContent = stationNames[4];
       document.querySelectorAll("#confirmedKinderTable thead th")[5].textContent = stationNames[6];
       document.querySelectorAll("#confirmedKinderTable thead th")[6].textContent = stationNames[7];
     }
-    
+
     function updateDashboard() {
       const total = globalTeams.length;
       const confirmed = globalTeams.filter(team => team.confirmed).length;
@@ -515,8 +502,7 @@
       const completed = globalTeams.filter(team => isCompleted(team)).length;
       const kinder = globalTeams.filter(team => team.teamType === "Kindergruppe").length;
       const normal = globalTeams.filter(team => team.teamType === "Normale Gruppe").length;
-    
-      // Alle Statistiken werden in einer einzigen Zeile als Flex-Container dargestellt.
+
       document.getElementById("dashboard").innerHTML = `
         <div class="dashboard-row">
           <span class="stat">Alle Teams: ${total}</span>
@@ -528,7 +514,7 @@
         </div>
       `;
     }
-    
+
     function isCompleted(team) {
       if (team.teamType === "Normale Gruppe") {
         for (let i = 1; i <= 6; i++) {
@@ -542,7 +528,7 @@
         return true;
       }
     }
-    
+
     function renderTables() {
       const confirmed = globalTeams.filter(team => team.confirmed);
       const confirmedNormal = confirmed.filter(team => team.teamType === "Normale Gruppe");
@@ -554,8 +540,7 @@
       renderKinderTable("confirmedKinderTable", confirmedKinder, true);
       renderTentativeTable("tentativeTable", tentative);
     }
-    
-    // Für Normale Gruppen: Station 1 bis 6 editierbar
+
     function renderNormalTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
@@ -582,8 +567,7 @@
         tbody.appendChild(tr);
       });
     }
-    
-    // Für Kindergruppen: Station 1, 2, 5, 7 und 8 editierbar
+
     function renderKinderTable(tableId, teams, canEdit) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
@@ -609,7 +593,7 @@
         tbody.appendChild(tr);
       });
     }
-    
+
     function renderTentativeTable(tableId, teams) {
       const tbody = document.querySelector(`#${tableId} tbody`);
       if (!tbody) return;
@@ -628,8 +612,7 @@
         tbody.appendChild(tr);
       });
     }
-    
-    /* --------------------- Bearbeitungsmodus: Alle Punkte editieren --------------------- */
+
     function editTeam(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
@@ -681,7 +664,7 @@
       }
     }
     window.editTeam = editTeam;
-    
+
     function updateRowTotal(teamId, groupType) {
       let total = 0;
       if (groupType === "Normale Gruppe") {
@@ -695,7 +678,7 @@
       }
       document.getElementById(`total-${teamId}`).textContent = total;
     }
-    
+
     async function saveTeam(teamId) {
       const team = globalTeams.find(t => t.id === teamId);
       if (!team) return;
@@ -714,7 +697,7 @@
         newTotal += newData["station" + i] || team["station" + i] || 0;
       }
       newData.total = newTotal;
-    
+
       try {
         await updateDoc(doc(db, "teams", teamId), newData);
       } catch (err) {
@@ -722,23 +705,23 @@
       }
     }
     window.saveTeam = saveTeam;
-    
+
     function cancelEdit(teamId) {
       renderTables();
     }
     window.cancelEdit = cancelEdit;
-    
+
     /* --------------------- Ranking rendern --------------------- */
     function renderRanking() {
       const normalTeams = globalTeams.filter(team => team.teamType === "Normale Gruppe" && team.confirmed);
       normalTeams.sort((a, b) => b.total - a.total);
       const kinderTeams = globalTeams.filter(team => team.teamType === "Kindergruppe" && team.confirmed);
       kinderTeams.sort((a, b) => b.total - a.total);
-    
+
       const normalTbody = document.getElementById("rankingNormalBody");
       const kinderTbody = document.getElementById("rankingKinderBody");
       if (!normalTbody || !kinderTbody) return;
-    
+
       normalTbody.innerHTML = "";
       normalTeams.forEach((team, index) => {
         let completedStations = 0;
@@ -754,7 +737,7 @@
         `;
         normalTbody.appendChild(row);
       });
-    
+
       kinderTbody.innerHTML = "";
       kinderTeams.forEach((team, index) => {
         let completedStations = 0;
@@ -771,7 +754,7 @@
         kinderTbody.appendChild(row);
       });
     }
-    
+
     /* --------------------- CRUD-Funktionen --------------------- */
     async function deleteTeam(teamId) {
       if (confirm("Soll dieses Team wirklich gelöscht werden?")) {
@@ -779,14 +762,14 @@
       }
     }
     window.deleteTeam = deleteTeam;
-    
+
     async function confirmTeam(teamId) {
       if (confirm("Dieses Team bestätigen?")) {
         await updateDoc(doc(db, "teams", teamId), { confirmed: true });
       }
     }
     window.confirmTeam = confirmTeam;
-    
+
     /* --------------------- CSV Export und Theme Toggle --------------------- */
     function exportTeamsCSV() {
       let csvContent = "data:text/csv;charset=utf-8,";
@@ -826,7 +809,7 @@
       document.body.removeChild(link);
     }
     window.exportTeamsCSV = exportTeamsCSV;
-    
+
     function toggleTheme() {
       const root = document.documentElement;
       if (root.style.getPropertyValue("--bg-color") === "#121212") {
@@ -854,7 +837,7 @@
       }
     }
     window.toggleTheme = toggleTheme;
-    
+
     /* --------------------- Ranking Modal Funktionen --------------------- */
     function openRankingModal() {
       document.getElementById("rankingModal").style.display = "block";
@@ -864,17 +847,18 @@
     }
     window.openRankingModal = openRankingModal;
     window.closeRankingModal = closeRankingModal;
-    
+
     /* --------------------- Neues Team Modal Funktionen --------------------- */
     function openNewTeamModal() {
       document.getElementById("newTeamModal").style.display = "block";
     }
     function closeNewTeamModal() {
       document.getElementById("newTeamModal").style.display = "none";
+      document.getElementById("newTeamFeedback").textContent = "";
     }
     window.openNewTeamModal = openNewTeamModal;
     window.closeNewTeamModal = closeNewTeamModal;
-    
+
     async function clearDatabase() {
       if (!confirm("Wirklich ALLE Teams löschen?")) return;
       const snapshot = await getDocs(collection(db, "teams"));
