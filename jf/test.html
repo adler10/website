@@ -97,6 +97,19 @@
     th {
       background: var(--button-bg);
     }
+    input[type="number"],
+    .search-input,
+    input[type="text"],
+    select,
+    input[type="password"] {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+      padding: 6px;
+      margin-bottom: 10px;
+      width: calc(100% - 14px);
+      border-radius: 3px;
+    }
     .delete-btn {
       background: var(--delete-bg);
       border: none;
@@ -131,15 +144,6 @@
       font-size: 1.2em; color: var(--text-color);
       cursor: pointer;
     }
-    input[type="number"], .search-input, input[type="text"], select, input[type="password"] {
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      color: var(--text-color);
-      padding: 6px;
-      margin-bottom: 10px;
-      width: calc(100% - 14px);
-      border-radius: 3px;
-    }
   </style>
 </head>
 <body>
@@ -163,9 +167,8 @@
     <button class="admin-btn" onclick="openNewTeamModal()">Neues Team</button>
     <button class="admin-btn" onclick="openRankingModal()">Ranking</button>
     <button class="admin-btn" onclick="toggleTheme()">Dark/Light</button>
-    <button class="clear-db-btn" onclick="clearDatabase()">DB leeren</button>
+    <button class="clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
 
-    <!-- Tabellen -->
     <div class="table-section">
       <h2>Bestätigte Teams – Normale Gruppen</h2>
       <input type="text" id="searchNormal" class="search-input" placeholder="Suche...">
@@ -214,12 +217,12 @@
       <button class="close-modal" onclick="closeRankingModal()">✖</button>
       <h2>Top Ranking – Normale</h2>
       <table>
-        <thead><tr><th>Platz</th><th>Name</th><th>Punkte</th><th>St. Abg.</th></tr></thead>
+        <thead><tr><th>Platz</th><th>Name</th><th>Punkte</th><th>Erledigte St.</th></tr></thead>
         <tbody id="rankingNormalBody"></tbody>
       </table>
       <h2>Top Ranking – Kinder</h2>
       <table>
-        <thead><tr><th>Platz</th><th>Name</th><th>Punkte</th><th>St. Abg.</th></tr></thead>
+        <thead><tr><th>Platz</th><th>Name</th><th>Punkte</th><th>Erledigte St.</th></tr></thead>
         <tbody id="rankingKinderBody"></tbody>
       </table>
     </div>
@@ -230,15 +233,13 @@
     <div class="modal-content">
       <button class="close-modal" onclick="closeNewTeamModal()">✖</button>
       <h2>Neues Team hinzufügen</h2>
-      <form id="newTeamForm">
-        <input type="text" id="teamName" placeholder="Team Name" required>
-        <select id="teamType" required>
-          <option value="" disabled selected>Typ wählen</option>
-          <option value="Normale Gruppe">Normale Gruppe</option>
-          <option value="Kindergruppe">Kindergruppe</option>
-        </select>
-        <button type="submit" class="admin-btn">Hinzufügen</button>
-      </form>
+      <input type="text" id="teamName" placeholder="Team Name" required>
+      <select id="teamType" required>
+        <option value="" disabled selected>Typ wählen</option>
+        <option value="Normale Gruppe">Normale Gruppe</option>
+        <option value="Kindergruppe">Kindergruppe</option>
+      </select>
+      <button id="addTeamBtn" type="button" class="admin-btn">Hinzufügen</button>
       <div id="newTeamFeedback"></div>
     </div>
   </div>
@@ -248,7 +249,6 @@
   </footer>
 
   <script>
-    // Supabase initialisieren
     const supabaseUrl = 'https://oyhonbsquujgkzrurgyo.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95aG9uYnNxdXVqZ2t6cnVyZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyOTk1MjEsImV4cCI6MjA2Mjg3NTUyMX0.6zP35KlaeD_hwEHK9AFxK34swFuTD2hEP5wtG0nRRgU';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -297,7 +297,6 @@
       renderRanking();
     }
 
-    // Dashboard
     function updateDashboard() {
       const total = globalTeams.length;
       const confirmed = globalTeams.filter(t => t.confirmed).length;
@@ -321,7 +320,6 @@
       return fields.every(i => team['station'+i] > 0);
     }
 
-    // Tabellen
     function renderTables() {
       renderNormalTable();
       renderKinderTable();
@@ -341,9 +339,7 @@
             ${[1,2,3,4,5,6].map(i => `<td><input type="number" value="${team['station'+i]||0}" onchange="updateField('${team.id}','station${i}',this.value)"></td>`).join('')}
             <td>${team.total||0}</td>
             <td>${isCompleted(team)?'✔︎':'–'}</td>
-            <td>
-              <button onclick="deleteTeam('${team.id}')">Löschen</button>
-            </td>`;
+            <td><button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button></td>`;
           tbody.appendChild(tr);
         });
     }
@@ -361,9 +357,7 @@
             ${[1,2,5,7,8].map(i => `<td><input type="number" value="${team['station'+i]||0}" onchange="updateField('${team.id}','station${i}',this.value)"></td>`).join('')}
             <td>${team.total||0}</td>
             <td>${isCompleted(team)?'✔︎':'–'}</td>
-            <td>
-              <button onclick="deleteTeam('${team.id}')">Löschen</button>
-            </td>`;
+            <td><button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button></td>`;
           tbody.appendChild(tr);
         });
     }
@@ -378,14 +372,13 @@
             <td>${team.teamName}</td>
             <td>${team.teamType}</td>
             <td>
-              <button onclick="confirmTeam('${team.id}')">✓</button>
+              <button class="admin-btn" onclick="confirmTeam('${team.id}')">Bestätigen</button>
               <button class="delete-btn" onclick="deleteTeam('${team.id}')">✖</button>
             </td>`;
           tbody.appendChild(tr);
         });
     }
 
-    // Ranking
     function renderRanking() {
       const normalBody = document.getElementById('rankingNormalBody');
       const kinderBody = document.getElementById('rankingKinderBody');
@@ -405,20 +398,14 @@
         });
     }
 
-    // CRUD
+    // CRUD helpers
     async function updateField(id, field, val) {
-      const value = parseInt(val)||0;
-      const newTotal = await supabase
-        .from('teams')
-        .select(`station1,station2,station3,station4,station5,station6,station7,station8`)
-        .eq('id', id)
-        .single()
-        .then(({ data }) => {
-          data[field] = value;
-          return Object.values(data).reduce((sum,n)=>sum+(n||0),0);
-        });
-      const payload = { [field]: value, total: newTotal };
-      await supabase.from('teams').update(payload).eq('id', id);
+      const value = parseInt(val) || 0;
+      // total neu berechnen
+      const { data: cur } = await supabase.from('teams').select('station1,station2,station3,station4,station5,station6,station7,station8').eq('id', id).single();
+      cur[field] = value;
+      const newTotal = Object.values(cur).reduce((sum,n)=> sum + (n||0), 0);
+      await supabase.from('teams').update({ [field]: value, total: newTotal }).eq('id', id);
       loadTeams();
     }
 
@@ -434,7 +421,7 @@
     }
 
     async function clearDatabase() {
-      if (!confirm('ALLE löschen?')) return;
+      if (!confirm('Alle Teams löschen?')) return;
       await supabase.from('teams').delete().neq('id','');
       loadTeams();
     }
@@ -459,36 +446,59 @@
       a.click();
     }
 
-    // Modals & Theme
-    function openRankingModal(){document.getElementById('rankingModal').style.display='block';}
-    function closeRankingModal(){document.getElementById('rankingModal').style.display='none';}
-    function openNewTeamModal(){document.getElementById('newTeamModal').style.display='block';}
-    function closeNewTeamModal(){document.getElementById('newTeamModal').style.display='none';}
-    window.openRankingModal=openRankingModal;
-    window.closeRankingModal=closeRankingModal;
-    window.openNewTeamModal=openNewTeamModal;
-    window.closeNewTeamModal=closeNewTeamModal;
-
     // Neues Team
-    document.getElementById('newTeamForm').addEventListener('submit', async e => {
-      e.preventDefault();
+    async function addTeam() {
       const name = document.getElementById('teamName').value.trim();
       const type = document.getElementById('teamType').value;
-      if (!name||!type) return;
-      await supabase.from('teams').insert([{ teamName:name, teamType:type, confirmed:false, station1:0,station2:0,station3:0,station4:0,station5:0,station6:0,station7:0,station8:0, total:0 }]);
-      document.getElementById('newTeamForm').reset();
-      document.getElementById('newTeamFeedback').textContent = 'Hinzugefügt!';
-      closeNewTeamModal();
-    });
+      const feedback = document.getElementById('newTeamFeedback');
+      if (!name || !type) {
+        feedback.textContent = 'Bitte Name und Typ ausfüllen.';
+        return;
+      }
+      const { error } = await supabase.from('teams').insert([{
+        teamName: name,
+        teamType: type,
+        confirmed: false,
+        station1:0,station2:0,station3:0,station4:0,
+        station5:0,station6:0,station7:0,station8:0,
+        total:0
+      }]);
+      if (error) {
+        feedback.textContent = 'Fehler beim Hinzufügen.';
+        console.error(error);
+      } else {
+        feedback.textContent = 'Team erfolgreich hinzugefügt!';
+        document.getElementById('teamName').value = '';
+        document.getElementById('teamType').value = '';
+        loadTeams();
+      }
+    }
+    document.getElementById('addTeamBtn').addEventListener('click', addTeam);
+
+    // Modals & Theme
+    function openRankingModal(){ document.getElementById('rankingModal').style.display='block'; }
+    function closeRankingModal(){ document.getElementById('rankingModal').style.display='none'; }
+    function openNewTeamModal(){ document.getElementById('newTeamModal').style.display='block'; }
+    function closeNewTeamModal(){ document.getElementById('newTeamModal').style.display='none'; }
+    window.openRankingModal = openRankingModal;
+    window.closeRankingModal = closeRankingModal;
+    window.openNewTeamModal = openNewTeamModal;
+    window.closeNewTeamModal = closeNewTeamModal;
 
     // Theme toggle
     function toggleTheme() {
       const root = document.documentElement;
       if (root.style.getPropertyValue('--bg-color') === '#121212') {
-        ['#f5f5f5','#333','#ddd','#fff','#ccc','#bbb','#aaa','#fff','#ccc','#333','#444','#555','#fff','#e0e0e0'].forEach((v,i)=>{
-          const vars = ['--bg-color','--text-color','--header-bg','--container-bg','--button-bg','--button-border','--button-hover','--input-bg','--input-border','--text-color','--button-border','--input-border','--card-bg','--text-color'];
-          root.style.setProperty(vars[i],v);
-        });
+        root.style.setProperty('--bg-color','#f5f5f5');
+        root.style.setProperty('--text-color','#333');
+        root.style.setProperty('--header-bg','#ddd');
+        root.style.setProperty('--container-bg','#fff');
+        root.style.setProperty('--button-bg','#ccc');
+        root.style.setProperty('--button-border','#bbb');
+        root.style.setProperty('--button-hover','#aaa');
+        root.style.setProperty('--input-bg','#fff');
+        root.style.setProperty('--input-border','#ccc');
+        root.style.setProperty('--card-bg','#fff');
       } else {
         root.style.setProperty('--bg-color','#121212');
         root.style.setProperty('--text-color','#e0e0e0');
