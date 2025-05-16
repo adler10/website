@@ -2,390 +2,272 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Panel – Bali-Cup 2025</title>
+  <title>Admin Panel – Bali‑Cup 2025</title>
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     :root {
-      --bg-color: #121212;
-      --text-color: #e0e0e0;
-      --header-bg: #1e1e1e;
-      --container-bg: #1e1e1e;
-      --button-bg: #333;
-      --button-border: #444;
-      --button-hover: #555;
-      --delete-bg: #d32f2f;
-      --delete-hover: #b71c1c;
-      --input-bg: #222;
-      --input-border: #555;
-      --card-bg: #1e1e1e;
-      --card-shadow: rgba(0, 0, 0, 0.3);
+      --bg: #121212; --fg: #e0e0e0;
+      --panel: #1e1e1e; --btn: #333; --btn-hover: #555;
+      --danger: #d32f2f; --danger-hover: #b71c1c;
+      --input-bg: #222; --input-border: #555;
     }
-    body { font-family: Arial, sans-serif; margin:0; background:var(--bg-color); color:var(--text-color); transition: .3s; }
-    header { text-align:center; padding:20px; background:var(--header-bg); border-bottom:1px solid var(--button-border); }
-    header h1 { margin:0; font-size:2em; }
-    .container { padding:20px; max-width:1200px; margin:0 auto; background:var(--container-bg); }
-    .dashboard { margin-bottom:20px; padding:20px; background:var(--container-bg); border-radius:8px; box-shadow:0 2px 6px var(--card-shadow); }
-    .dashboard-row { display:flex; gap:10px; flex-wrap:wrap; }
-    .stat { flex:1; background:var(--card-bg); border:1px solid var(--button-border); padding:15px; text-align:center; border-radius:6px; }
-    .admin-btn, .clear-db-btn { padding:10px 15px; margin:5px; border:1px solid var(--button-border); cursor:pointer; border-radius:4px; background:var(--button-bg); color:var(--text-color); }
-    .admin-btn:hover, .clear-db-btn:hover { background:var(--button-hover); }
-    .clear-db-btn { background:var(--delete-bg); }
-    .clear-db-btn:hover { background:var(--delete-hover); }
-    .table-section { margin-top:30px; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th, td { border:1px solid var(--button-border); padding:8px; text-align:center; }
-    th { background:var(--button-bg); }
-    input[type="number"], .search-input, input[type="text"], select, input[type="password"] {
-      background:var(--input-bg); border:1px solid var(--input-border); color:var(--text-color);
-      padding:6px; margin-bottom:10px; width:calc(100% - 14px); border-radius:3px;
+    * { box-sizing: border-box; }
+    body {
+      margin:0; font-family: Arial, sans-serif;
+      background: var(--bg); color: var(--fg);
     }
-    .delete-btn { background:var(--delete-bg); border:none; color:#fff; padding:5px 10px; cursor:pointer; border-radius:3px; }
-    .delete-btn:hover { background:var(--delete-hover); }
-    .modal-popup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; }
-    .modal-content { background:var(--container-bg); margin:10% auto; padding:20px; border:1px solid var(--button-border); border-radius:4px; width:90%; max-width:500px; position:relative; text-align:center; }
-    .close-modal { position:absolute; top:10px; right:10px; background:none; border:none; font-size:1.2em; color:var(--text-color); cursor:pointer; }
+    header {
+      background: var(--panel); padding: 1rem; text-align:center;
+      border-bottom:1px solid var(--input-border);
+    }
+    header h1 { margin:0; }
+    .container {
+      max-width: 1000px; margin:1rem auto; padding:1rem;
+      background: var(--panel); border-radius:4px;
+    }
+    button {
+      background: var(--btn); color: var(--fg); border:1px solid var(--input-border);
+      padding:0.5rem 1rem; margin:0.2rem; cursor:pointer; border-radius:3px;
+    }
+    button:hover { background: var(--btn-hover); }
+    button.danger { background: var(--danger); border:none; }
+    button.danger:hover { background: var(--danger-hover); }
+    table {
+      width:100%; border-collapse:collapse; margin-top:1rem;
+    }
+    th, td {
+      padding:0.5rem; border:1px solid var(--input-border); text-align:center;
+    }
+    th { background: var(--btn); }
+    input, select {
+      background: var(--input-bg); color: var(--fg);
+      border:1px solid var(--input-border); padding:0.4rem;
+      border-radius:3px; width:100%;
+    }
+    /* Modal */
+    .modal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.6); justify-content:center; align-items:center;
+    }
+    .modal.active { display:flex; }
+    .modal-content {
+      background: var(--panel); padding:1rem; border-radius:4px;
+      width:90%; max-width:400px; position:relative;
+    }
+    .modal-content button.close {
+      position:absolute; top:0.5rem; right:0.5rem; background:none; border:none;
+      color:var(--fg); font-size:1.2rem; cursor:pointer;
+    }
+    .stats { display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .stats .stat {
+      flex:1; padding:0.5rem; background: var(--btn); border-radius:4px;
+    }
   </style>
 </head>
 <body>
-  <!-- Login Modal -->
-  <div id="loginModal" class="modal-popup" style="display:block;">
+
+<header>
+  <h1>Admin Panel – Bali‑Cup 2025</h1>
+</header>
+
+<div class="container">
+  <div id="loginModal" class="modal active">
     <div class="modal-content">
+      <button class="close" onclick="closeLogin()">✖︎</button>
       <h2>Admin Login</h2>
-      <input type="password" id="loginPassword" placeholder="Passwort">
-      <button class="admin-btn" onclick="checkAdminPassword()">Einloggen</button>
+      <input type="password" id="pw" placeholder="Passwort" />
+      <button onclick="login()">Einloggen</button>
     </div>
   </div>
 
-  <header><h1>Admin Panel – Bali-Cup 2025</h1></header>
-  <div class="container">
-    <div class="dashboard" id="dashboard"></div>
-    <button class="admin-btn" onclick="exportTeamsCSV()">Export als CSV</button>
-    <button class="admin-btn" onclick="openNewTeamModal()">Neues Team</button>
-    <button class="admin-btn" onclick="openRankingModal()">Ranking</button>
-    <button class="admin-btn" onclick="toggleTheme()">Dark/Light</button>
-    <button class="clear-db-btn" onclick="clearDatabase()">Datenbank leeren</button>
+  <div id="dashboard" class="stats"></div>
 
-    <div class="table-section">
-      <h2>Bestätigte Teams – Normale Gruppen</h2>
-      <input type="text" id="searchNormal" class="search-input" placeholder="Suche...">
-      <table id="confirmedNormalTable">
-        <thead>
-          <tr>
-            <th>Name</th><th>Typ</th><th>St1</th><th>St2</th><th>St3</th><th>St4</th><th>St5</th><th>St6</th>
-            <th>Total</th><th>Status</th><th>Aktionen</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+  <button onclick="openAdd()">Neues Team</button>
+  <button onclick="exportCSV()">Export CSV</button>
+  <button onclick="clearDB()" class="danger">DB leeren</button>
 
-    <div class="table-section">
-      <h2>Bestätigte Teams – Kindergruppen</h2>
-      <input type="text" id="searchKinder" class="search-input" placeholder="Suche...">
-      <table id="confirmedKinderTable">
-        <thead>
-          <tr>
-            <th>Name</th><th>Typ</th><th>St1</th><th>St2</th><th>St5</th><th>St7</th><th>St8</th>
-            <th>Total</th><th>Status</th><th>Aktionen</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="table-section">
-      <h2>Vormerkungen</h2>
-      <input type="text" id="searchTentative" class="search-input" placeholder="Suche...">
-      <table id="tentativeTable">
-        <thead><tr><th>Name</th><th>Typ</th><th>Aktionen</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+  <div class="table-section">
+    <h2>Alle Teams</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th><th>Typ</th><th>Bestätigt</th>
+          <th>St1</th><th>St2</th><th>St3</th><th>St4</th>
+          <th>St5</th><th>St6</th><th>St7</th><th>St8</th>
+          <th>Total</th><th>Aktion</th>
+        </tr>
+      </thead>
+      <tbody id="teamsBody"></tbody>
+    </table>
   </div>
+</div>
 
-  <!-- Ranking Modal -->
-  <div id="rankingModal" class="modal-popup">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeRankingModal()">✖</button>
-      <h2>Top Ranking – Normale</h2>
-      <table>
-        <thead><tr><th>Platz</th><th>Name</th><th>Punkte</th><th>Erledigte St.</th></tr></thead>
-        <tbody id="rankingNormalBody"></tbody>
-      </table>
-      <h2>Top Ranking – Kinder</h2>
-      <table>
-        <thead><tr><th>Platz</th><th>Name</th><th>Punkte</th><th>Erledigte St.</th></tr></thead>
-        <tbody id="rankingKinderBody"></tbody>
-      </table>
-    </div>
+<div id="addModal" class="modal">
+  <div class="modal-content">
+    <button class="close" onclick="closeAdd()">✖︎</button>
+    <h2>Neues Team</h2>
+    <input id="newName" placeholder="Team Name" />
+    <select id="newType">
+      <option value="">Typ wählen</option>
+      <option value="Normale Gruppe">Normale Gruppe</option>
+      <option value="Kindergruppe">Kindergruppe</option>
+    </select>
+    <button onclick="addTeam()">Hinzufügen</button>
+    <p id="addMsg"></p>
   </div>
+</div>
 
-  <!-- Neues Team Modal -->
-  <div id="newTeamModal" class="modal-popup">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeNewTeamModal()">✖</button>
-      <h2>Neues Team hinzufügen</h2>
-      <input type="text" id="teamName" placeholder="Team Name" required>
-      <select id="teamType" required>
-        <option value="" disabled selected>Typ wählen</option>
-        <option value="Normale Gruppe">Normale Gruppe</option>
-        <option value="Kindergruppe">Kindergruppe</option>
-      </select>
-      <button id="addTeamBtn" type="button" class="admin-btn">Hinzufügen</button>
-      <div id="newTeamFeedback"></div>
-    </div>
-  </div>
+<script>
+  // Supabase init
+  const URL = 'https://oyhonbsquujgkzrurgyo.supabase.co';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95aG9uYnNxdXVqZ2t6cnVyZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyOTk1MjEsImV4cCI6MjA2Mjg3NTUyMX0.6zP35KlaeD_hwEHK9AFxK34swFuTD2hEP5wtG0nRRgU';
+  const supabase = supabaseJs.createClient(URL, KEY);
 
-  <footer style="text-align:center; padding:10px; border-top:1px solid var(--button-border);">
-    Version: 1.0.3
-  </footer>
+  let teams = [];
 
-  <script>
-    const supabaseUrl = 'https://oyhonbsquujgkzrurgyo.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95aG9uYnNxdXVqZ2t6cnVyZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyOTk1MjEsImV4cCI6MjA2Mjg3NTUyMX0.6zP35KlaeD_hwEHK9AFxK34swFuTD2hEP5wtG0nRRgU';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-    let globalTeams = [];
+  // --- Login ---
+  function closeLogin() {
+    document.getElementById('loginModal').classList.remove('active');
+  }
+  function login() {
+    if (document.getElementById('pw').value === '112') {
+      closeLogin();
+      init();
+    } else alert('Falsches Passwort!');
+  }
 
-    // Login
-    function checkAdminPassword() {
-      if (document.getElementById('loginPassword').value === '112') {
-        document.getElementById('loginModal').style.display = 'none';
-        loadTeams();
-        setupRealtime();
-      } else {
-        alert('Falsches Passwort!');
+  // --- Init fetch + realtime ---
+  async function init() {
+    await loadTeams();
+    supabase
+      .from('teams')
+      .on('*', payload => loadTeams())
+      .subscribe();
+  }
+
+  // --- Load & Render ---
+  async function loadTeams() {
+    const { data, error } = await supabase.from('teams').select('*');
+    if (error) return console.error(error);
+    teams = data;
+    renderDashboard();
+    renderTable();
+  }
+
+  function renderDashboard() {
+    const dash = document.getElementById('dashboard');
+    const total = teams.length;
+    const confirmed = teams.filter(t => t.confirmed).length;
+    const pending = total - confirmed;
+    dash.innerHTML = `
+      <div class="stat">Alle Teams: ${total}</div>
+      <div class="stat">Bestätigt: ${confirmed}</div>
+      <div class="stat">Offen: ${pending}</div>
+    `;
+  }
+
+  function renderTable() {
+    const body = document.getElementById('teamsBody');
+    body.innerHTML = '';
+    teams.forEach(t => {
+      const row = document.createElement('tr');
+      const vals = [
+        t.teamName, t.teamType,
+        `<input type="checkbox" ${t.confirmed?'checked':''} onchange="toggleConfirm('${t.id}',this.checked)" />`
+      ];
+      let total = 0;
+      for (let i=1; i<=8; i++) {
+        const v = t['station'+i] || 0;
+        total += v;
+        vals.push(`<input type="number" min="0" value="${v}" style="width:3rem" onchange="updateField('${t.id}','station${i}',this.value)" />`);
       }
-    }
-    window.checkAdminPassword = checkAdminPassword;
+      vals.push(total);
+      vals.push(`<button class="danger" onclick="deleteTeam('${t.id}')">✖︎</button>`);
+      row.innerHTML = vals.map(c=>`<td>${c}</td>`).join('');
+      body.appendChild(row);
+    });
+  }
 
-    // Load & Realtime
-    async function loadTeams() {
-      const { data, error } = await supabase.from('teams').select('*');
-      if (error) return console.error(error);
-      globalTeams = data;
-      renderAll();
-    }
-    function setupRealtime() {
-      supabase
-        .from('teams')
-        .on('INSERT', p => handleRealtime('INSERT', p.new))
-        .on('UPDATE', p => handleRealtime('UPDATE', p.new))
-        .on('DELETE', p => handleRealtime('DELETE', p.old))
-        .subscribe();
-    }
-    function handleRealtime(evt, row) {
-      if (evt==='INSERT') globalTeams.push(row);
-      if (evt==='UPDATE') globalTeams = globalTeams.map(t => t.id===row.id ? row : t);
-      if (evt==='DELETE') globalTeams = globalTeams.filter(t => t.id!==row.id);
-      renderAll();
-    }
+  // --- CRUD Helpers ---
+  async function updateField(id, field, value) {
+    value = parseInt(value)||0;
+    // compute new total
+    const { data:cur } = await supabase.from('teams')
+      .select('station1,station2,station3,station4,station5,station6,station7,station8')
+      .eq('id',id).single();
+    cur[field] = value;
+    const total = Object.values(cur).reduce((s,n)=>s+(n||0),0);
+    await supabase.from('teams').update({ [field]:value, total }).eq('id',id);
+  }
 
-    // Render
-    function renderAll() { updateDashboard(); renderTables(); renderRanking(); }
-    function updateDashboard(){
-      const total=globalTeams.length,
-            confirmed=globalTeams.filter(t=>t.confirmed).length,
-            pending=total-confirmed,
-            completed=globalTeams.filter(t=>isCompleted(t)).length,
-            kinder=globalTeams.filter(t=>t.teamType==='Kindergruppe').length,
-            normal=globalTeams.filter(t=>t.teamType==='Normale Gruppe').length;
-      document.getElementById('dashboard').innerHTML = `
-        <div class="dashboard-row">
-          <div class="stat">Alle Teams: ${total}</div>
-          <div class="stat">Bestätigt: ${confirmed}</div>
-          <div class="stat">Offen: ${pending}</div>
-          <div class="stat">Fertig: ${completed}</div>
-          <div class="stat">Kinder: ${kinder}</div>
-          <div class="stat">Normal: ${normal}</div>
-        </div>`;
-    }
-    function isCompleted(t){
-      const f = t.teamType==='Normale Gruppe' ? [1,2,3,4,5,6] : [1,2,5,7,8];
-      return f.every(i=>t['station'+i]>0);
-    }
-    function renderTables(){
-      renderNormalTable(); renderKinderTable(); renderTentativeTable();
-    }
-    function renderNormalTable(){
-      const tbody=document.querySelector('#confirmedNormalTable tbody');
-      tbody.innerHTML='';
-      globalTeams.filter(t=>t.confirmed&&t.teamType==='Normale Gruppe')
-        .sort((a,b)=>b.total-a.total)
-        .forEach(team=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML=`
-            <td>${team.teamName}</td>
-            <td>${team.teamType}</td>
-            ${[1,2,3,4,5,6].map(i=>
-              `<td><input type="number" value="${team['station'+i]||0}"
-                onchange="updateField('${team.id}','station${i}',this.value)"></td>`).join('')}
-            <td>${team.total||0}</td>
-            <td>${isCompleted(team)?'✔︎':'–'}</td>
-            <td><button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button></td>`;
-          tbody.appendChild(tr);
-        });
-    }
-    function renderKinderTable(){
-      const tbody=document.querySelector('#confirmedKinderTable tbody');
-      tbody.innerHTML='';
-      globalTeams.filter(t=>t.confirmed&&t.teamType==='Kindergruppe')
-        .sort((a,b)=>b.total-a.total)
-        .forEach(team=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML=`
-            <td>${team.teamName}</td>
-            <td>${team.teamType}</td>
-            ${[1,2,5,7,8].map(i=>
-              `<td><input type="number" value="${team['station'+i]||0}"
-                onchange="updateField('${team.id}','station${i}',this.value)"></td>`).join('')}
-            <td>${team.total||0}</td>
-            <td>${isCompleted(team)?'✔︎':'–'}</td>
-            <td><button class="delete-btn" onclick="deleteTeam('${team.id}')">Löschen</button></td>`;
-          tbody.appendChild(tr);
-        });
-    }
-    function renderTentativeTable(){
-      const tbody=document.querySelector('#tentativeTable tbody');
-      tbody.innerHTML='';
-      globalTeams.filter(t=>!t.confirmed)
-        .forEach(team=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML=`
-            <td>${team.teamName}</td>
-            <td>${team.teamType}</td>
-            <td>
-              <button class="admin-btn" onclick="confirmTeam('${team.id}')">Bestätigen</button>
-              <button class="delete-btn" onclick="deleteTeam('${team.id}')">✖</button>
-            </td>`;
-          tbody.appendChild(tr);
-        });
-    }
-    function renderRanking(){
-      const normBody=document.getElementById('rankingNormalBody'),
-            kidBody=document.getElementById('rankingKinderBody');
-      normBody.innerHTML=''; kidBody.innerHTML='';
-      globalTeams.filter(t=>t.confirmed&&t.teamType==='Normale Gruppe')
-        .sort((a,b)=>b.total-a.total)
-        .forEach((team,i)=>{
-          const done=[1,2,3,4,5,6].filter(j=>team['station'+j]>0).length;
-          normBody.insertAdjacentHTML('beforeend',`<tr><td>${i+1}</td><td>${team.teamName}</td><td>${team.total}</td><td>${done}</td></tr>`);
-        });
-      globalTeams.filter(t=>t.confirmed&&t.teamType==='Kindergruppe')
-        .sort((a,b)=>b.total-a.total)
-        .forEach((team,i)=>{
-          const done=[1,2,5,7,8].filter(j=>team['station'+j]>0).length;
-          kidBody.insertAdjacentHTML('beforeend',`<tr><td>${i+1}</td><td>${team.teamName}</td><td>${team.total}</td><td>${done}</td></tr>`);
-        });
-    }
+  async function toggleConfirm(id, val) {
+    await supabase.from('teams').update({ confirmed: val }).eq('id',id);
+  }
 
-    // CRUD
-    async function updateField(id, field, val){
-      const value=parseInt(val)||0;
-      // aktuellen Stations-Werte holen
-      const { data:cur } = await supabase.from('teams').select('station1,station2,station3,station4,station5,station6,station7,station8').eq('id',id).single();
-      cur[field]=value;
-      const newTotal=Object.values(cur).reduce((s,n)=>s+(n||0),0);
-      await supabase.from('teams').update({ [field]:value, total:newTotal }).eq('id',id);
-      loadTeams();
-    }
-    async function confirmTeam(id){
-      await supabase.from('teams').update({ confirmed:true }).eq('id',id);
-      loadTeams();
-    }
-    async function deleteTeam(id){
-      if(!confirm('Löschen?'))return;
-      await supabase.from('teams').delete().eq('id',id);
-      loadTeams();
-    }
-    async function clearDatabase(){
-      if(!confirm('Alle Teams löschen?'))return;
-      await supabase.from('teams').delete().neq('id','');
-      loadTeams();
-    }
+  async function deleteTeam(id) {
+    if (!confirm('Löschen?')) return;
+    await supabase.from('teams').delete().eq('id',id);
+  }
 
-    // CSV Export
-    function exportTeamsCSV(){
-      let csv=`"Team","Typ","St1","St2","St3","St4","St5","St6","St7","St8","Total","Status"\n`;
-      globalTeams.forEach(t=>{
-        const status=t.confirmed?(isCompleted(t)?'done':'open'):'pending';
-        const row=[t.teamName,t.teamType,
-          t.station1||0,t.station2||0,t.station3||0,t.station4||0,
-          t.station5||0,t.station6||0,t.station7||0,t.station8||0,
-          t.total||0,status];
-        csv+=row.map(x=>`"${x}"`).join(',')+'\n';
-      });
-      const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
-      a.download='teams.csv';
-      a.click();
+  // --- Add Team Modal ---
+  function openAdd() { document.getElementById('addModal').classList.add('active'); }
+  function closeAdd() {
+    document.getElementById('addModal').classList.remove('active');
+    document.getElementById('addMsg').textContent = '';
+  }
+
+  async function addTeam() {
+    const name = document.getElementById('newName').value.trim();
+    const type = document.getElementById('newType').value;
+    const msg  = document.getElementById('addMsg');
+    if (!name || !type) {
+      msg.textContent = 'Bitte ausfüllen.';
+      return;
     }
-
-    // Neues Team
-    async function addTeam(){
-      const name=document.getElementById('teamName').value.trim();
-      const type=document.getElementById('teamType').value;
-      const feedback=document.getElementById('newTeamFeedback');
-      if(!name||!type){
-        feedback.textContent='Bitte Name und Typ ausfüllen.';
-        return;
-      }
-      const { data, error } = await supabase
-        .from('teams')
-        .insert([{ teamName:name, teamType:type, confirmed:false,
-          station1:0,station2:0,station3:0,station4:0,station5:0,station6:0,station7:0,station8:0, total:0
-        }])
-        .select()  // <-- sorgt dafür, dass 'data' das neue Objekt enthält
-        .single();
-
-      if(error){
-        console.error(error);
-        feedback.textContent='Fehler beim Hinzufügen.';
-      } else {
-        alert(`Team "${data.teamName}" angelegt!`);
-        feedback.textContent='';
-        document.getElementById('teamName').value='';
-        document.getElementById('teamType').value='';
-        closeNewTeamModal();
-        loadTeams();
-      }
+    const { data, error } = await supabase
+      .from('teams')
+      .insert([{ teamName:name, teamType:type, confirmed:false,
+                 station1:0,station2:0,station3:0,station4:0,
+                 station5:0,station6:0,station7:0,station8:0,
+                 total:0 }])
+      .select().single();
+    if (error) {
+      msg.textContent = 'Fehler!';
+      console.error(error);
+    } else {
+      alert(`Team "${data.teamName}" hinzugefügt`);
+      closeAdd();
     }
-    document.getElementById('addTeamBtn').addEventListener('click', addTeam);
+  }
 
-    // Modals & Theme
-    function openRankingModal(){document.getElementById('rankingModal').style.display='block';}
-    function closeRankingModal(){document.getElementById('rankingModal').style.display='none';}
-    function openNewTeamModal(){document.getElementById('newTeamModal').style.display='block';}
-    function closeNewTeamModal(){document.getElementById('newTeamModal').style.display='none';}
-    window.openRankingModal=openRankingModal; window.closeRankingModal=closeRankingModal;
-    window.openNewTeamModal=openNewTeamModal; window.closeNewTeamModal=closeNewTeamModal;
+  // --- Export / Clear ---
+  function exportCSV() {
+    let csv = `"Name","Typ","Bestätigt","St1","St2","St3","St4","St5","St6","St7","St8","Total"\n`;
+    teams.forEach(t=>{
+      const row = [
+        t.teamName, t.teamType, t.confirmed,
+        t.station1||0, t.station2||0, t.station3||0, t.station4||0,
+        t.station5||0, t.station6||0, t.station7||0, t.station8||0,
+        t.total||0
+      ];
+      csv += row.map(v=>`"${v}"`).join(',')+'\n';
+    });
+    const blob = new Blob([csv],{type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'teams.csv';
+    a.click();
+  }
 
-    function toggleTheme(){
-      const root=document.documentElement;
-      if(root.style.getPropertyValue('--bg-color')==='#121212'){
-        root.style.setProperty('--bg-color','#f5f5f5');
-        root.style.setProperty('--text-color','#333');
-        root.style.setProperty('--header-bg','#ddd');
-        root.style.setProperty('--container-bg','#fff');
-        root.style.setProperty('--button-bg','#ccc');
-        root.style.setProperty('--button-border','#bbb');
-        root.style.setProperty('--button-hover','#aaa');
-        root.style.setProperty('--input-bg','#fff');
-        root.style.setProperty('--input-border','#ccc');
-        root.style.setProperty('--card-bg','#fff');
-      } else {
-        root.style.setProperty('--bg-color','#121212');
-        root.style.setProperty('--text-color','#e0e0e0');
-        root.style.setProperty('--header-bg','#1e1e1e');
-        root.style.setProperty('--container-bg','#1e1e1e');
-        root.style.setProperty('--button-bg','#333');
-        root.style.setProperty('--button-border','#444');
-        root.style.setProperty('--button-hover','#555');
-        root.style.setProperty('--input-bg','#222');
-        root.style.setProperty('--input-border','#555');
-        root.style.setProperty('--card-bg','#1e1e1e');
-      }
-    }
-    window.toggleTheme=toggleTheme;
-  </script>
+  async function clearDB() {
+    if (!confirm('Alle Teams löschen?')) return;
+    await supabase.from('teams').delete().neq('id','');
+  }
+
+  // Prevent form submission reloads
+  window.addEventListener('DOMContentLoaded',()=>{});
+</script>
+
 </body>
 </html>
