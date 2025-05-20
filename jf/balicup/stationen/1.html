@@ -7,8 +7,8 @@
   <style>
     :root {
       --bg-dark: #222; --bg-light: #f5f5f5;
-      --btn-bg-dark: #555; --btn-hover-dark: #444; --btn-border-dark: #666;
-      --btn-bg-light: #e7e7e7; --btn-hover-light: #d7d7d7; --btn-border-light: #ccc;
+      --btn-bg-dark: #555; --btn-border-dark: #666; --btn-hover-dark: #444;
+      --btn-bg-light: #e7e7e7; --btn-border-light: #ccc; --btn-hover-light: #d7d7d7;
     }
     body {
       margin: 20px; font-family: Arial, sans-serif;
@@ -30,28 +30,26 @@
       font-size: 1em; padding: 8px; box-sizing: border-box;
     }
     button {
-      cursor: pointer;
-      background: var(--btn-bg-dark);
-      border: 1px solid var(--btn-border-dark);
-      color: #fff; transition: .3s;
+      cursor: pointer; background: var(--btn-bg-dark);
+      border: 1px solid var(--btn-border-dark); color: #fff;
+      transition: .3s;
     }
     button:hover { background: var(--btn-hover-dark); }
     body.light-mode button {
       background: var(--btn-bg-light);
-      border-color: var(--btn-border-light);
-      color: #333;
+      border-color: var(--btn-border-light); color: #333;
     }
     body.light-mode button:hover { background: var(--btn-hover-light); }
-
     #feedback {
       display: none; text-align: center; margin-top: 15px;
       padding: 8px; border-radius: 4px;
     }
     #feedback.success { background: #4caf50; color: #fff; }
     #feedback.error   { background: #f44336; color: #fff; }
-
     .teams-info { margin-top: 20px; }
-    .teams-info h2 { margin-bottom: 10px; text-align: center; }
+    .teams-info h2 {
+      margin-bottom: 10px; text-align: center;
+    }
     .group-container { margin-bottom: 20px; }
     .team-card {
       margin: 8px 0; padding: 8px;
@@ -61,7 +59,6 @@
     .not-participated{ background: #d32f2f; border-color: #c62828; color: #fff; }
     body.light-mode .participated    { background: #81c784; border-color: #66bb6a; color: #333; }
     body.light-mode .not-participated{ background: #e57373; border-color: #ef5350; color: #333; }
-
     .toggle-mode {
       position: fixed; bottom: 10px; right: 10px;
       padding: 4px 8px; font-size: 0.8em;
@@ -75,7 +72,6 @@
       color: #333;
     }
     body.light-mode .toggle-mode:hover { background: var(--btn-hover-light); }
-
     @media (max-width: 600px) {
       body { margin: 10px; }
       .container { padding: 15px; }
@@ -84,6 +80,7 @@
   </style>
 </head>
 <body>
+
   <header>
     <h1>Ergebnisse Station 1 – Schätzspiel</h1>
   </header>
@@ -93,6 +90,8 @@
       <label for="teamSelect">Team auswählen:</label>
       <select id="teamSelect" required>
         <option value="" disabled selected>Bitte wählen</option>
+        <optgroup label="Kindergruppen" id="optKinder"></optgroup>
+        <optgroup label="Normale Gruppen" id="optNormal"></optgroup>
       </select>
 
       <label for="points">Punkte:</label>
@@ -102,7 +101,10 @@
     </form>
 
     <div id="feedback"></div>
-    <div class="teams-info" id="teamsInfo"></div>
+
+    <div class="teams-info" id="teamsInfo">
+      <!-- Hier kommen später die beiden Gruppen-Container -->
+    </div>
   </div>
 
   <button class="toggle-mode" onclick="toggleMode()">Light</button>
@@ -114,7 +116,7 @@
       updateDoc, setDoc, onSnapshot, addDoc
     } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
-    // Firebase init
+    // ---------- Init ----------
     const firebaseConfig = {
       apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
       authDomain: "bali-cup2025.firebaseapp.com",
@@ -124,105 +126,143 @@
       appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
       measurementId: "G-484CZNKVQ1"
     };
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    initializeApp(firebaseConfig);
+    const db = getFirestore();
+    const station = 1;
+    const teamsCol = collection(db, "teams");
 
-    const stationNumber = 1;
-    const teamsCol      = collection(db, "teams");
-
-    // Dropdown befüllen: confirmed=true && station1==0
+    // ---------- Dropdown befüllen ----------
     async function loadTeamsDropdown() {
-      const select = document.getElementById("teamSelect");
-      select.innerHTML = '<option value="" disabled selected>Bitte wählen</option>';
+      const optKinder = document.getElementById("optKinder");
+      const optNormal = document.getElementById("optNormal");
+      optKinder.innerHTML = "";
+      optNormal.innerHTML = "";
 
       const snaps = await getDocs(teamsCol);
-      snaps.forEach(s => {
-        const d = s.data();
-        if (d.confirmed && (d["station1"] || 0) === 0) {
-          const opt = document.createElement("option");
-          opt.value = s.id;
-          opt.textContent = d.teamName;
-          select.append(opt);
-        }
+      snaps.forEach(snap => {
+        const d = snap.data();
+        if (!d.confirmed || (d["station"+station] || 0) > 0) return;
+        const isChild = d.teamType.toLowerCase() === "kindergruppe";
+        const opt = document.createElement("option");
+        opt.value = snap.id;
+        opt.textContent = d.teamName;
+        (isChild ? optKinder : optNormal).appendChild(opt);
       });
     }
 
-    // Übersicht befüllen: confirmed=true
+    // ---------- Team-Übersicht ----------
     async function loadTeamsInfo() {
       const container = document.getElementById("teamsInfo");
       container.innerHTML = "";
 
       const snaps = await getDocs(teamsCol);
-      snaps.forEach(s => {
-        const d = s.data();
+      const groups = { kinder: [], normal: [] };
+      snaps.forEach(snap => {
+        const d = snap.data();
         if (!d.confirmed) return;
-
-        const card = document.createElement("div");
-        card.className = "team-card " + ((d["station1"] || 0) > 0 ? "participated" : "not-participated");
-        card.innerHTML = `<strong>${d.teamName}</strong><br>` +
-          ((d["station1"] || 0) > 0
-            ? `Teilgenommen mit ${d["station1"]} Punkten.`
-            : `<em>Noch nicht teilgenommen</em>`);
-        container.append(card);
+        const isChild = d.teamType.toLowerCase() === "kindergruppe";
+        groups[isChild ? "kinder" : "normal"].push({
+          name: d.teamName,
+          points: d["station"+station] || 0
+        });
       });
+
+      // Kindergruppen
+      if (groups.kinder.length) {
+        const h2 = document.createElement("h2");
+        h2.textContent = "Kindergruppen";
+        const wrap = document.createElement("div");
+        wrap.className = "group-container";
+        groups.kinder.sort((a,b)=>a.name.localeCompare(b.name))
+          .forEach(t=>{
+            const c = document.createElement("div");
+            c.className = "team-card " + (t.points>0?"participated":"not-participated");
+            c.innerHTML = `<strong>${t.name}</strong><br>` +
+              (t.points>0 ? `${t.points} Punkte` : `<em>Noch nicht teilgenommen</em>`);
+            wrap.appendChild(c);
+          });
+        container.appendChild(h2);
+        container.appendChild(wrap);
+      }
+
+      // Normale Gruppen
+      if (groups.normal.length) {
+        const h2 = document.createElement("h2");
+        h2.textContent = "Normale Gruppen";
+        const wrap = document.createElement("div");
+        wrap.className = "group-container";
+        groups.normal.sort((a,b)=>a.name.localeCompare(b.name))
+          .forEach(t=>{
+            const c = document.createElement("div");
+            c.className = "team-card " + (t.points>0?"participated":"not-participated");
+            c.innerHTML = `<strong>${t.name}</strong><br>` +
+              (t.points>0 ? `${t.points} Punkte` : `<em>Noch nicht teilgenommen</em>`);
+            wrap.appendChild(c);
+          });
+        container.appendChild(h2);
+        container.appendChild(wrap);
+      }
     }
 
-    // Feedback
-    function showFeedback(msg, ok = true) {
+    // ---------- Formular-Logik ----------
+    document.getElementById("resultForm")
+      .addEventListener("submit", async e => {
+        e.preventDefault();
+        const teamId = e.target.teamSelect.value;
+        const pts    = parseInt(e.target.points.value,10);
+        if (!teamId) return showFeedback("Bitte ein Team wählen",false);
+
+        const ref  = doc(teamsCol, teamId);
+        const snap = await getDoc(ref);
+        const d    = snap.data() || {};
+
+        if (d["station"+station] > 0
+            && !confirm("Eintrag überschreiben?")) {
+          return showFeedback("Abgebrochen",false);
+        }
+
+        // neuen Total berechnen
+        let total = 0;
+        Object.keys(d)
+          .filter(k=>k.startsWith("station"))
+          .forEach(k=> total += (k==="station"+station ? pts : (d[k]||0)));
+
+        await updateDoc(ref, {
+          ["station"+station]: pts,
+          total
+        });
+
+        showFeedback("Gespeichert");
+        e.target.reset();
+        await loadTeamsDropdown();
+        await loadTeamsInfo();
+      });
+
+    // ---------- Feedback ----------
+    function showFeedback(msg, ok=true) {
       const fb = document.getElementById("feedback");
       fb.textContent = msg;
       fb.className   = ok ? "success" : "error";
       fb.style.display = "block";
-      setTimeout(() => fb.style.display = "none", 3000);
+      setTimeout(()=> fb.style.display="none", 3000);
     }
 
-    // Formular absenden
-    document.getElementById("resultForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const teamId = e.target.teamSelect.value;
-      const pts    = parseInt(e.target.points.value, 10);
-      if (!teamId) { showFeedback("Bitte Team wählen", false); return; }
-
-      const ref  = doc(teamsCol, teamId);
-      const snap = await getDoc(ref);
-      const d    = snap.data();
-
-      if (d.station1 > 0 && !confirm("Eintrag überschreiben?")) {
-        showFeedback("Abgebrochen", false);
-        return;
-      }
-
-      // Update station1 & total
-      const newTotal = Object.keys(d)
-        .filter(k => k.startsWith("station"))
-        .reduce((sum, k) => sum + (k === "station1" ? pts : (d[k] || 0)), 0);
-
-      await updateDoc(ref, {
-        station1: pts,
-        total:    newTotal
-      });
-
-      showFeedback("Gespeichert");
-      e.target.reset();
-      await loadTeamsDropdown();
-      await loadTeamsInfo();
-    });
-
-    // Station-Status (optional)
-    onSnapshot(doc(db, "stationSessions", "station1"), snap => {
-      if (!snap.exists() || snap.data().loggedIn === false) {
-        setDoc(doc(db, "stationSessions", "station1"), { loggedIn: true }, { merge: true });
+    // ---------- Station session setzen ----------
+    onSnapshot(doc(db, "stationSessions","station"+station), snap => {
+      if (!snap.exists() || snap.data().loggedIn===false) {
+        setDoc(doc(db,"stationSessions","station"+station),
+               { loggedIn:true }, { merge:true });
       }
     });
 
-    // Light/Dark Mode
-    window.toggleMode = () => {
+    // ---------- Dark/Light Mode ----------
+    window.toggleMode = ()=> {
       document.body.classList.toggle("light-mode");
       document.querySelector(".toggle-mode").textContent =
         document.body.classList.contains("light-mode") ? "Dark" : "Light";
     };
 
-    // Initial
+    // ---------- Initial Load ----------
     loadTeamsDropdown();
     loadTeamsInfo();
   </script>
