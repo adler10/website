@@ -2,10 +2,10 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Ergebnisse für Station <span id="stationId"></span> - <span id="stationLabel"></span> erfassen – Bali-Cup 2025</title>
+  <title>Ergebnisse für Station <span id="stationLabel"></span> – Bali-Cup 2025</title>
   <style>
     :root {
-      /* Standardfarben für Dark Mode */
+      /* Standard Farben für Dark Mode */
       --btn-bg-dark: #555;
       --btn-border-dark: #666;
       --btn-hover-dark: #444;
@@ -17,10 +17,11 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background: #222;
+      background: #222; /* Dark Mode */
       color: #fff;
       transition: background 0.3s, color 0.3s;
     }
+    /* Light Mode Styles */
     body.light-mode {
       background: #f5f5f5;
       color: #333;
@@ -33,7 +34,7 @@
       max-width: 400px;
       margin: 0 auto;
       padding: 20px;
-      background: #333;
+      background: #333; /* Dark Mode: Container-Hintergrund */
       border: 1px solid #444;
       border-radius: 4px;
     }
@@ -85,6 +86,7 @@
       background-color: #f44336;
       color: #fff;
     }
+    /* Toggle-Button: kleiner, oben rechts */
     .toggle-mode {
       position: fixed;
       top: 10px;
@@ -125,19 +127,27 @@
       border-radius: 4px;
       border: 1px solid;
       text-align: center;
-      transition: background 0.3s, border-color 0.3s;
     }
-    /* Rote Karte, falls noch keine Schätzung vorliegt */
-    .team-card.not-estimated {
-      background: #d32f2f;
+    /* Farben in Abhängigkeit vom Status */
+    body:not(.light-mode) .team-card.participated {
+      background: #388e3c; /* Dunkelgrün */
+      border-color: #2e7d32;
+      color: #fff;
+    }
+    body:not(.light-mode) .team-card.not-participated {
+      background: #d32f2f; /* Dunkelrot */
       border-color: #c62828;
       color: #fff;
     }
-    /* Grüne Markierung, wenn eine Schätzung abgegeben wurde */
-    .team-card.estimated {
-      background: #388e3c;
-      border-color: #2e7d32;
-      color: #fff;
+    body.light-mode .team-card.participated {
+      background: #81c784; /* Hellgrün */
+      border-color: #66bb6a;
+      color: #333;
+    }
+    body.light-mode .team-card.not-participated {
+      background: #e57373; /* Hellrot */
+      border-color: #ef5350;
+      color: #333;
     }
   </style>
 </head>
@@ -146,7 +156,7 @@
   <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
 
   <header>
-    <h1>Ergebnisse für Station <span id="stationId"></span> – <span id="stationLabel"></span> erfassen</h1>
+    <h1>Ergebnisse für Station <span id="stationId"></span> - <span id="stationLabel"></span> erfassen</h1>
   </header>
   <div class="container">
     <form id="resultForm">
@@ -155,35 +165,35 @@
         <option value="" disabled selected>Bitte wähle ein Team</option>
       </select>
       
-      <!-- Eingabe für die Schätzung -->
-      <label for="guess">Schätzung eingeben:</label>
-      <input type="number" id="guess" placeholder="Schätzung" min="0" required>
+      <label for="points">Punkte:</label>
+      <input type="number" id="points" placeholder="Punkte" min="0" required>
       
-      <button type="submit">Schätzung speichern</button>
+      <button type="submit">Ergebnis speichern</button>
     </form>
     <div id="feedback"></div>
     
-    <!-- Übersicht der Teams -->
+    <!-- Kreative Teamübersicht, getrennt nach Gruppen -->
     <div class="teams-info" id="teamsInfo"></div>
   </div>
 
   <script type="module">
-    // Stationsname und -nummer
-    const stationName = "Schätzspiel";   
-    const stationNumber = 1;             
-    // Erlaubte Gruppen
+    // Konfiguration: Stationsname, Stationsnummer und erlaubte Gruppen
+    const stationName = "Schätzspiel";   // Name der Station
+    const stationNumber = 1;             // Nummer der Station
+    // Erlaubte Gruppen: Hier können die anzuzeigenden Gruppen festgelegt werden.
+    // Die Werte sollten in Kleinbuchstaben vorliegen.
     const allowedGroups = {
       dropdown: ["normale gruppe", "kindergruppe"],
       teams: ["normale gruppe", "kindergruppe"]
     };
 
-    // Setze Stations-ID und -Label
+    // Setze den Stationsnamen in der Überschrift und im Title
     document.getElementById("stationLabel").textContent = stationName;
     document.getElementById("stationId").textContent = stationNumber;
 
     // Firebase SDKs importieren
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, setDoc, getDoc } 
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, setDoc } 
       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
     import { onSnapshot } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
@@ -202,7 +212,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Station-Status in Firestore aktualisieren
+    // Funktion zum Aktualisieren des Station-Status in Firestore
     function setStationStatus(stationId, status) {
       setDoc(doc(db, "stationSessions", stationId), { loggedIn: status }, { merge: true });
     }
@@ -220,32 +230,28 @@
           }
         }
       } else {
+        // Dokument erstellen, falls noch nicht vorhanden.
         await setStationStatus("station" + stationNumber, true);
       }
     });
 
-    // Lade Teams ins Dropdown: Nur confirmed = true, noch keine Schätzung
+    // Dropdown mit Teams befüllen:
     async function loadTeamsDropdown() {
+      const teamsRef = collection(db, "teams");
+      const querySnapshot = await getDocs(teamsRef);
       const teamSelect = document.getElementById("teamSelect");
       teamSelect.innerHTML = '<option value="" disabled selected>Bitte wähle ein Team</option>';
-      
-      // Query: confirmed = true, guess_station1 <= 0 oder nicht vorhanden
-      const teamsRef = collection(db, "teams");
-      // Wir holen alle, die confirmed = true haben:
-      const qConfirmed = query(teamsRef, where("confirmed", "==", true));
-      const querySnapshot = await getDocs(qConfirmed);
       
       const normalTeams = [];
       const kinderTeams = [];
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
-        // Falls guess_station1 > 0, nicht anzeigen (Team hat schon eine Schätzung abgegeben)
-        if (data.guess_station1 && data.guess_station1 > 0) return;
-        
+        // Überspringe Teams, die bereits einen Eintrag für diese Station haben
+        if (data["station" + stationNumber] && data["station" + stationNumber] > 0) return;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
+        // Nur erlaubte Gruppen berücksichtigen
         if (!allowedGroups.dropdown.includes(teamType)) return;
-        
         const teamObj = { id: docSnap.id, name: data.teamName };
         if (teamType === "kindergruppe") {
           kinderTeams.push(teamObj);
@@ -281,27 +287,26 @@
         teamSelect.appendChild(kinderOptGroup);
       }
     }
-
-    // Teams in der Übersicht laden: Nur confirmed = true (unabhängig von guess_station1)
+    loadTeamsDropdown();
+    
+    // Darstellung der Teams in der Übersicht
     async function loadTeamsInfo() {
+      const teamsRef = collection(db, "teams");
+      const querySnapshot = await getDocs(teamsRef);
       const teamsInfoDiv = document.getElementById("teamsInfo");
       teamsInfoDiv.innerHTML = "";
-      
-      const teamsRef = collection(db, "teams");
-      const qConfirmed = query(teamsRef, where("confirmed", "==", true));
-      const querySnapshot = await getDocs(qConfirmed);
       
       const normalTeams = [];
       const kinderTeams = [];
       
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
+        const teamName = data.teamName;
+        const points = data["station" + stationNumber] || 0;
         const teamType = data.teamType ? data.teamType.toLowerCase() : "normale gruppe";
+        // Nur erlaubte Gruppen berücksichtigen
         if (!allowedGroups.teams.includes(teamType)) return;
-        
-        const guess = data.guess_station1 || null;
-        const teamObj = { name: data.teamName, guess: guess };
-        
+        const teamObj = { name: teamName, points: points };
         if (teamType === "kindergruppe") {
           kinderTeams.push(teamObj);
         } else {
@@ -316,17 +321,17 @@
         const normalHeading = document.createElement("h2");
         normalHeading.textContent = "Normale Gruppe";
         teamsInfoDiv.appendChild(normalHeading);
-        
         const normalContainer = document.createElement("div");
         normalContainer.className = "group-container";
         normalTeams.forEach(team => {
           const card = document.createElement("div");
-          if (team.guess !== null && team.guess > 0) {
-            card.classList.add("team-card", "estimated");
-            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.guess}`;
+          card.classList.add("team-card");
+          if (team.points > 0) {
+            card.classList.add("participated");
+            card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
           } else {
-            card.classList.add("team-card", "not-estimated");
-            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung</em>`;
+            card.classList.add("not-participated");
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
           }
           normalContainer.appendChild(card);
         });
@@ -337,167 +342,97 @@
         const kinderHeading = document.createElement("h2");
         kinderHeading.textContent = "Kindergruppe";
         teamsInfoDiv.appendChild(kinderHeading);
-        
         const kinderContainer = document.createElement("div");
         kinderContainer.className = "group-container";
         kinderTeams.forEach(team => {
           const card = document.createElement("div");
-          if (team.guess !== null && team.guess > 0) {
-            card.classList.add("team-card", "estimated");
-            card.innerHTML = `<strong>${team.name}</strong><br>Schätzung: ${team.guess}`;
+          card.classList.add("team-card");
+          if (team.points > 0) {
+            card.classList.add("participated");
+            card.innerHTML = `<strong>${team.name}</strong><br>Teilgenommen mit <em>${team.points}</em> Punkten.`;
           } else {
-            card.classList.add("team-card", "not-estimated");
-            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch keine Schätzung</em>`;
+            card.classList.add("not-participated");
+            card.innerHTML = `<strong>${team.name}</strong><br><em>Noch nicht teilgenommen</em>`;
           }
           kinderContainer.appendChild(card);
         });
         teamsInfoDiv.appendChild(kinderContainer);
       }
     }
+    loadTeamsInfo();
 
-    // Punkte neu berechnen für alle confirmed-Teams mit guess_station1 > 0
-    async function recalcStation1Scores() {
-      // Richtwert aus stationTargets/station1
-      const targetDoc = await getDoc(doc(db, "stationTargets", "station1"));
-      if (!targetDoc.exists()) {
-        console.error("Kein Richtwert für Station 1 gefunden!");
-        return;
-      }
-      const target = targetDoc.data().target;
-      
-      // Hole alle Teams, die confirmed sind und guess_station1 > 0
-      const teamsRef = collection(db, "teams");
-      const qConfirmedWithGuess = query(
-        teamsRef,
-        where("confirmed", "==", true),
-        where("guess_station1", ">", 0)
-      );
-      const querySnapshot = await getDocs(qConfirmedWithGuess);
-      
-      const teams = [];
-      querySnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        teams.push({
-          id: docSnap.id,
-          guess: data.guess_station1,
-          teamData: data
-        });
-      });
-      
-      if (teams.length === 0) return;
-
-      // Differenzen berechnen und sortieren
-      teams.forEach(team => {
-        team.diff = Math.abs(team.guess - target);
-      });
-      teams.sort((a, b) => a.diff - b.diff);
-
-      // Punktevergabe: bestes Team = teams.length, usw.
-      teams.forEach((team, index) => {
-        team.newPoints = teams.length - index;
-      });
-
-      // Station1 + total aktualisieren
-      for (const team of teams) {
-        let newTotal = 0;
-        for (let i = 1; i <= 8; i++) {
-          if (i === stationNumber) {
-            newTotal += team.newPoints;
-          } else {
-            newTotal += team.teamData["station" + i] || 0;
-          }
-        }
-        const updateData = {
-          ["station" + stationNumber]: team.newPoints,
-          total: newTotal
-        };
-        await updateDoc(doc(db, "teams", team.id), updateData);
-      }
-      // Anzeige aktualisieren
-      loadTeamsInfo();
-    }
-
-    // Feedback
+    // Feedback-Funktion
     function showFeedback(message, isSuccess = true) {
       const feedback = document.getElementById("feedback");
       feedback.textContent = message;
       feedback.className = isSuccess ? "success" : "error";
       feedback.style.display = "block";
-      setTimeout(() => {
-        feedback.style.display = "none";
-      }, 3000);
+      setTimeout(() => { feedback.style.display = "none"; }, 3000);
     }
 
-    // Schätzung speichern und Punkte neu berechnen
+    // Ergebnisformular absenden
     document.getElementById("resultForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const teamId = document.getElementById("teamSelect").value;
-      const guessValue = parseInt(document.getElementById("guess").value, 10);
+      const points = parseInt(document.getElementById("points").value, 10);
       if (!teamId) {
         showFeedback("Bitte wähle ein Team aus!", false);
         return;
       }
       
       const teamsRef = collection(db, "teams");
-      const teamDoc = doc(db, "teams", teamId);
+      const q = query(teamsRef, where("teamName", "!=", ""));
+      const querySnapshot = await getDocs(q);
       let teamData;
-      try {
-        const snap = await getDoc(teamDoc);
-        teamData = snap.data();
-      } catch (err) {
-        console.error("Fehler beim Lesen des Team-Dokuments:", err);
-      }
-
-      // Falls bereits eine Schätzung vorliegt, bestätigen
-      if (teamData && teamData.guess_station1 && teamData.guess_station1 > 0) {
-        if (!confirm("Für dieses Team wurde bereits eine Schätzung abgegeben. Möchtest du den Eintrag überschreiben?")) {
+      querySnapshot.forEach(docSnap => {
+        if (docSnap.id === teamId) {
+          teamData = docSnap.data();
+        }
+      });
+      
+      if (teamData && teamData["station" + stationNumber] && teamData["station" + stationNumber] !== 0) {
+        if (!confirm("Für dieses Team ist bereits ein Wert eingetragen. Möchtest du den bestehenden Eintrag überschreiben?")) {
           showFeedback("Eintrag nicht überschrieben.", false);
           return;
         }
       }
       
       try {
-        // Team-Dokument aktualisieren oder anlegen
         if (!teamData) {
-          // Falls das Team-Dokument nicht existiert, neu anlegen
-          await addDoc(teamsRef, {
+          let newTeamData = {
             teamName: "Unbekannt",
-            confirmed: true,
-            guess_station1: guessValue,
             station1: 0, station2: 0, station3: 0, station4: 0,
             station5: 0, station6: 0, station7: 0, station8: 0,
             total: 0
-          });
+          };
+          newTeamData["station" + stationNumber] = points;
+          newTeamData.total = points;
+          await addDoc(teamsRef, newTeamData);
         } else {
-          // Aktualisiere nur das Feld guess_station1
-          await updateDoc(teamDoc, {
-            guess_station1: guessValue
-          });
+          let newTotal = 0;
+          for (let i = 1; i <= 8; i++) {
+            newTotal += (i === stationNumber ? points : (teamData["station" + i] || 0));
+          }
+          const updateData = {};
+          updateData["station" + stationNumber] = points;
+          updateData.total = newTotal;
+          await updateDoc(doc(db, "teams", teamId), updateData);
         }
-        showFeedback("Schätzung erfolgreich gespeichert!", true);
-        // Punktevergabe
-        recalcStation1Scores();
+        showFeedback("Ergebnis erfolgreich gespeichert!");
       } catch (error) {
-        console.error("Fehler beim Speichern der Schätzung:", error);
+        console.error("Fehler beim Speichern des Ergebnisses:", error);
         showFeedback("Fehler beim Speichern!", false);
       }
-
-      // Formular zurücksetzen und Dropdown neu laden
       document.getElementById("resultForm").reset();
       loadTeamsDropdown();
+      loadTeamsInfo();
     });
-
-    // Seite initial laden
-    loadTeamsDropdown();
-    loadTeamsInfo();
-
-    // Toggle Dark/Light Mode
+    
+    // Toggle zwischen Dark und Light Mode
     function toggleMode() {
       document.body.classList.toggle("light-mode");
       const btn = document.querySelector(".toggle-mode");
-      btn.textContent = document.body.classList.contains("light-mode")
-        ? "Dark Mode"
-        : "Light Mode";
+      btn.textContent = document.body.classList.contains("light-mode") ? "Dark Mode" : "Light Mode";
     }
     window.toggleMode = toggleMode;
   </script>
