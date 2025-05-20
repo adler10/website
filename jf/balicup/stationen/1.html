@@ -12,8 +12,7 @@
     }
     body {
       margin: 20px; font-family: Arial, sans-serif;
-      background: var(--bg-dark); color: #fff;
-      transition: .3s;
+      background: var(--bg-dark); color: #fff; transition: .3s;
     }
     body.light-mode {
       background: var(--bg-light); color: #333;
@@ -32,12 +31,14 @@
     }
     button {
       cursor: pointer;
-      background: var(--btn-bg-dark); border: 1px solid var(--btn-border-dark);
+      background: var(--btn-bg-dark);
+      border: 1px solid var(--btn-border-dark);
       color: #fff; transition: .3s;
     }
     button:hover { background: var(--btn-hover-dark); }
     body.light-mode button {
-      background: var(--btn-bg-light); border-color: var(--btn-border-light);
+      background: var(--btn-bg-light);
+      border-color: var(--btn-border-light);
       color: #333;
     }
     body.light-mode button:hover { background: var(--btn-hover-light); }
@@ -53,20 +54,20 @@
     .teams-info h2 { margin-bottom: 10px; text-align: center; }
     .group-container { margin-bottom: 20px; }
     .team-card {
-      margin: 8px 0; padding: 8px; border-radius: 4px; border: 1px solid;
-      text-align: center;
+      margin: 8px 0; padding: 8px;
+      border-radius: 4px; border: 1px solid; text-align: center;
     }
-    .participated   { background: #388e3c; border-color: #2e7d32; color: #fff; }
-    .not-participated { background: #d32f2f; border-color: #c62828; color: #fff; }
-    body.light-mode .participated   { background: #81c784; border-color: #66bb6a; color: #333; }
-    body.light-mode .not-participated { background: #e57373; border-color: #ef5350; color: #333; }
+    .participated    { background: #388e3c; border-color: #2e7d32; color: #fff; }
+    .not-participated{ background: #d32f2f; border-color: #c62828; color: #fff; }
+    body.light-mode .participated    { background: #81c784; border-color: #66bb6a; color: #333; }
+    body.light-mode .not-participated{ background: #e57373; border-color: #ef5350; color: #333; }
 
     .toggle-mode {
       position: fixed; bottom: 10px; right: 10px;
       padding: 4px 8px; font-size: 0.8em;
-      border: 1px solid var(--btn-border-dark); background: var(--btn-bg-dark);
-      color: #fff; cursor: pointer; transition: .3s;
-      white-space: nowrap;
+      border: 1px solid var(--btn-border-dark);
+      background: var(--btn-bg-dark); color: #fff;
+      cursor: pointer; transition: .3s; white-space: nowrap;
     }
     .toggle-mode:hover { background: var(--btn-hover-dark); }
     body.light-mode .toggle-mode {
@@ -78,14 +79,13 @@
     @media (max-width: 600px) {
       body { margin: 10px; }
       .container { padding: 15px; }
-      header h1 { font-size: 1.3em; }
       .toggle-mode { bottom: 5px; right: 5px; padding: 3px 6px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Ergebnisse für Station 1 – Schätzspiel</h1>
+    <h1>Ergebnisse Station 1 – Schätzspiel</h1>
   </header>
 
   <div class="container">
@@ -102,137 +102,129 @@
     </form>
 
     <div id="feedback"></div>
-
     <div class="teams-info" id="teamsInfo"></div>
   </div>
 
   <button class="toggle-mode" onclick="toggleMode()">Light</button>
 
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, getDoc, doc,
+      updateDoc, setDoc, onSnapshot, addDoc
+    } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: "AIzaSyByMYvt0OdfhteOgyNplMqxbWWYQJBwTpg",
+      authDomain: "bali-cup2025.firebaseapp.com",
+      projectId: "bali-cup2025",
+      storageBucket: "bali-cup2025.firebasestorage.app",
+      messagingSenderId: "867421335336",
+      appId: "1:867421335336:web:e046ccb32b631dcbf86a1d",
+      measurementId: "G-484CZNKVQ1"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
     const stationNumber = 1;
-    const app = initializeApp({
-      apiKey: "...", authDomain: "bali-cup2025.firebaseapp.com",
-      projectId: "bali-cup2025", storageBucket: "", messagingSenderId: "",
-      appId: "", measurementId: ""
-    });
-    const db = getFirestore(app);
+    const teamsCol      = collection(db, "teams");
 
-    // Dropdown befüllen (nur confirmed=true)
+    // Dropdown befüllen: confirmed=true && station1==0
     async function loadTeamsDropdown() {
-      const sel = document.getElementById('teamSelect');
-      sel.innerHTML = '<option value="" disabled selected>Bitte wählen</option>';
-      const snaps = await getDocs(collection(db, 'teams'));
-      const groups = { normal: [], kinder: [] };
+      const select = document.getElementById("teamSelect");
+      select.innerHTML = '<option value="" disabled selected>Bitte wählen</option>';
 
+      const snaps = await getDocs(teamsCol);
       snaps.forEach(s => {
         const d = s.data();
-        if (!d.confirmed || (d['station'+stationNumber] || 0) > 0) return;
-        const key = d.teamType.toLowerCase() === 'kindergruppe' ? 'kinder' : 'normal';
-        groups[key].push({ id: s.id, name: d.teamName });
-      });
-
-      ['normal','kinder'].forEach(type => {
-        if (groups[type].length) {
-          groups[type].sort((a,b)=>a.name.localeCompare(b.name));
-          const og = document.createElement('optgroup');
-          og.label = type==='normal' ? 'Normale Gruppe' : 'Kindergruppe';
-          groups[type].forEach(t => {
-            const o = document.createElement('option');
-            o.value = t.id; o.textContent = t.name;
-            og.appendChild(o);
-          });
-          sel.appendChild(og);
+        if (d.confirmed && (d["station1"] || 0) === 0) {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = d.teamName;
+          select.append(opt);
         }
       });
     }
 
-    // Übersicht laden (nur confirmed=true)
+    // Übersicht befüllen: confirmed=true
     async function loadTeamsInfo() {
-      const div = document.getElementById('teamsInfo');
-      div.innerHTML = '';
-      const snaps = await getDocs(collection(db, 'teams'));
-      const groups = { normal: [], kinder: [] };
+      const container = document.getElementById("teamsInfo");
+      container.innerHTML = "";
 
+      const snaps = await getDocs(teamsCol);
       snaps.forEach(s => {
         const d = s.data();
         if (!d.confirmed) return;
-        const pts = d['station'+stationNumber] || 0;
-        const key = d.teamType.toLowerCase() === 'kindergruppe' ? 'kinder' : 'normal';
-        groups[key].push({ name: d.teamName, points: pts });
-      });
 
-      ['normal','kinder'].forEach(type => {
-        if (groups[type].length) {
-          groups[type].sort((a,b)=>a.name.localeCompare(b.name));
-          const h2 = document.createElement('h2');
-          h2.textContent = type==='normal' ? 'Normale Gruppe' : 'Kindergruppe';
-          const wrap = document.createElement('div');
-          wrap.className = 'group-container';
-          groups[type].forEach(t => {
-            const c = document.createElement('div');
-            c.className = 'team-card ' + (t.points>0?'participated':'not-participated');
-            c.innerHTML = `<strong>${t.name}</strong><br>${
-              t.points>0 ? `${t.points} Punkte` : 'Noch nicht teilgenommen'
-            }`;
-            wrap.appendChild(c);
-          });
-          div.appendChild(h2);
-          div.appendChild(wrap);
-        }
+        const card = document.createElement("div");
+        card.className = "team-card " + ((d["station1"] || 0) > 0 ? "participated" : "not-participated");
+        card.innerHTML = `<strong>${d.teamName}</strong><br>` +
+          ((d["station1"] || 0) > 0
+            ? `Teilgenommen mit ${d["station1"]} Punkten.`
+            : `<em>Noch nicht teilgenommen</em>`);
+        container.append(card);
       });
     }
 
-    // Feedback + Submit
-    function showFeedback(msg, ok=true) {
-      const f = document.getElementById('feedback');
-      f.textContent = msg;
-      f.className = ok ? 'success' : 'error';
-      f.style.display = 'block';
-      setTimeout(()=>f.style.display='none', 3000);
+    // Feedback
+    function showFeedback(msg, ok = true) {
+      const fb = document.getElementById("feedback");
+      fb.textContent = msg;
+      fb.className   = ok ? "success" : "error";
+      fb.style.display = "block";
+      setTimeout(() => fb.style.display = "none", 3000);
     }
 
-    document.getElementById('resultForm')
-      .addEventListener('submit', async e => {
-        e.preventDefault();
-        const teamId = e.target.teamSelect.value;
-        const pts    = parseInt(e.target.points.value,10);
-        if (!teamId) { showFeedback('Bitte Team wählen',false); return; }
+    // Formular absenden
+    document.getElementById("resultForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const teamId = e.target.teamSelect.value;
+      const pts    = parseInt(e.target.points.value, 10);
+      if (!teamId) { showFeedback("Bitte Team wählen", false); return; }
 
-        const sRef = doc(db,'teams',teamId);
-        const snap = await getDoc(sRef);
-        const data = snap.data() || {};
+      const ref  = doc(teamsCol, teamId);
+      const snap = await getDoc(ref);
+      const d    = snap.data();
 
-        if (data['station'+stationNumber] > 0
-            && !confirm('Überschreiben?')) {
-          showFeedback('Abgebrochen',false);
-          return;
-        }
+      if (d.station1 > 0 && !confirm("Eintrag überschreiben?")) {
+        showFeedback("Abgebrochen", false);
+        return;
+      }
 
-        const update = { ['station'+stationNumber]: pts };
-        update.total = Object.keys(data)
-          .filter(k=>k.startsWith('station'))
-          .reduce((sum,k)=>(k===`station${stationNumber}`?pts:(data[k]||0))+sum,0);
+      // Update station1 & total
+      const newTotal = Object.keys(d)
+        .filter(k => k.startsWith("station"))
+        .reduce((sum, k) => sum + (k === "station1" ? pts : (d[k] || 0)), 0);
 
-        await updateDoc(sRef, update);
-        showFeedback('Gespeichert');
-        e.target.reset();
-        loadTeamsDropdown();
-        loadTeamsInfo();
+      await updateDoc(ref, {
+        station1: pts,
+        total:    newTotal
       });
 
-    // Dark/Light
+      showFeedback("Gespeichert");
+      e.target.reset();
+      await loadTeamsDropdown();
+      await loadTeamsInfo();
+    });
+
+    // Station-Status (optional)
+    onSnapshot(doc(db, "stationSessions", "station1"), snap => {
+      if (!snap.exists() || snap.data().loggedIn === false) {
+        setDoc(doc(db, "stationSessions", "station1"), { loggedIn: true }, { merge: true });
+      }
+    });
+
+    // Light/Dark Mode
     window.toggleMode = () => {
-      document.body.classList.toggle('light-mode');
-      document.querySelector('.toggle-mode').textContent =
-        document.body.classList.contains('light-mode') ? 'Dark' : 'Light';
+      document.body.classList.toggle("light-mode");
+      document.querySelector(".toggle-mode").textContent =
+        document.body.classList.contains("light-mode") ? "Dark" : "Light";
     };
 
-    // Init
+    // Initial
     loadTeamsDropdown();
     loadTeamsInfo();
   </script>
-
-  <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js"></script>
 </body>
 </html>
