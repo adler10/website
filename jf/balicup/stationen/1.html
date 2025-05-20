@@ -24,28 +24,43 @@
       background: #f5f5f5;
       color: #333;
     }
-    header { text-align: center; margin-bottom: 20px; }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     .container {
-      max-width: 400px; margin: 0 auto;
-      padding: 20px; background: #333;
-      border: 1px solid #444; border-radius: 4px;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #333;
+      border: 1px solid #444;
+      border-radius: 4px;
     }
     body.light-mode .container {
-      background: #fff; border: 1px solid #ccc;
+      background: #fff;
+      border: 1px solid #ccc;
     }
-    label { display: block; margin-top: 10px; }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
     select, input, button {
-      font-size: 1em; padding: 10px;
-      margin-top: 5px; width: 100%;
+      font-size: 1em;
+      padding: 10px;
+      margin-top: 5px;
+      width: 100%;
       box-sizing: border-box;
     }
     button {
       cursor: pointer;
       background: var(--btn-bg-dark);
       border: 1px solid var(--btn-border-dark);
-      color: #fff; transition: background 0.3s;
+      color: #fff;
+      transition: background 0.3s;
     }
-    button:hover { background: var(--btn-hover-dark); }
+    button:hover {
+      background: var(--btn-hover-dark);
+    }
     body.light-mode button {
       background: var(--btn-bg-light);
       border: 1px solid var(--btn-border-light);
@@ -55,21 +70,36 @@
       background: var(--btn-hover-light);
     }
     #feedback {
-      margin-top: 15px; padding: 10px;
-      border-radius: 4px; text-align: center;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
       display: none;
     }
-    #feedback.success { background: #4caf50; color: #fff; }
-    #feedback.error   { background: #f44336; color: #fff; }
+    #feedback.success {
+      background: #4caf50;
+      color: #fff;
+    }
+    #feedback.error {
+      background: #f44336;
+      color: #fff;
+    }
+    /* Toggle unten rechts */
     .toggle-mode {
-      position: fixed; top: 10px; right: 10px;
-      padding: 4px 6px; font-size: 0.9em;
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      padding: 6px 8px;
+      font-size: 0.9em;
       cursor: pointer;
       border: 1px solid var(--btn-border-dark);
       background: var(--btn-bg-dark);
-      transition: background 0.3s; white-space: nowrap;
+      transition: background 0.3s;
+      white-space: nowrap;
     }
-    .toggle-mode:hover { background: var(--btn-hover-dark); }
+    .toggle-mode:hover {
+      background: var(--btn-hover-dark);
+    }
     body.light-mode .toggle-mode {
       border: 1px solid var(--btn-border-light);
       background: var(--btn-bg-light);
@@ -77,27 +107,42 @@
     body.light-mode .toggle-mode:hover {
       background: var(--btn-hover-light);
     }
-    .teams-info { margin-top: 20px; }
-    .teams-info h2 {
-      text-align: center; margin-bottom: 10px;
+    .teams-info {
+      margin-top: 20px;
     }
-    .group-container { margin-bottom: 20px; }
+    .teams-info h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .group-container {
+      margin-bottom: 20px;
+    }
     .team-card {
-      padding: 10px; margin: 10px;
-      border-radius: 4px; border: 1px solid;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 4px;
+      border: 1px solid;
       text-align: center;
     }
     body:not(.light-mode) .team-card.participated {
-      background: #388e3c; border-color: #2e7d32; color: #fff;
+      background: #388e3c;
+      border-color: #2e7d32;
+      color: #fff;
     }
     body:not(.light-mode) .team-card.not-participated {
-      background: #d32f2f; border-color: #c62828; color: #fff;
+      background: #d32f2f;
+      border-color: #c62828;
+      color: #fff;
     }
     body.light-mode .team-card.participated {
-      background: #81c784; border-color: #66bb6a; color: #333;
+      background: #81c784;
+      border-color: #66bb6a;
+      color: #333;
     }
     body.light-mode .team-card.not-participated {
-      background: #e57373; border-color: #ef5350; color: #333;
+      background: #e57373;
+      border-color: #ef5350;
+      color: #333;
     }
     /* Mobile */
     @media (max-width: 600px) {
@@ -106,8 +151,8 @@
       header h1 { font-size: 1.3em; }
       label, select, input, button { font-size: 1em; }
       .toggle-mode {
-        top: 5px; right: 5px;
-        padding: 3px 5px; font-size: 0.8em;
+        bottom: 5px; right: 5px;
+        padding: 4px 6px; font-size: 0.8em;
       }
       .teams-info h2 { font-size: 1.1em; }
       .team-card { margin: 8px 5px; font-size: 0.9em; padding: 8px; }
@@ -115,8 +160,6 @@
   </style>
 </head>
 <body>
-  <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
-
   <header>
     <h1>Ergebnisse für Station <span id="stationId"></span> – <span id="stationLabel"></span> erfassen</h1>
   </header>
@@ -126,18 +169,17 @@
       <select id="teamSelect" required>
         <option value="" disabled selected>Bitte wähle ein Team</option>
       </select>
-
       <label for="points">Punkte:</label>
       <input type="number" id="points" placeholder="Punkte" min="0" required>
-
       <button type="submit">Ergebnis speichern</button>
     </form>
     <div id="feedback"></div>
     <div class="teams-info" id="teamsInfo"></div>
   </div>
 
+  <button class="toggle-mode" onclick="toggleMode()">Light Mode</button>
+
   <script type="module">
-    // Konfiguration
     const stationName   = "Schätzspiel";
     const stationNumber = 1;
     const allowedGroups = {
@@ -145,11 +187,9 @@
       teams:     ["normale gruppe", "kindergruppe"]
     };
 
-    // Überschrift
     document.getElementById("stationLabel").textContent = stationName;
     document.getElementById("stationId").textContent    = stationNumber;
 
-    // Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import {
       getFirestore, collection, getDocs, updateDoc, doc,
@@ -179,7 +219,7 @@
       }
     });
 
-    // Dropdown befüllen (confirmed === true)
+    // Dropdown (nur confirmed=true)
     async function loadTeamsDropdown() {
       const snaps = await getDocs(collection(db, "teams"));
       const sel   = document.getElementById("teamSelect");
@@ -187,12 +227,12 @@
 
       const normal = [], kinder = [];
       snaps.forEach(docSnap => {
-        const data = docSnap.data();
-        if (!data.confirmed) return;
-        if ((data["station" + stationNumber] || 0) > 0) return;
-        const type = (data.teamType || "normale gruppe").toLowerCase();
+        const d = docSnap.data();
+        if (!d.confirmed) return;
+        if ((d["station" + stationNumber] || 0) > 0) return;
+        const type = (d.teamType || "normale gruppe").toLowerCase();
         if (!allowedGroups.dropdown.includes(type)) return;
-        const obj = { id: docSnap.id, name: data.teamName };
+        const obj = { id: docSnap.id, name: d.teamName };
         (type === "kindergruppe" ? kinder : normal).push(obj);
       });
 
@@ -229,26 +269,22 @@
 
       const normal = [], kinder = [];
       snaps.forEach(docSnap => {
-        const data = docSnap.data();
-        const pts  = data["station" + stationNumber] || 0;
-        const type = (data.teamType || "normale gruppe").toLowerCase();
+        const d = docSnap.data();
+        const pts = d["station" + stationNumber] || 0;
+        const type = (d.teamType || "normale gruppe").toLowerCase();
         if (!allowedGroups.teams.includes(type)) return;
-        const card = { name: data.teamName, points: pts };
+        const card = { name: d.teamName, points: pts };
         (type === "kindergruppe" ? kinder : normal).push(card);
       });
 
       normal.sort((a,b)=>a.name.localeCompare(b.name));
       kinder.sort((a,b)=>a.name.localeCompare(b.name));
 
-      if (normal.length) {
-        div.append(createGroupSection("Normale Gruppe", normal));
-      }
-      if (kinder.length) {
-        div.append(createGroupSection("Kindergruppe", kinder));
-      }
+      if (normal.length) div.append(createGroup("Normale Gruppe", normal));
+      if (kinder.length) div.append(createGroup("Kindergruppe", kinder));
     }
 
-    function createGroupSection(title, list) {
+    function createGroup(title, list) {
       const frag = document.createDocumentFragment();
       const h2   = document.createElement("h2");
       h2.textContent = title;
@@ -259,9 +295,9 @@
         const c = document.createElement("div");
         c.className = "team-card " + (t.points > 0 ? "participated" : "not-participated");
         c.innerHTML = `<strong>${t.name}</strong><br>` +
-                      (t.points > 0
-                        ? `Teilgenommen mit <em>${t.points}</em> Punkten.`
-                        : `<em>Noch nicht teilgenommen</em>`);
+          (t.points > 0
+            ? `Teilgenommen mit <em>${t.points}</em> Punkten.`
+            : `<em>Noch nicht teilgenommen</em>`);
         wrap.append(c);
       });
       frag.append(wrap);
@@ -277,15 +313,15 @@
       setTimeout(()=> f.style.display = "none", 3000);
     }
 
-    // Formular absenden
-    document.getElementById("resultForm").addEventListener("submit", async e => {
+    // Formular
+    document.getElementById("resultForm")
+      .addEventListener("submit", async e => {
       e.preventDefault();
       const teamId = document.getElementById("teamSelect").value;
       const pts    = parseInt(document.getElementById("points").value, 10);
       if (!teamId) { showFeedback("Bitte wähle ein Team aus!", false); return; }
 
-      const teamsRef = collection(db, "teams");
-      const snaps    = await getDocs(teamsRef);
+      const snaps = await getDocs(collection(db, "teams"));
       let data;
       snaps.forEach(s => { if (s.id === teamId) data = s.data(); });
 
@@ -299,36 +335,36 @@
       try {
         if (!data) {
           const obj = { teamName: "Unbekannt", total: pts };
-          for (let i = 1; i <= 8; i++) obj["station" + i] = (i === stationNumber ? pts : 0);
-          await addDoc(teamsRef, obj);
+          for (let i=1; i<=8; i++) obj["station"+i] = (i===stationNumber ? pts : 0);
+          await addDoc(collection(db, "teams"), obj);
         } else {
           let total = 0;
-          for (let i = 1; i <= 8; i++) {
-            total += (i === stationNumber ? pts : (data["station" + i] || 0));
+          for (let i=1; i<=8; i++) {
+            total += (i===stationNumber ? pts : (data["station"+i]||0));
           }
           await updateDoc(doc(db, "teams", teamId), {
-            ["station" + stationNumber]: pts,
+            ["station"+stationNumber]: pts,
             total
           });
         }
         showFeedback("Ergebnis gespeichert!");
         document.getElementById("resultForm").reset();
-        loadTeamsDropdown();
-        loadTeamsInfo();
-      } catch (err) {
+        await loadTeamsDropdown();
+        await loadTeamsInfo();
+      } catch(err) {
         console.error(err);
         showFeedback("Fehler beim Speichern!", false);
       }
     });
 
-    // Dark/Light Mode
+    // Dark/Light
     window.toggleMode = () => {
       document.body.classList.toggle("light-mode");
       document.querySelector(".toggle-mode").textContent =
         document.body.classList.contains("light-mode") ? "Dark Mode" : "Light Mode";
     };
 
-    // Initial laden
+    // Initial
     loadTeamsDropdown();
     loadTeamsInfo();
   </script>
