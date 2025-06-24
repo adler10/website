@@ -2,210 +2,205 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Postmoderne Poster</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Postmoderne Literatur</title>
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Garamond&family=Montserrat:wght@700;400&display=swap" rel="stylesheet">
-  <!-- Font Awesome for Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=PT+Serif:ital@0;1&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Montserrat', sans-serif;
-      background: #f4f4f4;
-      color: #222;
+    :root {
+      --black: #0d0d0d;
+      --white: #fafafa;
+      --red:   #e63946;
+      --yellow: #f4d35e;
+      --teal:  #2a9d8f;
+      --gap:   16px;
     }
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      padding: 20px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 40px;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "PT Serif", serif;
+      color: var(--black);
+      background: var(--white);
+      line-height: 1.4;
+      padding: var(--gap);
+    }
+    h1, h2 {
+      font-family: "Montserrat", sans-serif;
+      text-transform: uppercase;
     }
     h1 {
-      font-family: 'Montserrat', sans-serif;
+      grid-area: header;
       font-size: 3rem;
       text-align: center;
-      text-transform: uppercase;
-      margin-bottom: 0.2em;
+      transform: rotate(-1deg);
+      color: var(--red);
+      text-shadow: 2px 2px var(--yellow);
+      margin-bottom: var(--gap);
     }
-    .subtitle {
-      font-family: 'Garamond', serif;
-      font-size: 1.2rem;
-      text-align: center;
-      margin-bottom: 1em;
-      color: #555;
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "header header"
+        "def   timeline"
+        "features themes"
+        "authors authors"
+        "quote quote"
+        "footer footer";
+      grid-gap: var(--gap);
+      max-width: 1200px;
+      margin: 0 auto;
     }
     .section {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .timeline {
       position: relative;
-      padding: 20px 0;
+      padding: var(--gap);
+      background: var(--white);
+      border: 4px solid var(--black);
+      overflow: hidden;
     }
-    .timeline::before {
-      content: '';
+    .section::before {
+      content: "";
       position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: #222;
+      width: 120%;
+      height: 120%;
+      background: var(--teal);
+      transform: rotate(3deg) translate(-10%, -50%);
+      z-index: -1;
+      opacity: 0.2;
     }
-    .event {
+    .def      { grid-area: def; }
+    .timeline { grid-area: timeline; }
+    .features { grid-area: features; }
+    .themes   { grid-area: themes; }
+    .authors  { grid-area: authors; }
+    .quote    { grid-area: quote; background: var(--yellow); border-color: var(--red); }
+    .footer   { grid-area: footer; text-align: center; font-size: 0.9rem; }
+    .timeline ul, .features ul, .themes ul {
+      list-style: none;
+      margin-top: var(--gap);
+    }
+    .timeline li {
+      margin-bottom: calc(var(--gap) / 2);
       position: relative;
-      width: 45%;
-      padding: 10px 20px;
-      background: #fafafa;
-      border-radius: 8px;
-      margin-bottom: 40px;
+      padding-left: 1.5rem;
     }
-    .event.left {
+    .timeline li::before {
+      content: "";
+      position: absolute;
       left: 0;
-      transform: translateX(-50%);
+      top: 0.3rem;
+      width: 10px; height: 10px;
+      background: var(--red);
+      border-radius: 50%;
     }
-    .event.right {
-      left: 100%;
-      transform: translateX(-50%);
+    .features li, .themes li {
+      margin-bottom: calc(var(--gap) / 2);
+      padding-left: 1.2rem;
+      position: relative;
     }
-    .event .year {
-      font-weight: bold;
-      margin-bottom: 0.5em;
+    .features li::before, .themes li::before {
+      content: "▹";
+      position: absolute;
+      left: 0;
+      color: var(--teal);
     }
-    .features {
+    .authors .cards {
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
-      justify-content: center;
+      gap: var(--gap);
+      margin-top: var(--gap);
     }
-    .feature {
-      flex: 1 1 200px;
+    .author-card {
+      flex: 1 1 calc(33% - var(--gap));
+      padding: var(--gap);
+      background: var(--white);
+      border: 2px dashed var(--teal);
       text-align: center;
     }
-    .feature i {
-      font-size: 2rem;
-      margin-bottom: 0.5em;
-      color: #e63946;
-    }
-    .authors table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
-    .authors th, .authors td {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-    }
-    .quote {
+    .author-card h3 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+    .quote blockquote {
       font-style: italic;
-      border-left: 4px solid #e63946;
-      padding-left: 16px;
+      font-size: 1.2rem;
       position: relative;
-      background: #fff;
-      border-radius: 8px;
+      padding-left: 2rem;
     }
-    .quote::before {
-      content: '\201C';
-      font-size: 4rem;
+    .quote blockquote::before {
+      content: "“";
       position: absolute;
-      top: -10px;
-      left: 10px;
-      color: #e63946;
-    }
-    .footer {
-      font-size: 0.8rem;
-      text-align: center;
-      color: #555;
+      left: 0; top: -0.2rem;
+      font-size: 3rem;
+      line-height: 1;
+      color: var(--red);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Postmoderne</h1>
-      <p class="subtitle">Die Epoche des Hinterfragens und Spielens mit Formen</p>
-    </header>
 
-    <section class="section definition">
-      <h2>Definition</h2>
-      <p>"Die Postmoderne Literatur ist eine literarische Epoche, die sich als Reaktion und Weiterentwicklung auf die modernistische Literatur versteht." (ab 1960er, geprägt von Lyotard, Foucault, Derrida)</p>
+  <div class="grid">
+    <h1>Postmoderne Literatur</h1>
+
+    <section class="section def">
+      <h2>Was ist Postmoderne?</h2>
+      <p>Die Postmoderne ist eine literarische Epoche (ab ca. 1960), die traditionelle Erzählformen aufbricht, Realität und Fiktion vermischt und mit Sprache als Spielzeug umgeht.</p>
     </section>
 
     <section class="section timeline">
       <h2>Zeitstrahl</h2>
-      <div class="event left">
-        <div class="year">1960er</div>
-        <div>Erste Experimente (Grass, Johnson)</div>
-      </div>
-      <div class="event right">
-        <div class="year">1970/80er</div>
-        <div>Metafiktion & Intertextualität (Jelinek, Handke)</div>
-      </div>
-      <div class="event left">
-        <div class="year">1990–2010</div>
-        <div>Höhepunkt (Süskind, Kehlmann, Schlink)</div>
-      </div>
-      <div class="event right">
-        <div class="year">ab 2000</div>
-        <div>Globalisierung & digitale Themen (Kehlmann, Zeh)</div>
-      </div>
+      <ul>
+        <li><strong>1960er:</strong> Erste Experimente im deutschsprachigen Raum</li>
+        <li><strong>1970/80er:</strong> Metafiktion &amp; Intertextualität</li>
+        <li><strong>1990–2010:</strong> Höhepunkt &amp; Bestseller</li>
+        <li><strong>ab 2000:</strong> Globalisierung &amp; Digitale Themen</li>
+      </ul>
     </section>
 
     <section class="section features">
       <h2>Zentrale Merkmale</h2>
-      <div class="feature">
-        <i class="fas fa-bolt"></i>
-        <p>Fragmentierung</p>
-      </div>
-      <div class="feature">
-        <i class="fas fa-book-open"></i>
-        <p>Metafiktion</p>
-      </div>
-      <div class="feature">
-        <i class="fas fa-code-branch"></i>
-        <p>Intertextualität</p>
-      </div>
-      <div class="feature">
-        <i class="fas fa-laugh"></i>
-        <p>Ironie & Parodie</p>
-      </div>
+      <ul>
+        <li>Fragmentierung</li>
+        <li>Metafiktion</li>
+        <li>Intertextualität</li>
+        <li>Ironie &amp; Parodie</li>
+        <li>Antihelden</li>
+        <li>Sprachexperimente</li>
+      </ul>
     </section>
 
     <section class="section themes">
-      <h2>Themen & Motive</h2>
+      <h2>Themen &amp; Motive</h2>
       <ul>
-        <li>Identität & Selbst</li>
+        <li>Identität &amp; Selbst</li>
         <li>Relativität von Wahrheiten</li>
-        <li>Kultur- und Gesellschaftskritik</li>
-        <li>Medialität & Rolle des Erzählers</li>
+        <li>Kultur- &amp; Gesellschaftskritik</li>
+        <li>Medialität &amp; Rolle des Erzählers</li>
       </ul>
     </section>
 
     <section class="section authors">
       <h2>Typische Vertreter</h2>
-      <table>
-        <thead>
-          <tr><th>Genre</th><th>Autoren</th><th>Beispielwerke</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Epik</td><td>Patrick Süskind, Daniel Kehlmann</td><td>"Das Parfum", "Die Vermessung der Welt"</td></tr>
-          <tr><td>Lyrik</td><td>Durs Grünbein, Barbara Köhler</td><td>Ausgewählte Gedichte</td></tr>
-          <tr><td>Drama</td><td>Elfriede Jelinek, Peter Handke</td><td>"Die Schutzbefohlenen", "Publikumsbeschimpfung"</td></tr>
-        </tbody>
-      </table>
+      <div class="cards">
+        <div class="author-card">
+          <h3>Patrick Süskind</h3>
+          <p><em>Das Parfum</em></p>
+        </div>
+        <div class="author-card">
+          <h3>Elfriede Jelinek</h3>
+          <p><em>Die Schutzbefohlenen</em></p>
+        </div>
+        <div class="author-card">
+          <h3>Daniel Kehlmann</h3>
+          <p><em>Die Vermessung der Welt</em></p>
+        </div>
+      </div>
     </section>
 
     <section class="section quote">
-      <p>„Wir sind alle Postmoderne – weil wir nicht nach einer einzigen, großen Wahrheit leben.“</p>
+      <blockquote>Wir sind alle Postmoderne – weil wir nicht nach einer einzigen, großen Wahrheit leben.</blockquote>
     </section>
 
-    <footer class="footer">
-      <p>Quelle: LIWI Verlag – Postmoderne Literatur (https://liwi-verlag.de/postmoderne-literatur/)</p>
+    <footer class="section footer">
+      <p>Quelle: LIWI Verlag – <a href="https://liwi-verlag.de/postmoderne-literatur/" target="_blank">Postmoderne Literatur</a></p>
     </footer>
   </div>
+
 </body>
 </html>
