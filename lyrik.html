@@ -2,64 +2,210 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Plakat: Postmoderne Lyrik</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postmoderne Poster</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Garamond&family=Montserrat:wght@700;400&display=swap" rel="stylesheet">
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: 'Arial', sans-serif; margin: 40px; background: #f9f9f9; color: #333; }
-    .container { max-width: 800px; margin: auto; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; }
-    h1 { font-size: 3rem; text-align: center; margin-bottom: 0.5rem; color: #222; }
-    h2 { font-size: 1.75rem; margin-top: 1.5rem; color: #444; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.3rem; }
-    ul { margin: 0.5rem 0 1rem 1.5rem; }
-    li { margin: 0.5rem 0; line-height: 1.4; }
-    .quote { font-style: italic; margin: 1rem 0; padding: 1rem; background: #f0f0f0; border-left: 4px solid #888; }
-    .authors-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-    .authors-table th, .authors-table td { border: 1px solid #ddd; padding: 8px; }
-    .authors-table th { background: #f0f0f0; }
-    .footer { text-align: right; font-size: 0.85rem; color: #666; margin-top: 2rem; }
+    body {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      background: #f4f4f4;
+      color: #222;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+    h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 3rem;
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 0.2em;
+    }
+    .subtitle {
+      font-family: 'Garamond', serif;
+      font-size: 1.2rem;
+      text-align: center;
+      margin-bottom: 1em;
+      color: #555;
+    }
+    .section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .timeline {
+      position: relative;
+      padding: 20px 0;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #222;
+    }
+    .event {
+      position: relative;
+      width: 45%;
+      padding: 10px 20px;
+      background: #fafafa;
+      border-radius: 8px;
+      margin-bottom: 40px;
+    }
+    .event.left {
+      left: 0;
+      transform: translateX(-50%);
+    }
+    .event.right {
+      left: 100%;
+      transform: translateX(-50%);
+    }
+    .event .year {
+      font-weight: bold;
+      margin-bottom: 0.5em;
+    }
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .feature {
+      flex: 1 1 200px;
+      text-align: center;
+    }
+    .feature i {
+      font-size: 2rem;
+      margin-bottom: 0.5em;
+      color: #e63946;
+    }
+    .authors table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .authors th, .authors td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .quote {
+      font-style: italic;
+      border-left: 4px solid #e63946;
+      padding-left: 16px;
+      position: relative;
+      background: #fff;
+      border-radius: 8px;
+    }
+    .quote::before {
+      content: '\201C';
+      font-size: 4rem;
+      position: absolute;
+      top: -10px;
+      left: 10px;
+      color: #e63946;
+    }
+    .footer {
+      font-size: 0.8rem;
+      text-align: center;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Postmoderne Lyrik</h1>
-    <p><strong>Zeitraum:</strong> ab ca. 1970 – heute</p>
+    <header>
+      <h1>Postmoderne</h1>
+      <p class="subtitle">Die Epoche des Hinterfragens und Spielens mit Formen</p>
+    </header>
 
-    <h2>Was ist Postmoderne Lyrik?</h2>
-    <p>Lyrik, die traditionelle Formen und Erwartungen bricht, spielerisch mit Sprache umgeht und Vielfalt, Mehrdeutigkeit und Intertextualität betont.</p>
+    <section class="section definition">
+      <h2>Definition</h2>
+      <p>"Die Postmoderne Literatur ist eine literarische Epoche, die sich als Reaktion und Weiterentwicklung auf die modernistische Literatur versteht." (ab 1960er, geprägt von Lyotard, Foucault, Derrida)</p>
+    </section>
 
-    <h2>Merkmale</h2>
-    <ul>
-      <li><strong>Fragmentierung & Bruch:</strong> Abgebrochene Verse, offene Bedeutungen.</li>
-      <li><strong>Metapoetische Reflexion:</strong> Texte hinterfragen ihr eigenes Dichten.</li>
-      <li><strong>Collage & Zitat:</strong> Einbau von Alltags- und Popkultur-Fragmenten.</li>
-      <li><strong>Ironie & Parodie:</strong> Brechung klassischer Formen.</li>
-      <li><strong>Intertextualität:</strong> Anspielungen auf andere Werke.</li>
-    </ul>
+    <section class="section timeline">
+      <h2>Zeitstrahl</h2>
+      <div class="event left">
+        <div class="year">1960er</div>
+        <div>Erste Experimente (Grass, Johnson)</div>
+      </div>
+      <div class="event right">
+        <div class="year">1970/80er</div>
+        <div>Metafiktion & Intertextualität (Jelinek, Handke)</div>
+      </div>
+      <div class="event left">
+        <div class="year">1990–2010</div>
+        <div>Höhepunkt (Süskind, Kehlmann, Schlink)</div>
+      </div>
+      <div class="event right">
+        <div class="year">ab 2000</div>
+        <div>Globalisierung & digitale Themen (Kehlmann, Zeh)</div>
+      </div>
+    </section>
 
-    <h2>Autoren & Beispiele</h2>
-    <table class="authors-table">
-      <thead>
-        <tr><th>Autor·in</th><th>Werk/Gedicht</th><th>Besonderheit</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Friederike Mayröcker</td><td>„vergebliche unfugversuche“</td><td>Klangspiel, freie Zeilenführung</td></tr>
-        <tr><td>Durs Grünbein</td><td>„Falten und Schatten“</td><td>Metapoetik, Reflexion des Schreibens</td></tr>
-        <tr><td>Thomas Kling</td><td>„muldental“</td><td>Lokalsprache, Alltagsfragmente</td></tr>
-        <tr><td>Jan Wagner</td><td>„Probebohrung im Himmel“</td><td>Naturbeschreibung, Alltagsbezug</td></tr>
-      </tbody>
-    </table>
+    <section class="section features">
+      <h2>Zentrale Merkmale</h2>
+      <div class="feature">
+        <i class="fas fa-bolt"></i>
+        <p>Fragmentierung</p>
+      </div>
+      <div class="feature">
+        <i class="fas fa-book-open"></i>
+        <p>Metafiktion</p>
+      </div>
+      <div class="feature">
+        <i class="fas fa-code-branch"></i>
+        <p>Intertextualität</p>
+      </div>
+      <div class="feature">
+        <i class="fas fa-laugh"></i>
+        <p>Ironie & Parodie</p>
+      </div>
+    </section>
 
-    <h2>Analyse-Tipps</h2>
-    <ul>
-      <li><strong>Form:</strong> Zeilen-, Strophenbruch & Weißraum beachten.</li>
-      <li><strong>Sprache:</strong> Wortneuschöpfungen, Ironie, Anspielungen suchen.</li>
-      <li><strong>Inhalt:</strong> Themen wie Identität, Medien, Konsum identifizieren.</li>
-      <li><strong>Metapoetik:</strong> Hinweise auf das eigene Dichten erkennen.</li>
-    </ul>
+    <section class="section themes">
+      <h2>Themen & Motive</h2>
+      <ul>
+        <li>Identität & Selbst</li>
+        <li>Relativität von Wahrheiten</li>
+        <li>Kultur- und Gesellschaftskritik</li>
+        <li>Medialität & Rolle des Erzählers</li>
+      </ul>
+    </section>
 
-    <div class="quote">
-      „Die Postmoderne bricht mit Gewissheiten und feiert das Fragment.“
-    </div>
+    <section class="section authors">
+      <h2>Typische Vertreter</h2>
+      <table>
+        <thead>
+          <tr><th>Genre</th><th>Autoren</th><th>Beispielwerke</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Epik</td><td>Patrick Süskind, Daniel Kehlmann</td><td>"Das Parfum", "Die Vermessung der Welt"</td></tr>
+          <tr><td>Lyrik</td><td>Durs Grünbein, Barbara Köhler</td><td>Ausgewählte Gedichte</td></tr>
+          <tr><td>Drama</td><td>Elfriede Jelinek, Peter Handke</td><td>"Die Schutzbefohlenen", "Publikumsbeschimpfung"</td></tr>
+        </tbody>
+      </table>
+    </section>
 
-    <div class="footer">Erstellt für den Deutschunterricht J1</div>
+    <section class="section quote">
+      <p>„Wir sind alle Postmoderne – weil wir nicht nach einer einzigen, großen Wahrheit leben.“</p>
+    </section>
+
+    <footer class="footer">
+      <p>Quelle: LIWI Verlag – Postmoderne Literatur (https://liwi-verlag.de/postmoderne-literatur/)</p>
+    </footer>
   </div>
 </body>
 </html>
