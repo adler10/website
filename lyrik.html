@@ -3,37 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Postmoderne Literatur</title>
+  <title>Postmoderne Literatur – Dark Mode</title>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=PT+Serif:ital@0;1&display=swap" rel="stylesheet">
   <style>
     :root {
-      --black: #0d0d0d;
-      --white: #fafafa;
-      --red:   #e63946;
-      --yellow: #f4d35e;
-      --teal:  #2a9d8f;
-      --gap:   16px;
+      --bg: #121212;
+      --fg: #e0e0e0;
+      --accent1: #ff4f4f;   /* kräftiges Rot */
+      --accent2: #ffd54f;   /* Gold-Gelb */
+      --accent3: #4fd1cd;   /* Türkis angehaucht */
+      --gap: 16px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "PT Serif", serif;
-      color: var(--black);
-      background: var(--white);
+      color: var(--fg);
+      background: var(--bg);
       line-height: 1.4;
       padding: var(--gap);
     }
     h1, h2 {
       font-family: "Montserrat", sans-serif;
       text-transform: uppercase;
+      color: var(--accent1);
     }
     h1 {
       grid-area: header;
       font-size: 3rem;
       text-align: center;
       transform: rotate(-1deg);
-      color: var(--red);
-      text-shadow: 2px 2px var(--yellow);
+      text-shadow: 2px 2px var(--accent2);
       margin-bottom: var(--gap);
     }
     .grid {
@@ -53,8 +53,8 @@
     .section {
       position: relative;
       padding: var(--gap);
-      background: var(--white);
-      border: 4px solid var(--black);
+      background: #1e1e1e;
+      border: 4px solid var(--fg);
       overflow: hidden;
     }
     .section::before {
@@ -62,18 +62,18 @@
       position: absolute;
       width: 120%;
       height: 120%;
-      background: var(--teal);
+      background: var(--accent3);
       transform: rotate(3deg) translate(-10%, -50%);
       z-index: -1;
-      opacity: 0.2;
+      opacity: 0.15;
     }
     .def      { grid-area: def; }
     .timeline { grid-area: timeline; }
     .features { grid-area: features; }
     .themes   { grid-area: themes; }
     .authors  { grid-area: authors; }
-    .quote    { grid-area: quote; background: var(--yellow); border-color: var(--red); }
-    .footer   { grid-area: footer; text-align: center; font-size: 0.9rem; }
+    .quote    { grid-area: quote; background: var(--accent2); border-color: var(--accent1); }
+    .footer   { grid-area: footer; text-align: center; font-size: 0.9rem; color: var(--fg); }
     .timeline ul, .features ul, .themes ul {
       list-style: none;
       margin-top: var(--gap);
@@ -82,6 +82,7 @@
       margin-bottom: calc(var(--gap) / 2);
       position: relative;
       padding-left: 1.5rem;
+      color: var(--fg);
     }
     .timeline li::before {
       content: "";
@@ -89,19 +90,20 @@
       left: 0;
       top: 0.3rem;
       width: 10px; height: 10px;
-      background: var(--red);
+      background: var(--accent1);
       border-radius: 50%;
     }
     .features li, .themes li {
       margin-bottom: calc(var(--gap) / 2);
       padding-left: 1.2rem;
       position: relative;
+      color: var(--fg);
     }
     .features li::before, .themes li::before {
       content: "▹";
       position: absolute;
       left: 0;
-      color: var(--teal);
+      color: var(--accent3);
     }
     .authors .cards {
       display: flex;
@@ -112,16 +114,25 @@
     .author-card {
       flex: 1 1 calc(33% - var(--gap));
       padding: var(--gap);
-      background: var(--white);
-      border: 2px dashed var(--teal);
+      background: #2a2a2a;
+      border: 2px dashed var(--accent3);
       text-align: center;
     }
-    .author-card h3 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+    .author-card h3 {
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+      color: var(--accent2);
+    }
+    .author-card p {
+      font-style: italic;
+      color: var(--fg);
+    }
     .quote blockquote {
       font-style: italic;
       font-size: 1.2rem;
       position: relative;
       padding-left: 2rem;
+      color: var(--bg);
     }
     .quote blockquote::before {
       content: "“";
@@ -129,7 +140,14 @@
       left: 0; top: -0.2rem;
       font-size: 3rem;
       line-height: 1;
-      color: var(--red);
+      color: var(--accent1);
+    }
+    .footer a {
+      color: var(--accent1);
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
