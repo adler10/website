@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Postmoderne Literatur</title>
+  <title>Postmoderne Literatur – Dark Mode (Privat)</title>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=PT+Serif:ital@0;1&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #121212;
       --fg: #e0e0e0;
-      --accent1: #ff4f4f;   /* kräftiges Rot */
-      --accent2: #ffd54f;   /* Gold-Gelb */
-      --accent3: #4fd1cd;   /* Türkis angehaucht */
+      --accent1: #ff4f4f;
+      --accent2: #ffd54f;
+      --accent3: #4fd1cd;
       --gap: 16px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,7 +22,51 @@
       background: var(--bg);
       line-height: 1.4;
       padding: var(--gap);
+      overflow: hidden;
     }
+    /* Overlay für Passwortabfrage */
+    #login-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #login-box {
+      background: #1e1e1e;
+      padding: 2rem;
+      border: 2px solid var(--accent2);
+      text-align: center;
+    }
+    #login-box h2 {
+      margin-bottom: 1rem;
+      color: var(--accent1);
+      font-family: "Montserrat", sans-serif;
+    }
+    #login-box input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      background: #2a2a2a;
+      border: 1px solid var(--accent3);
+      color: var(--fg);
+      font-size: 1rem;
+    }
+    #login-box button {
+      padding: 0.5rem 1rem;
+      background: var(--accent1);
+      border: none;
+      color: var(--bg);
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    /* Inhalt erst sichtbar, wenn eingeloggt */
+    #main-content { visibility: hidden; }
+
+    /* Rest des Styles wie gehabt */
     h1, h2 {
       font-family: "Montserrat", sans-serif;
       text-transform: uppercase;
@@ -150,10 +194,40 @@
       text-decoration: underline;
     }
   </style>
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const overlay = document.getElementById("login-overlay");
+      const form = document.getElementById("login-form");
+      form.addEventListener("submit", e => {
+        e.preventDefault();
+        const pw = document.getElementById("password").value;
+        if (pw === "geheim123") {  // <— Passe hier das Passwort an
+          overlay.style.display = "none";
+          document.getElementById("main-content").style.visibility = "visible";
+          document.body.style.overflow = "auto";
+        } else {
+          alert("Falsches Passwort!");
+        }
+      });
+    });
+  </script>
 </head>
 <body>
 
-  <div class="grid">
+  <!-- Passwort-Overlay -->
+  <div id="login-overlay">
+    <div id="login-box">
+      <h2>Passwortschutz</h2>
+      <form id="login-form">
+        <input type="password" id="password" placeholder="Passwort eingeben" required>
+        <button type="submit">Einloggen</button>
+      </form>
+      <p style="margin-top:1rem; font-size:0.8rem; color:var(--fg)">Nur zur privaten Nutzung – kein Impressum.</p>
+    </div>
+  </div>
+
+  <!-- Hauptinhalt -->
+  <div id="main-content" class="grid">
     <h1>Postmoderne Literatur</h1>
 
     <section class="section def">
@@ -216,6 +290,7 @@
     </section>
 
     <footer class="section footer">
+      <p>Diese Website ist nur für private Nutzung bestimmt. Daher kein Impressum.</p>
       <p>Quelle: LIWI Verlag – <a href="https://liwi-verlag.de/postmoderne-literatur/" target="_blank">Postmoderne Literatur</a></p>
     </footer>
   </div>
