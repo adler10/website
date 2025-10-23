@@ -44,8 +44,20 @@
 <body class="bg-gray-100 font-sans">
     <div class="flex flex-col md:flex-row h-screen">
         <!-- Sidebar -->
-        <div class="w-full md:w-1/3 bg-white p-4 overflow-y-auto shadow-lg">
-            <h1 class="text-2xl font-bold text-red-700 mb-4">Local Dispatch Console</h1>
+        <div id="sidebar-container" class="w-full md:w-1/3 bg-white p-4 overflow-y-auto shadow-lg">
+            
+            <!-- HEADER WITH UNDO BUTTON -->
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-red-700">Local Dispatch Console</h1>
+                <button id="undo-btn" class="flex items-center space-x-1 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-gray-800 disabled:text-white font-bold py-1 px-2 rounded transition duration-150 text-sm" disabled>
+                    <!-- Back Arrow SVG Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                        <path fill-rule="evenodd" d="M15.312 8.412a1.002 1.002 0 0 1 .634.341c.288.354.341.854.148 1.256l-1.049 2.098a.75.75 0 0 0 1.295.648l1.049-2.098a2.502 2.502 0 0 0-.154-4.814 1 1 0 0 1-.692-.98 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 1.7 8.356a.75.75 0 0 0-.256.452l-.63 1.89c-.19.569.21.992.746.857l2.128-.532a.75.75 0 0 0 .584-.712c0-.398-.242-.71-.564-.812a4.002 4.002 0 0 0-.001-.001 1 1 0 0 1 1.004-.996c.555 0 1 .444 1 1a1 1 0 0 1-.996 1.004c-.001 0-.002 0-.003-.001h.001a2.502 2.502 0 0 0 2.501 2.396 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 3.737 4.08 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 2.825-1.127 1 1 0 0 1 1.414 1.414 6.002 6.002 0 0 1-4.239 1.693 1 1 0 0 1-.96-1.004 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 15.312 8.412Z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Undo</span>
+                </button>
+            </div>
+            <!-- END HEADER WITH UNDO BUTTON -->
 
             <!-- Status Indicator -->
             <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Address Lookup Active</div>
@@ -152,15 +164,18 @@
 
         // --- Local State and Persistence ---
         const LOCAL_STORAGE_KEY = "localDispatchIncidents_v1";
+        const LOCAL_STORAGE_HISTORY_KEY = "localDispatchIncidentHistory_v1"; // New key for history
+        
         const incidents = new Map();
         const markers = new Map();
         let selectedIncidentId = null; 
-        
+        let statusHistory = []; // Stores { id, oldStatus, newStatus }
+
         // Map Click Mode State
         let mapClickMode = false;
         let pendingQuickIncident = null; 
 
-        // NEW: Completed Section State
+        // Completed Section State
         let isCompletedSectionOpen = false;
 
         // --- UI Elements ---
@@ -180,6 +195,8 @@
         const quickIncidentForm = document.getElementById('quick-incident-form');
         const quickKeywordInput = document.getElementById('quick-keyword');
         const cancelQuickIncidentBtn = document.getElementById('cancel-quick-incident');
+        const sidebarContainer = document.getElementById('sidebar-container');
+        const undoBtn = document.getElementById('undo-btn'); // New undo button element
         
         let debounceTimer;
         
@@ -192,7 +209,7 @@
 
         map.on('click', onMapClick);
         
-        // --- Utility Functions (Geocoding, Status, etc. remains the same) ---
+        // --- Utility Functions ---
 
         function showFormMessage(message, isError = true) {
             formMessage.textContent = message;
@@ -252,7 +269,11 @@
         function saveIncidents() {
             const incidentsArray = Array.from(incidents.values());
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(incidentsArray));
-            console.log("Local incidents saved.");
+            
+            // Save history stack
+            localStorage.setItem(LOCAL_STORAGE_HISTORY_KEY, JSON.stringify(statusHistory));
+            
+            console.log("Local state saved (incidents and history).");
         }
 
         function loadIncidents() {
@@ -264,16 +285,66 @@
                         if (!incident.id) incident.id = generateUUID(); 
                         incidents.set(incident.id, incident);
                     });
-                    renderAllIncidents();
                     console.log(`Loaded ${incidents.size} incidents from local storage.`);
                 } catch (e) {
                     console.error("Error loading incidents from local storage:", e);
                     localStorage.removeItem(LOCAL_STORAGE_KEY);
                 }
             }
+            
+            const cachedHistory = localStorage.getItem(LOCAL_STORAGE_HISTORY_KEY);
+            if (cachedHistory) {
+                try {
+                    statusHistory = JSON.parse(cachedHistory);
+                } catch (e) {
+                    console.error("Error loading history:", e);
+                    localStorage.removeItem(LOCAL_STORAGE_HISTORY_KEY);
+                }
+            }
+
+            renderAllIncidents();
+            updateUndoButtonState();
         }
         
-        // --- Map Click Mode Logic (same as before) ---
+        // --- Undo Logic ---
+
+        function updateUndoButtonState() {
+            if (statusHistory.length > 0) {
+                undoBtn.disabled = false;
+                undoBtn.classList.replace('text-white', 'text-gray-800'); 
+            } else {
+                undoBtn.disabled = true;
+                undoBtn.classList.replace('text-gray-800', 'text-white');
+            }
+        }
+
+        function undoLastAction() {
+            if (statusHistory.length === 0) return;
+
+            const lastAction = statusHistory.pop();
+            const incident = incidents.get(lastAction.id);
+
+            if (incident) {
+                // Revert status
+                incident.status = lastAction.oldStatus;
+                incidents.set(incident.id, incident);
+                
+                selectedIncidentId = null; // Clear selection after undo
+                saveIncidents();
+                renderAllIncidents();
+                
+                showFormMessage(`Undid action on incident ${lastAction.id.substring(0, 4)}... Reverted to ${lastAction.oldStatus.toUpperCase()}.`, false);
+            } else {
+                showFormMessage("Error: Incident for undo action not found. History cleared.", true);
+                statusHistory = []; // Clear history if action points to non-existent ID
+            }
+
+            updateUndoButtonState();
+        }
+
+        undoBtn.addEventListener('click', undoLastAction);
+        
+        // --- Map Click Mode Logic ---
 
         function toggleMapMode() {
             mapClickMode = !mapClickMode;
@@ -370,7 +441,7 @@
             } else {
                 completedIncidentList.classList.add('hidden');
             }
-            renderAllIncidents(); // Re-render to update the arrow icon
+            renderAllIncidents(); 
         });
 
 
@@ -420,13 +491,14 @@
                 buttonHTML = `<button data-id="${incident.id}" class="update-status-btn complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
             } else if (incident.status === 'completed') {
                 statusColorClass = 'bg-amber-100 text-amber-800 opacity-75 border-l-4 border-amber-500';
+                // No button for completed incidents (revert done via global Undo button)
                 buttonHTML = `<button disabled class="bg-gray-300 text-gray-700 text-sm font-bold py-1 px-3 rounded w-full cursor-not-allowed">Completed</button>`;
             }
             
             let selectionClass = '';
             if (incident.id === selectedIncidentId) {
                 selectionClass = 'incident-selected';
-                if (!isCompleted) { // Only scroll to active incidents
+                if (!isCompleted) { 
                     setTimeout(() => incidentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
                 }
             }
@@ -438,7 +510,7 @@
                 <div class="mt-2">
                     <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass.split(' ').filter(c => !c.startsWith('border-')).join(' ')}">${incident.status.toUpperCase()}</span>
                 </div>
-                ${!isCompleted ? `<div class="button-container mt-2 space-y-2">${buttonHTML}</div>` : ''}
+                <div class="button-container mt-2 space-y-2">${buttonHTML}</div>
             `;
             incidentElement.className = `p-3 bg-gray-50 border rounded-lg shadow-sm ${statusColorClass} ${selectionClass} ${isCompleted ? 'cursor-default' : 'cursor-pointer'}`;
             return incidentElement;
@@ -462,14 +534,14 @@
                 }
             });
 
-            // 1. Render Active Incidents
+            // 1. Render Active Incidents & Markers
             activeIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 incidentList.appendChild(incidentElement);
 
-                // Attach click listener for zoom/selection on the card itself
+                // Attach click listener for zoom/selection on the card itself (only active cards)
                 incidentElement.addEventListener('click', (e) => {
-                    // Prevent card click from triggering if a button inside was clicked
+                    // Ignore clicks on buttons within the card
                     if (e.target.closest('.update-status-btn') || e.target.closest('.button-container')) {
                         return;
                     }
@@ -498,12 +570,12 @@
                 }
             });
 
-            // 3. Render Completed Incidents
+            // 3. Render Completed Incidents & Markers
             completedIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 completedIncidentList.appendChild(incidentElement);
                 
-                // Completed markers remain on the map as well
+                // Completed markers remain on the map
                 if (incident.lat && incident.lon) {
                     const color = getStatusColor(incident.status);
                     const newIcon = createMarkerIcon(color);
@@ -524,27 +596,51 @@
             // 4. Update Completed Section Toggle
             const toggleIcon = isCompletedSectionOpen ? '▲' : '▼';
             completedToggleBtn.innerHTML = `Completed Incidents (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIcon}</span>`;
+            
+            // 5. Ensure Undo button state is correct after rendering
+            updateUndoButtonState();
         }
 
-        incidentList.addEventListener('click', (e) => {
-            // This listener is only for the status update buttons
+        // --- General Status Update Listener using Event Delegation ---
+        sidebarContainer.addEventListener('click', (e) => {
             if (!e.target.classList.contains('update-status-btn')) return;
 
             const id = e.target.dataset.id;
             const incident = incidents.get(id);
 
             if (!incident) return;
+            
+            let oldStatus = incident.status;
+            let newStatus;
+            let message = '';
 
             if (e.target.classList.contains('dispatch-btn')) {
-                incident.status = 'dispatched';
+                newStatus = 'dispatched';
+                message = 'dispatched.';
             } else if (e.target.classList.contains('complete-btn')) {
-                incident.status = 'completed'; 
+                newStatus = 'completed'; 
+                message = 'marked complete.';
+            } else {
+                return; 
             }
+
+            // Record history only if the status is actually changing
+            if (oldStatus !== newStatus) {
+                statusHistory.push({
+                    id: id,
+                    oldStatus: oldStatus,
+                    newStatus: newStatus
+                });
+            }
+            
+            // Apply the new status
+            incident.status = newStatus;
             
             incidents.set(id, incident);
             selectedIncidentId = null; 
             saveIncidents();
-            renderAllIncidents();
+            renderAllIncidents(); // Re-render handles UI and map marker updates
+            showFormMessage(`Incident ${id.substring(0, 4)}... ${message}`, false);
         });
 
 
