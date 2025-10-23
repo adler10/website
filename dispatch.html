@@ -75,6 +75,26 @@
     </div>
 
     <script>
+        // --- COMPATIBILITY FIX: Custom UUID Generator ---
+        // Replaces crypto.randomUUID(), which is not supported on all browsers (like some iPads).
+        function generateUUID() {
+            let d = new Date().getTime();
+            let d2 = (performance && performance.now && (performance.now() * 1000)) || 0;
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                let r = Math.random() * 16;
+                if (d > 0) {
+                    r = (d + r) % 16 | 0;
+                    d = Math.floor(d / 16);
+                } else {
+                    r = (d2 + r) % 16 | 0;
+                    d2 = Math.floor(d2 / 16);
+                }
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+        // --- END COMPATIBILITY FIX ---
+
+
         // --- Local State and Persistence ---
         const LOCAL_STORAGE_KEY = "localDispatchIncidents_v1";
         const incidents = new Map();
@@ -88,8 +108,8 @@
         const statusIndicator = document.getElementById('status-indicator');
         const submitBtn = document.getElementById('submit-btn');
         const formMessage = document.getElementById('form-message');
-        const latInput = document.getElementById('lat-input'); // New reference
-        const lonInput = document.getElementById('lon-input'); // New reference
+        const latInput = document.getElementById('lat-input');
+        const lonInput = document.getElementById('lon-input');
         
         let debounceTimer;
         
@@ -139,6 +159,7 @@
             if (!query || !navigator.onLine) return null;
             
             try {
+                // We limit to 1 result for the fallback geocode as we only need the best match.
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=1`);
                 const data = await response.json();
 
@@ -169,7 +190,8 @@
                 try {
                     const incidentsArray = JSON.parse(cachedData);
                     incidentsArray.forEach(incident => {
-                        if (!incident.id) incident.id = crypto.randomUUID();
+                        // Use generateUUID() for any incident missing an ID upon load (legacy)
+                        if (!incident.id) incident.id = generateUUID(); 
                         incidents.set(incident.id, incident);
                     });
                     renderAllIncidents();
@@ -210,7 +232,7 @@
             
             incidents.forEach(incident => {
                 if (incident.status === 'open' || incident.status === 'dispatched') {
-                    // 1. Render UI Element (omitted for brevity)
+                    // 1. Render UI Element
                     const incidentElement = document.createElement('div');
                     incidentElement.id = `incident-${incident.id}`;
                     incidentElement.className = 'p-3 bg-gray-50 border rounded-lg shadow-sm';
@@ -290,7 +312,7 @@
             clearTimeout(debounceTimer);
             const query = addressInput.value;
             
-            // CRITICAL: Clear hidden coordinates whenever the user types
+            // Clear hidden coordinates whenever the user types
             latInput.value = '';
             lonInput.value = '';
 
@@ -313,7 +335,7 @@
                     suggestionItem.className = 'p-2 cursor-pointer suggestion-item';
                     
                     suggestionItem.addEventListener('click', () => {
-                        // CRITICAL FIX: Write coordinates directly to hidden inputs
+                        // Write coordinates directly to hidden inputs
                         addressInput.value = formattedAddress;
                         latInput.value = data.lat; 
                         lonInput.value = data.lon;
@@ -342,8 +364,8 @@
             
             const keyword = keywordInput.value.trim();
             const addressText = addressInput.value.trim();
-            const finalLat = latInput.value; // Read directly from DOM
-            const finalLon = lonInput.value; // Read directly from DOM
+            const finalLat = latInput.value;
+            const finalLon = lonInput.value;
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Processing...';
@@ -359,7 +381,7 @@
             let incidentLon = parseFloat(finalLon);
             let finalAddressData = { lat: incidentLat, lon: incidentLon, address: {} }; 
             
-            // --- Fallback Geocoding if hidden inputs are empty (user typed, didn't click) ---
+            // --- Fallback Geocoding if hidden inputs are empty ---
             if (!finalLat || !finalLon) {
                 console.log("No coordinates found in hidden inputs, running fallback lookup...");
                 if (!navigator.onLine) {
@@ -384,11 +406,11 @@
             
             // --- Incident Creation ---
             try {
-                // If using the fallback, format the address. If using the clicked data, we trust addressInput.value
                 const displayAddress = finalAddressData.address.display_name ? formatGermanAddress(finalAddressData.address) : addressText;
 
                 const newIncident = {
-                    id: crypto.randomUUID(),
+                    // CRITICAL FIX: Use the compatible generateUUID function
+                    id: generateUUID(),
                     formattedAddress: displayAddress,        
                     keyword: keyword,
                     lat: incidentLat,
