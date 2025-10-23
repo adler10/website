@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fire Department Dispatch System (Local Storage)</title>
+    <title>Fire Department Dispatch System (Local Persistence)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -13,15 +13,17 @@
             border-radius: 0.5rem;
         }
         .suggestion-item:hover {
-            background-color: #f0f0f0;
+            background-color: #f0ff;
         }
-        /* Styles for offline mode: geolocation (Nominatim) and status changes rely on network for now */
-        .offline .dispatch-btn,
-        .offline .complete-btn,
-        .offline button[type="submit"] {
+        /* Styles for visual feedback when offline and can't use address lookup */
+        .offline-form input,
+        .offline-form button[type="submit"] {
             pointer-events: none;
             opacity: 0.5;
-            background-color: #9ca3af; /* gray-400 */
+            background-color: #f3f4f6;
+        }
+        .offline-form button[type="submit"] {
+            background-color: #9ca3af;
         }
     </style>
 </head>
@@ -29,7 +31,10 @@
     <div class="flex flex-col md:flex-row h-screen">
         <!-- Sidebar -->
         <div class="w-full md:w-1/3 bg-white p-4 overflow-y-auto shadow-lg">
-            <h1 class="text-2xl font-bold text-red-700 mb-4">Dispatch System</h1>
+            <h1 class="text-2xl font-bold text-red-700 mb-4">Local Dispatch Console</h1>
+
+            <!-- Status Indicator -->
+            <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Address Lookup Active</div>
 
             <!-- Dispatch Form -->
             <form id="dispatch-form" class="mb-6">
@@ -40,9 +45,9 @@
                 </div>
                 <div class="mb-4">
                     <label for="keyword" class="block text-gray-700 text-sm font-bold mb-2">Alarm Keyword</label>
-                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Tree down, Basement flooded">
+                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Tree down, Basement flooded" required>
                 </div>
-                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150">
                     Create Incident
                 </button>
             </form>
@@ -53,7 +58,7 @@
                 <div id="incident-list" class="space-y-3">
                     <!-- Incidents will be dynamically inserted here -->
                 </div>
-                <p id="local-storage-info" class="text-xs text-gray-500 mt-4 text-center">Data is stored locally in your browser.</p>
+                <p class="text-xs text-gray-500 mt-4 text-center">Data saved locally in this browser. Not synchronized.</p>
             </div>
         </div>
 
@@ -61,225 +66,59 @@
         <div class="w-full md:w-2/3 h-64 md:h-full" id="map"></div>
     </div>
 
-    <!-- Offline Overlay -->
-    <div id="offline-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
-            <h3 class="text-xl font-bold text-yellow-600">Connection Lost</h3>
-            <p class="text-gray-700 mt-2">You are offline. Geolocation and status updates are disabled.<br>Local data is preserved.</p>
-        </div>
-    </div>
-
     <script>
+        // --- Local State and Persistence ---
+        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v1";
+        const incidents = new Map();
+        const markers = new Map();
+
         // --- UI Elements ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
         const keywordInput = document.getElementById('keyword');
-        const submitButton = dispatchForm.querySelector('button[type="submit"]');
-        const offlineOverlay = document.getElementById('offline-overlay');
-        const incidentListContainer = document.getElementById('incident-list');
         const incidentList = document.getElementById('incident-list');
-
-        // Global map to hold incident data, replacing Firestore's role
-        const incidents = new Map();
-        const markers = new Map();
-
+        const statusIndicator = document.getElementById('status-indicator');
+        
         // --- Map Initialization (Leaflet.js) ---
         const map = L.map('map').setView([49.0069, 8.4037], 13); // Centered on Karlsruhe
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+        
+        // --- Persistence Logic ---
 
-        // --- Local Storage Persistence ---
-        const STORAGE_KEY = `dispatchIncidentsLocal`;
-
-        /**
-         * Saves the current incidents Map to localStorage.
-         */
         function saveIncidents() {
-            try {
-                // Convert Map to an array of [key, value] pairs for JSON stringification
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(incidents.entries())));
-            } catch (e) {
-                console.error("Error saving incidents to local storage:", e);
-            }
+            // Convert Map to JSON array for saving
+            const incidentsArray = Array.from(incidents.values()).filter(i => i.status !== 'completed');
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(incidentsArray));
         }
 
-        /**
-         * Loads incidents from localStorage and populates the Map, UI, and Map.
-         */
         function loadIncidents() {
-            const cachedData = localStorage.getItem(STORAGE_KEY);
+            const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 try {
-                    const cachedIncidents = new Map(JSON.parse(cachedData));
-                    incidentList.innerHTML = ''; // Clear list
-                    markers.forEach(marker => map.removeLayer(marker)); // Clear map markers
-                    markers.clear();
-                    
-                    cachedIncidents.forEach(incident => {
-                        incidents.set(incident.id, incident); // Populate in-memory map
-                        addIncidentToUI(incident);
-                        addMarkerToMap(incident);
+                    const incidentsArray = JSON.parse(cachedData);
+                    incidentsArray.forEach(incident => {
+                        // Ensure a unique ID for Map key, generating one if missing
+                        if (!incident.id) incident.id = crypto.randomUUID();
+                        incidents.set(incident.id, incident);
                     });
-                    console.log(`Loaded ${incidents.size} incidents from local storage.`);
+                    renderAllIncidents();
                 } catch (e) {
-                    console.error("Error loading cache:", e);
-                    localStorage.removeItem(STORAGE_KEY); // Clear bad cache
+                    console.error("Error loading incidents from local storage:", e);
+                    localStorage.removeItem(LOCAL_STORAGE_KEY);
                 }
             }
         }
+        
+        // --- UI Rendering ---
 
-        // --- Offline Mode Management ---
-        function setOfflineMode(isOffline) {
-            if (isOffline) {
-                offlineOverlay.classList.remove('hidden');
-                document.body.classList.add('offline');
-                console.warn("Operating in offline mode.");
-            } else {
-                offlineOverlay.classList.add('hidden');
-                document.body.classList.remove('offline');
-                console.log("Back online.");
-            }
-        }
-
-        // Initial Load and Setup:
-        loadIncidents(); 
-        setOfflineMode(!navigator.onLine); 
-
-        // Add listeners
-        window.addEventListener('offline', () => setOfflineMode(true));
-        window.addEventListener('online', () => setOfflineMode(false));
-
-        // --- UI & Map Removal Helpers ---
-        function removeIncidentFromUI(id) {
-            const el = document.getElementById(`incident-${id}`);
-            if (el) el.remove();
-            incidents.delete(id);
-        }
-
-        function removeMarkerFromMap(id) {
-            const marker = markers.get(id);
-            if (marker) map.removeLayer(marker);
-            markers.delete(id);
-        }
-
-        // --- UI Management ---
-        function addIncidentToUI(incident) {
-            const incidentElement = document.createElement('div');
-            incidentElement.id = `incident-${incident.id}`;
-            incidentElement.className = 'p-3 bg-gray-50 border rounded-lg shadow-sm';
-            
-            // Determine status color
-            let statusColorClass = 'bg-gray-100 text-gray-800';
-            if (incident.status === 'open') {
-                statusColorClass = 'bg-red-100 text-red-800';
-            } else if (incident.status === 'dispatched') {
-                statusColorClass = 'bg-blue-100 text-blue-800';
-            } else if (incident.status === 'completed') {
-                statusColorClass = 'bg-yellow-100 text-yellow-800';
-            }
-
-            // Determine button HTML
-            let buttonHTML = '';
-            if (incident.status === 'open') {
-                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
-            } else if (incident.status === 'dispatched') {
-                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
-            }
-
-            incidentElement.innerHTML = `
-                <p class="font-semibold text-gray-800">${incident.keyword}</p>
-                <p class="text-sm text-gray-600">${incident.formattedAddress || incident.address}</p>
-                <div class="mt-2">
-                    <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass}">${incident.status.toUpperCase()}</span>
-                </div>
-                <div class="button-container mt-2 space-y-2">
-                    ${buttonHTML}
-                </div>
-            `;
-            incidentList.prepend(incidentElement);
-        }
-
-        function updateIncidentInUI(incident) {
-            const el = document.getElementById(`incident-${incident.id}`);
-            if (!el) {
-                addIncidentToUI(incident);
-                return;
-            }
-            
-            el.querySelector('.text-sm.text-gray-600').textContent = incident.formattedAddress || incident.address;
-            const statusTag = el.querySelector('.status-tag');
-            statusTag.textContent = incident.status.toUpperCase();
-            
-            let statusColorClass = 'bg-gray-100 text-gray-800';
-            if (incident.status === 'open') statusColorClass = 'bg-red-100 text-red-800';
-            else if (incident.status === 'dispatched') statusColorClass = 'bg-blue-100 text-blue-800';
-            else if (incident.status === 'completed') statusColorClass = 'bg-yellow-100 text-yellow-800';
-            statusTag.className = `status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass}`;
-
-            const buttonContainer = el.querySelector('.button-container');
-            let buttonHTML = '';
-            if (incident.status === 'open') {
-                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
-            } else if (incident.status === 'dispatched') {
-                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
-            }
-            buttonContainer.innerHTML = buttonHTML;
-        }
-
-        incidentList.addEventListener('click', (e) => {
-             const id = e.target.dataset.id;
-             if (!id) return; // Not a button
-             
-             const incidentToUpdate = incidents.get(id);
-             if (!incidentToUpdate) return;
-
-             if (e.target.classList.contains('dispatch-btn')) {
-                 incidentToUpdate.status = 'dispatched';
-             } else if (e.target.classList.contains('complete-btn')) {
-                 // For local storage, we can delete completed incidents or keep them.
-                 // Let's mark as completed for now. To delete, you'd call removeIncidentFromUI(id) and removeMarkerFromMap(id)
-                 incidentToUpdate.status = 'completed'; 
-             } else {
-                return;
-             }
-             
-             incidents.set(id, incidentToUpdate);
-             updateIncidentInUI(incidentToUpdate);
-             updateMarkerOnMap(incidentToUpdate);
-             saveIncidents(); // Save changes to local storage
-        });
-
-
-        // --- Map Management ---
         function getStatusColor(status) {
             if (status === 'open') return 'red';
             if (status === 'dispatched') return 'blue';
             if (status === 'completed') return 'yellow';
             return 'grey';
-        }
-
-        function updateMarkerOnMap(incident) {
-            if (!incident.lat || !incident.lon) return;
-
-            const marker = markers.get(incident.id);
-            const color = getStatusColor(incident.status);
-            const newIcon = createMarkerIcon(color);
-            const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress || incident.address}`;
-
-            if (marker) {
-                 marker.setIcon(newIcon);
-                 marker.setPopupContent(popupContent);
-            } else {
-                const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
-                newMarker.bindPopup(popupContent);
-                markers.set(incident.id, newMarker);
-            }
-        }
-
-        function addMarkerToMap(incident) {
-           updateMarkerOnMap(incident); 
         }
 
         function createMarkerIcon(color) {
@@ -296,11 +135,98 @@
             });
         }
 
+        function renderAllIncidents() {
+            // Clear current state
+            incidentList.innerHTML = '';
+            markers.forEach(marker => map.removeLayer(marker));
+            markers.clear();
+            
+            // Re-render only active incidents
+            incidents.forEach(incident => {
+                if (incident.status === 'open' || incident.status === 'dispatched') {
+                    // 1. Render UI Element
+                    const incidentElement = document.createElement('div');
+                    incidentElement.id = `incident-${incident.id}`;
+                    incidentElement.className = 'p-3 bg-gray-50 border rounded-lg shadow-sm';
+                    
+                    let statusColorClass = 'bg-gray-100 text-gray-800';
+                    let buttonHTML = '';
+                    
+                    if (incident.status === 'open') {
+                        statusColorClass = 'bg-red-100 text-red-800';
+                        buttonHTML = `<button data-id="${incident.id}" class="update-status-btn dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
+                    } else if (incident.status === 'dispatched') {
+                        statusColorClass = 'bg-blue-100 text-blue-800';
+                        buttonHTML = `<button data-id="${incident.id}" class="update-status-btn complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
+                    }
+
+                    incidentElement.innerHTML = `
+                        <p class="font-semibold text-gray-800">${incident.keyword}</p>
+                        <p class="text-sm text-gray-600">${incident.formattedAddress}</p>
+                        <div class="mt-2">
+                            <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass}">${incident.status.toUpperCase()}</span>
+                        </div>
+                        <div class="button-container mt-2 space-y-2">
+                            ${buttonHTML}
+                        </div>
+                    `;
+                    incidentList.appendChild(incidentElement);
+
+                    // 2. Render Map Marker
+                    if (incident.lat && incident.lon) {
+                        const color = getStatusColor(incident.status);
+                        const newIcon = createMarkerIcon(color);
+                        const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}`;
+                        
+                        const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
+                        newMarker.bindPopup(popupContent);
+                        markers.set(incident.id, newMarker);
+                    }
+                }
+            });
+        }
+
+        incidentList.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('update-status-btn')) return;
+
+            const id = e.target.dataset.id;
+            const incident = incidents.get(id);
+
+            if (!incident) return;
+
+            if (e.target.classList.contains('dispatch-btn')) {
+                incident.status = 'dispatched';
+            } else if (e.target.classList.contains('complete-btn')) {
+                incident.status = 'completed';
+            }
+            
+            incidents.set(id, incident);
+            saveIncidents();
+            renderAllIncidents();
+        });
+
 
         // --- Address Autocomplete (Nominatim) ---
         const suggestionsContainer = document.getElementById('address-suggestions');
         let selectedLocation = null;
         let debounceTimer;
+
+        function setOnlineStatus(isOnline) {
+            if (isOnline) {
+                statusIndicator.textContent = 'Online: Address Lookup Active';
+                statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700';
+                dispatchForm.classList.remove('offline-form');
+            } else {
+                statusIndicator.textContent = 'Offline: Address Lookup Disabled';
+                statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-yellow-100 text-yellow-700';
+                dispatchForm.classList.add('offline-form');
+            }
+        }
+        
+        window.addEventListener('online', () => setOnlineStatus(true));
+        window.addEventListener('offline', () => setOnlineStatus(false));
+        setOnlineStatus(navigator.onLine);
+
 
         function formatGermanAddress(address) {
             const parts = [];
@@ -318,11 +244,13 @@
         addressInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             const query = addressInput.value;
+            
             if (query.length < 3 || !navigator.onLine) {
                 suggestionsContainer.innerHTML = '';
                 suggestionsContainer.classList.add('hidden');
                 return;
             }
+            
             debounceTimer = setTimeout(() => {
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1`)
                     .then(response => response.json())
@@ -330,7 +258,7 @@
                         suggestionsContainer.innerHTML = '';
                         suggestionsContainer.classList.remove('hidden');
 
-                        // Filter results for postcodes starting with "76"
+                        // Filter results to only show addresses in the 76... postcode area (Karlsruhe region)
                         const filteredData = data.filter(place =>
                             place.address &&
                             place.address.postcode &&
@@ -371,54 +299,47 @@
         });
 
 
-        // --- Form Submission (Now uses localStorage) ---
-        dispatchForm.addEventListener('submit', async (e) => {
+        // --- Form Submission (Uses Local Storage) ---
+        dispatchForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
             const keyword = keywordInput.value.trim();
 
             if (!selectedLocation || !keyword) {
-                // Replacing alert with a simple console error and visual cue
-                console.error("Please select a valid address and enter a keyword."); 
+                alert("Please select a valid address from the dropdown and enter a keyword."); // Using alert only for user-error feedback here
                 return;
             }
             
             try {
                 const cleanAddress = formatGermanAddress(selectedLocation.address);
                 
-                // Use crypto.randomUUID() for a unique local identifier
-                const newId = crypto.randomUUID(); 
-
                 const newIncident = {
-                    id: newId,
-                    address: selectedLocation.display_name, 
+                    id: crypto.randomUUID(),
                     formattedAddress: cleanAddress,        
                     keyword: keyword,
                     lat: parseFloat(selectedLocation.lat),
                     lon: parseFloat(selectedLocation.lon),
                     status: 'open',
-                    createdAt: new Date().toISOString() // Store time as ISO string
+                    createdAt: new Date().toISOString() 
                 };
                 
-                // 1. Update in-memory Map
                 incidents.set(newIncident.id, newIncident);
-
-                // 2. Update UI and Map
-                addIncidentToUI(newIncident);
-                addMarkerToMap(newIncident);
-
-                // 3. Persist to Local Storage
                 saveIncidents();
+                renderAllIncidents(); 
                 
+                // Clear form state
                 dispatchForm.reset();
                 selectedLocation = null;
-                addressInput.value = ''; // Clear address input visually
+                addressInput.value = '';
                 suggestionsContainer.classList.add('hidden');
 
             } catch (error) {
-                console.error("Error creating new incident: ", error);
+                console.error("Error creating incident: ", error);
             }
         });
+        
+        // --- Initialize on Load ---
+        window.onload = loadIncidents;
 
     </script>
 </body>
