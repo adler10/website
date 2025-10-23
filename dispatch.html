@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Einsatzleitsystem der Feuerwehr (Mit Geo-Einsatzabschnitten)</title>
+    <meta name="robots" content="noindex">
+    <title>Einsatzleitsystem der Feuerwehr (Mit Geo-Einsatzabschnitten und Autocomplete)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -57,35 +58,45 @@
             <!-- Status Indicator -->
             <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Adresssuche aktiv</div>
             
-            <!-- Einsatzabschnitte Management -->
+            <!-- Einsatzabschnitte Management (COLLAPSIBLE) -->
             <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
-                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center">Einsatzabschnitte (EA)</h2>
-
-                <form id="section-form" class="mb-3 space-y-2">
-                    <input type="text" id="section-name" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Name des EA (z.B. Wasserversorgung)" required>
-                    <input type="text" id="section-responsible" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Verantwortlicher (z.B. OBM Meier)" required>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
-                        EA erstellen
+                <h2 id="section-header" class="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between cursor-pointer">
+                    <span>Einsatzabschnitte (EA)</span>
+                    <button id="toggle-ea-menu" class="text-gray-500 hover:text-gray-700 transition duration-150">
+                        <!-- Down Arrow -->
+                        <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 transition-transform duration-300">
+                            <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 0 1.06 1.06L10 6.56l3.72 3.72a.75.75 0 1 0 1.06-1.06L10 4.44 5.22 8.22Z" clip-rule="evenodd" />
+                        </svg>
                     </button>
-                </form>
+                </h2>
+                
+                <div id="ea-content-wrapper" class="space-y-4">
+                    <form id="section-form" class="space-y-2">
+                        <input type="text" id="section-name" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Name des EA (z.B. Wasserversorgung)" required>
+                        <input type="text" id="section-responsible" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Verantwortlicher (z.B. OBM Meier)" required>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
+                            EA erstellen
+                        </button>
+                    </form>
 
-                <div id="section-draw-panel" class="p-2 mb-3 bg-red-100 text-red-700 rounded-lg hidden">
-                    <p class="font-bold mb-1">EA-Zeichenmodus aktiv!</p>
-                    <p class="text-sm">Klicken Sie Punkte auf der Karte, um die Grenze zu definieren.</p>
-                    <div class="flex mt-2 space-x-2">
-                        <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
-                            Zeichnen beenden
-                        </button>
-                        <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
-                            Abbrechen
-                        </button>
+                    <div id="section-draw-panel" class="p-2 mb-3 bg-red-100 text-red-700 rounded-lg hidden">
+                        <p class="font-bold mb-1">EA-Zeichenmodus aktiv!</p>
+                        <p class="text-sm">Klicken Sie Punkte auf der Karte, um die Grenze zu definieren.</p>
+                        <div class="flex mt-2 space-x-2">
+                            <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
+                                Zeichnen beenden
+                            </button>
+                            <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
+                                Abbrechen
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div id="section-list" class="space-y-2 mt-3 text-sm">
-                    <!-- Section cards will be dynamically inserted here -->
+                    <div id="section-list" class="space-y-2 mt-3 text-sm">
+                        <!-- Section cards will be dynamically inserted here -->
+                    </div>
+                    <div id="section-message" class="hidden p-2 mt-2 text-xs rounded bg-red-100 text-red-700 font-medium"></div>
                 </div>
-                <div id="section-message" class="hidden p-2 mt-2 text-xs rounded bg-red-100 text-red-700 font-medium"></div>
             </div>
             <!-- END EA Management -->
 
@@ -98,14 +109,17 @@
                     <input type="hidden" id="lat-input" value="">
                     <input type="hidden" id="lon-input" value="">
 
-                    <div id="address-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
+                    <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 relative">
                     <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required>
+                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
+                    
+                    <!-- Autocomplete Suggestions Container (New) -->
+                    <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
                 </div>
                 
-                <!-- AUTOMATIC ASSIGNMENT DISPLAY (New) -->
+                <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
                 <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
                     <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
                     <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
@@ -149,6 +163,15 @@
     </div>
 
     <script>
+        // --- AAO KEYWORDS (Schlagwörter from PDF) ---
+        // Extracted keywords from the provided document snippet for the autocomplete feature.
+        const AAO_KEYWORDS = [
+            "B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien",
+			"B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"
+        ].sort();
+        // --- END AAO KEYWORDS ---
+        
+        
         // --- COMPATIBILITY FIX: Custom UUID Generator (V4) ---
         function generateUUID() {
             let d = new Date().getTime();
@@ -169,20 +192,20 @@
 
 
         // --- Local State and Persistence ---
-        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v2"; // Version bump for EA Geo data
-        const LOCAL_STORAGE_SECTIONS_KEY = "localDispatchSections_v2"; // Version bump for EA Geo data
+        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v2"; 
+        const LOCAL_STORAGE_SECTIONS_KEY = "localDispatchSections_v2"; 
         const LOCAL_STORAGE_HISTORY_KEY = "localDispatchIncidentHistory_v2"; 
         
         const incidents = new Map();
         const sections = new Map(); 
         const markers = new Map();
-        const sectionPolygons = new Map(); // NEW: Map to store Leaflet Polygon layers
+        const sectionPolygons = new Map(); // Map to store Leaflet Polygon layers
         
         let selectedIncidentId = null; 
         let statusHistory = []; 
         let isCompletedSectionOpen = false;
         
-        // --- Drawing State (NEW) ---
+        // --- Drawing State ---
         let drawingSectionId = null;
         let currentDrawPoints = []; // Array of [lat, lon]
         const currentDrawLayer = new L.LayerGroup();
@@ -191,7 +214,9 @@
         // --- UI Elements ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
-        const finalSectionAssignmentInput = document.getElementById('final-section-assignment'); // Hidden input for auto assignment
+        const keywordInput = document.getElementById('keyword'); // NEW
+        const keywordSuggestionsContainer = document.getElementById('keyword-suggestions'); // NEW
+        const finalSectionAssignmentInput = document.getElementById('final-section-assignment'); 
         const autoSectionDisplay = document.getElementById('auto-section-display');
         const incidentList = document.getElementById('incident-list');
         const completedIncidentList = document.getElementById('completed-incident-list');
@@ -203,8 +228,15 @@
         const lonInput = document.getElementById('lon-input');
         const sidebarContainer = document.getElementById('sidebar-container');
         const undoBtn = document.getElementById('undo-btn'); 
+        const suggestionsContainer = document.getElementById('address-suggestions'); // For Address Autocomplete
         
         // EA Management UI
+        const sectionHeader = document.getElementById('section-header');
+        const toggleEAMenuBtn = document.getElementById('toggle-ea-menu');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const eaContentWrapper = document.getElementById('ea-content-wrapper');
+        let isEAMenuOpen = true; 
+        
         const sectionForm = document.getElementById('section-form');
         const sectionNameInput = document.getElementById('section-name');
         const sectionResponsibleInput = document.getElementById('section-responsible');
@@ -215,7 +247,6 @@
         const cancelDrawBtn = document.getElementById('cancel-draw-btn');
         
         let debounceTimer;
-        let geoSearchDebounceTimer;
         
         // --- Map Initialization (Leaflet.js) ---
         const map = L.map('map').setView([49.0069, 8.4037], 13); // Centered on Karlsruhe
@@ -226,7 +257,7 @@
 
         currentDrawLayer.addTo(map);
         
-        // --- FIX: Define onMapClick to avoid ReferenceError at initialization ---
+        // --- Map Click Handler ---
         function onMapClick(e) {
             // Only handle deselection if not in drawing mode
             if (!drawingSectionId) {
@@ -236,7 +267,7 @@
         }
         
         map.on('click', onMapClick);
-        // --- END FIX ---
+        // --- END Map Click Handler ---
         
         // --- Utility Functions ---
 
@@ -248,6 +279,7 @@
             } else {
                  element.className = 'p-2 mb-3 text-sm rounded bg-green-100 text-green-700 font-medium';
             }
+            // Clear message after 7 seconds
             setTimeout(() => {
                 element.classList.add('hidden');
             }, 7000);
@@ -304,18 +336,16 @@
         /**
          * Point-in-Polygon (PIP) Ray Casting Algorithm
          * Checks if a point [lat, lon] is inside a polygon (array of [lat, lon] arrays).
-         * Uses the odd-even rule.
          */
         function isPointInPolygon(point, polygon) {
-            const x = point[0]; // Lat (latitude)
-            const y = point[1]; // Lon (longitude)
+            const x = point[0]; 
+            const y = point[1]; 
             let inside = false;
 
             for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
                 let xi = polygon[i][0], yi = polygon[i][1];
                 let xj = polygon[j][0], yj = polygon[j][1];
 
-                // Check if the ray from the point crosses the segment
                 let intersect = ((yi > y) !== (yj > y))
                     && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
                 
@@ -338,15 +368,109 @@
                     const point = [lat, lon];
                     if (isPointInPolygon(point, section.boundary)) {
                         assignedSectionId = section.id;
-                        // Prioritize the first match, assuming boundaries don't overlap or one is sufficient
                     }
                 }
             });
             return assignedSectionId;
         }
+        
+        // --- Geometric Helper Functions for Intersection Check (unchanged) ---
+        
+        function orientation(p, q, r) {
+            const val = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
+
+            if (Math.abs(val) < 1e-9) return 0; 
+            return (val > 0) ? 1 : 2; 
+        }
+
+        function onSegment(p, q, r) {
+            return (q[0] <= Math.max(p[0], r[0]) && q[0] >= Math.min(p[0], r[0]) &&
+                    q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1]));
+        }
+
+        function segmentsIntersect(p1, q1, p2, q2) {
+            const o1 = orientation(p1, q1, p2);
+            const o2 = orientation(p1, q1, q2);
+            const o3 = orientation(p2, q2, p1);
+            const o4 = orientation(p2, q2, q1);
+
+            // General case: Non-collinear orientations
+            if (o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0 && o1 !== o2 && o3 !== o4) {
+                return true;
+            }
+            
+            // Special Cases (Collinearity handling to allow touching/sharing vertices)
+            // We specifically IGNORE collinear intersections here to allow touching boundaries.
+            return false;
+        }
+        
+        /**
+         * Checks if the proposed newBoundary intersects any existing EA boundary.
+         */
+        function checkExistingEAOverlaps(newBoundary, excludeSectionId) {
+            let intersectionFound = false;
+
+            sections.forEach(section => {
+                if (section.id === excludeSectionId || section.boundary.length < 3) {
+                    return; 
+                }
+                
+                const existingBoundary = section.boundary;
+                
+                // 1. Check for edge intersections (crossing boundaries)
+                for (let i = 0; i < newBoundary.length; i++) {
+                    const p1 = newBoundary[i];
+                    const q1 = newBoundary[(i + 1) % newBoundary.length]; 
+                    for (let j = 0; j < existingBoundary.length; j++) {
+                        const p2 = existingBoundary[j];
+                        const q2 = existingBoundary[(j + 1) % existingBoundary.length]; 
+                        
+                        if (segmentsIntersect(p1, q1, p2, q2)) {
+                            intersectionFound = true;
+                            break;
+                        }
+                    }
+                    if (intersectionFound) break;
+                }
+                if (intersectionFound) return; 
+                
+                // 2. Check if a vertex of the new boundary is inside the existing boundary (full overlap)
+                if (isPointInPolygon(newBoundary[0], existingBoundary)) {
+                    intersectionFound = true;
+                    return; 
+                }
+                
+                // 3. Check if a vertex of the existing boundary is inside the new boundary (full overlap)
+                if (isPointInPolygon(existingBoundary[0], newBoundary)) {
+                    intersectionFound = true;
+                    return; 
+                }
+            });
+
+            return intersectionFound;
+        }
+        
+        /**
+         * Iterates over all active incidents and re-runs the EA assignment logic.
+         */
+        function reEvaluateIncidents() {
+            let assignmentsChanged = 0;
+            incidents.forEach(incident => {
+                if (incident.status !== 'completed') {
+                    const newSectionId = findContainingSection(incident.lat, incident.lon);
+                    if (incident.sectionId !== newSectionId) {
+                        incident.sectionId = newSectionId;
+                        assignmentsChanged++;
+                    }
+                }
+            });
+            if (assignmentsChanged > 0) {
+                console.log(`Re-evaluierung: ${assignmentsChanged} Einsätze neu zugeordnet.`);
+            }
+        }
 
 
-        // --- Persistence Logic ---
+        // --- Persistence Logic (unchanged) ---
 
         function saveState() {
             const incidentsArray = Array.from(incidents.values());
@@ -367,7 +491,7 @@
                     const sectionsArray = JSON.parse(cachedSections);
                     sectionsArray.forEach(section => {
                         if (!section.id) section.id = generateUUID();
-                        if (typeof section.boundary === 'undefined') section.boundary = []; // NEW default
+                        if (typeof section.boundary === 'undefined') section.boundary = []; 
                         sections.set(section.id, section);
                     });
                     console.log(`Geladen: ${sections.size} Einsatzabschnitte.`);
@@ -410,7 +534,7 @@
             updateUndoButtonState();
         }
 
-        // --- Undo Logic (Simplifed to Incident Status only) ---
+        // --- Undo Logic (unchanged) ---
 
         function updateUndoButtonState() {
             undoBtn.disabled = statusHistory.length === 0;
@@ -431,10 +555,7 @@
 
             if (incident) {
                 incident.status = lastAction.oldStatus;
-                if (incident.status !== 'completed') {
-                    // Re-run auto assignment if moving out of 'completed'
-                    incident.sectionId = findContainingSection(incident.lat, incident.lon); 
-                }
+                incident.sectionId = findContainingSection(incident.lat, incident.lon); 
                 incidents.set(incident.id, incident);
                 
                 selectedIncidentId = null; 
@@ -452,7 +573,26 @@
 
         undoBtn.addEventListener('click', undoLastAction);
         
-        // --- EA Drawing Logic (NEW) ---
+        // --- EA Menu Toggle Logic (unchanged) ---
+        function toggleEAMenu() {
+            isEAMenuOpen = !isEAMenuOpen;
+            if (isEAMenuOpen) {
+                eaContentWrapper.classList.remove('hidden');
+                toggleIcon.style.transform = 'rotate(0deg)'; 
+            } else {
+                eaContentWrapper.classList.add('hidden');
+                toggleIcon.style.transform = 'rotate(-90deg)'; 
+            }
+        }
+        
+        sectionHeader.addEventListener('click', toggleEAMenu);
+        toggleEAMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            toggleEAMenu();
+        });
+
+
+        // --- EA Drawing Logic (unchanged) ---
         
         function setDrawMode(isActive, sectionId = null) {
             drawingSectionId = isActive ? sectionId : null;
@@ -462,9 +602,19 @@
                 mapContainer.classList.add('map-draw-mode');
                 sectionDrawPanel.classList.remove('hidden');
                 sectionForm.querySelector('button[type="submit"]').disabled = true;
-                currentDrawPoints = [];
+                currentDrawPoints = sections.get(sectionId)?.boundary ? [...sections.get(sectionId).boundary] : []; 
                 currentDrawLayer.clearLayers();
                 map.on('click', handleMapDrawClick);
+                
+                if (currentDrawPoints.length > 0) {
+                    currentDrawPoints.forEach(p => {
+                        L.marker(p, { icon: drawingIcon, clickable: false }).addTo(currentDrawLayer);
+                    });
+                    if (currentDrawPoints.length > 1) {
+                        L.polyline(currentDrawPoints, { color: '#ef4444', weight: 3, opacity: 0.7 }).addTo(currentDrawLayer);
+                    }
+                }
+
             } else {
                 mapContainer.classList.remove('map-draw-mode');
                 sectionDrawPanel.classList.add('hidden');
@@ -485,17 +635,15 @@
             currentDrawPoints.push([lat, lon]);
             
             // Add point marker
-            const marker = L.marker([lat, lon], { icon: drawingIcon, clickable: false }).addTo(currentDrawLayer);
+            L.marker([lat, lon], { icon: drawingIcon, clickable: false }).addTo(currentDrawLayer);
             
-            // Redraw polyline if there are at least 2 points
-            if (currentDrawPoints.length > 1) {
-                currentDrawLayer.eachLayer(layer => {
-                    if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-                        currentDrawLayer.removeLayer(layer);
-                    }
-                });
-                L.polyline(currentDrawPoints, { color: '#ef4444', weight: 3, opacity: 0.7 }).addTo(currentDrawLayer);
-            }
+            // Clear old line and draw new line/polygon outline
+            currentDrawLayer.eachLayer(layer => {
+                if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+                    currentDrawLayer.removeLayer(layer);
+                }
+            });
+            L.polyline(currentDrawPoints, { color: '#ef4444', weight: 3, opacity: 0.7 }).addTo(currentDrawLayer);
             
             const section = sections.get(drawingSectionId);
             showSectionMessage(`Punkt hinzugefügt für EA "${section.name}". ${currentDrawPoints.length} Punkte.`, false);
@@ -506,24 +654,36 @@
                 showSectionMessage("Ein Polygon benötigt mindestens 3 Punkte.", true);
                 return;
             }
+            
+            // --- Intersection Check ---
+            if (checkExistingEAOverlaps(currentDrawPoints, drawingSectionId)) {
+                showSectionMessage("FEHLER: Die neue Grenze überschneidet oder überlappt einen bestehenden Einsatzabschnitt. Dies ist nicht erlaubt.", true);
+                return;
+            }
+            // --- End Intersection Check ---
 
             const section = sections.get(drawingSectionId);
             if (section) {
                 section.boundary = currentDrawPoints;
                 sections.set(drawingSectionId, section);
                 saveState();
-                showSectionMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert.`, false);
+                
+                // NEW: Re-evaluate all active incidents
+                reEvaluateIncidents();
+                
+                showSectionMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert. ${sections.get(drawingSectionId).boundary.length} Punkte.`, false);
             }
             setDrawMode(false);
+            renderAll();
         });
 
         cancelDrawBtn.addEventListener('click', () => {
             const section = sections.get(drawingSectionId);
-            showSectionMessage(`Zeichnen für EA "${section.name}" abgebrochen.`, true);
+            showSectionMessage(`Zeichnen für EA "${section.name}" abgebrochen. Die alte Grenze (falls vorhanden) bleibt erhalten.`, true);
             setDrawMode(false);
         });
         
-        // --- EA Management Logic ---
+        // --- EA Management Logic (unchanged) ---
 
         sectionForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -539,7 +699,7 @@
                 id: generateUUID(),
                 name: name,
                 responsible: responsible,
-                boundary: [] // NEW: Empty boundary array
+                boundary: [] 
             };
 
             sections.set(newSection.id, newSection);
@@ -555,19 +715,23 @@
             if (drawingSectionId === id) setDrawMode(false);
 
             sections.delete(id);
-            // Unassign incidents from this section
+            
+            // Unassign incidents from this section and re-evaluate against others
             incidents.forEach(incident => {
                 if (incident.sectionId === id) {
                     incident.sectionId = null;
                 }
             });
 
+            // Re-evaluate all incidents now that the section is gone
+            reEvaluateIncidents(); 
+            
             saveState();
             renderAll();
             showSectionMessage("EA gelöscht.", false);
         }
         
-        // --- UI Rendering ---
+        // --- UI Rendering (unchanged, but includes new functionality) ---
 
         function renderSectionManager() {
             sectionListContainer.innerHTML = '';
@@ -586,9 +750,10 @@
                 
                 // 1. Render Section Polygon on Map
                 if (hasBoundary) {
+                    const isDrawing = drawingSectionId === section.id;
                     const polygon = L.polygon(section.boundary, {
-                        color: drawingSectionId === section.id ? '#ef4444' : '#4f46e5', // Indigo or Red if drawing
-                        fillColor: drawingSectionId === section.id ? '#fef2f2' : '#c7d2fe', // Light fill
+                        color: isDrawing ? '#ef4444' : '#4f46e5', 
+                        fillColor: isDrawing ? '#fef2f2' : '#c7d2fe', 
                         fillOpacity: 0.3,
                         weight: 2
                     }).addTo(map);
@@ -645,13 +810,11 @@
             sectionListContainer.querySelectorAll('.draw-section-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     setDrawMode(true, e.target.dataset.id);
-                    map.flyTo(map.getCenter(), 13); // Zoom to center to prepare for drawing
+                    map.flyTo(map.getCenter(), 13); 
                 });
             });
         }
         
-        // Removed renderIncidentSelectOptions as assignment is now automatic
-
         function getStatusColor(status) {
             if (status === 'open') return 'red';
             if (status === 'dispatched') return 'blue';
@@ -869,8 +1032,8 @@
             });
 
             // 4. Update Completed Section Toggle
-            const toggleIcon = isCompletedSectionOpen ? '▲' : '▼';
-            completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIcon}</span>`;
+            const toggleIconText = isCompletedSectionOpen ? '▲' : '▼';
+            completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIconText}</span>`;
             
             // 5. Ensure Undo button state is correct after rendering
             updateUndoButtonState();
@@ -878,7 +1041,6 @@
 
         function renderAll() {
             if (drawingSectionId) {
-                // Do not rerender sections/polygons if in drawing mode (to avoid breaking the current path)
                 renderSectionManager(); 
             } else {
                 renderSectionManager();
@@ -886,7 +1048,7 @@
             }
         }
 
-        // --- Notes Saving and EA Changing Logic ---
+        // --- Notes Saving and EA Changing Logic (unchanged) ---
         sidebarContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('save-notes-btn')) {
                 const id = e.target.dataset.id;
@@ -912,12 +1074,11 @@
                 selectedIncidentId = id; 
                 showFormMessage("Notizen erfolgreich gespeichert.", false);
             } else if (e.target.classList.contains('unassign-section-btn')) {
-                // Manual unassign logic
                 const id = e.target.dataset.id;
                 const incident = incidents.get(id);
                 if (!incident) return;
                 
-                const oldSectionName = sections.get(incident.sectionId).name;
+                const oldSectionName = sections.get(incident.sectionId)?.name || 'Unbekannt';
                 incident.sectionId = null; 
                 incidents.set(id, incident);
                 
@@ -928,7 +1089,7 @@
             }
         });
 
-        // --- General Status Update Listener using Event Delegation ---
+        // --- General Status Update Listener (unchanged) ---
         sidebarContainer.addEventListener('click', (e) => {
             if (!e.target.classList.contains('update-status-btn')) return;
 
@@ -961,7 +1122,6 @@
             
             incident.status = newStatus;
             
-            // If completed, unassign from EA
             if (newStatus === 'completed') {
                 incident.sectionId = null; 
             }
@@ -974,8 +1134,7 @@
         });
 
 
-        // --- Network and Address Lookup Management ---
-        const suggestionsContainer = document.getElementById('address-suggestions');
+        // --- Network and Address Lookup Management (unchanged) ---
         
         function setOnlineStatus(isOnline) {
             if (isOnline) {
@@ -1039,7 +1198,7 @@
                     const formattedAddress = formatGermanAddress(data.address);
                     const suggestionItem = document.createElement('div');
                     suggestionItem.textContent = formattedAddress;
-                    suggestionItem.className = 'p-2 cursor-pointer suggestion-item';
+                    suggestionItem.className = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
                     
                     suggestionItem.addEventListener('click', () => {
                         addressInput.value = formattedAddress;
@@ -1049,7 +1208,6 @@
                         suggestionsContainer.classList.add('hidden');
                         suggestionsContainer.innerHTML = '';
                         
-                        // Immediately update auto assignment display
                         const lat = parseFloat(data.lat);
                         const lon = parseFloat(data.lon);
                         updateAutoAssignment(lat, lon);
@@ -1069,19 +1227,58 @@
             if (!suggestionsContainer.contains(e.target) && e.target !== addressInput) {
                 suggestionsContainer.classList.add('hidden');
             }
+            
+            // Also hide keyword suggestions if user clicks elsewhere
+            if (!keywordSuggestionsContainer.contains(e.target) && e.target !== keywordInput) {
+                keywordSuggestionsContainer.classList.add('hidden');
+            }
         });
 
 
-        // --- Final Submission Logic (Reads from Hidden Inputs) ---
+        // --- KEYWORD AUTOCOMPLETE LOGIC (NEW) ---
+
+        keywordInput.addEventListener('input', () => {
+            const query = keywordInput.value.trim().toLowerCase();
+            keywordSuggestionsContainer.innerHTML = '';
+
+            if (query.length < 2) {
+                keywordSuggestionsContainer.classList.add('hidden');
+                return;
+            }
+
+            const matches = AAO_KEYWORDS.filter(keyword => 
+                keyword.toLowerCase().includes(query)
+            ).slice(0, 10); // Limit to 10 suggestions
+
+            if (matches.length > 0) {
+                matches.forEach(keyword => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.textContent = keyword;
+                    suggestionItem.className = 'p-2 cursor-pointer hover:bg-red-100 transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0';
+                    
+                    suggestionItem.addEventListener('click', () => {
+                        keywordInput.value = keyword;
+                        keywordSuggestionsContainer.classList.add('hidden');
+                        keywordSuggestionsContainer.innerHTML = '';
+                        keywordInput.focus(); // Keep focus after selection
+                    });
+                    keywordSuggestionsContainer.appendChild(suggestionItem);
+                });
+                keywordSuggestionsContainer.classList.remove('hidden');
+            } else {
+                keywordSuggestionsContainer.classList.add('hidden');
+            }
+        });
+
+        // --- Final Submission Logic (unchanged) ---
         dispatchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const keyword = document.getElementById('keyword').value.trim();
+            const keyword = keywordInput.value.trim();
             const addressText = addressInput.value.trim();
             let incidentLat = parseFloat(latInput.value);
             let incidentLon = parseFloat(lonInput.value);
-            const sectionId = finalSectionAssignmentInput.value || null; // NEW: Use auto-assigned ID
-
+            
             submitBtn.disabled = true;
             submitBtn.textContent = 'Verarbeite...';
             
@@ -1093,7 +1290,6 @@
             }
             
             if (isNaN(incidentLat) || isNaN(incidentLon)) {
-                // Fallback attempt to geocode if no coordinates were selected from suggestion
                 if (!navigator.onLine) {
                     showFormMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
                     submitBtn.disabled = false;
@@ -1114,7 +1310,6 @@
             }
             
             try {
-                // Final check for auto assignment right before saving, in case the user edited the address field
                 const finalSectionId = findContainingSection(incidentLat, incidentLon);
                 
                 const newIncident = {
@@ -1150,7 +1345,7 @@
             }
         });
         
-        // --- Completed Section Toggle Logic ---
+        // --- Completed Section Toggle Logic (unchanged) ---
         completedToggleBtn.addEventListener('click', () => {
             isCompletedSectionOpen = !isCompletedSectionOpen;
             if (isCompletedSectionOpen) {
@@ -1161,8 +1356,16 @@
             renderAllIncidents(); 
         });
 
-        // --- Initialize on Load ---
-        window.onload = loadState;
+        // --- Initialize on Load (unchanged) ---
+        window.onload = () => {
+            loadState();
+            if (!isEAMenuOpen) {
+                eaContentWrapper.classList.add('hidden');
+                toggleIcon.style.transform = 'rotate(-90deg)';
+            } else {
+                 toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        };
 
     </script>
 </body>
