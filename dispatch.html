@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fire Department Dispatch System (Local Persistence)</title>
+    <title>Einsatzleitsystem der Feuerwehr (Mit Geo-Einsatzabschnitten)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -12,32 +12,27 @@
         .leaflet-container {
             border-radius: 0.5rem;
         }
-        .suggestion-item:hover {
-            background-color: #f0f0f0;
+        /* Highlight cursor when in drawing mode */
+        .map-draw-mode {
+            cursor: crosshair !important;
         }
-        .offline-form input,
-        .offline-form button[type="submit"] {
-            pointer-events: none;
-            opacity: 0.5;
-            background-color: #f3f4f6;
-        }
-        .offline-form button[type="submit"] {
-            background-color: #9ca3af;
+        /* Custom styles for Leaflet Draw markers */
+        .leaflet-drawing-icon {
+            background-color: #ef4444; /* red-500 */
+            border: 2px solid #b91c1c; /* red-700 */
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: -6px;
+            margin-left: -6px;
+            position: absolute;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
         }
         /* Style for the selected incident card */
         .incident-selected {
             border-color: #ef4444 !important; /* red-500 */
             box-shadow: 0 0 0 3px #f87171, 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* ring effect */
             background-color: #fef2f2 !important; /* red-50 for subtle highlight */
-        }
-        /* Map click cursor */
-        .map-click-mode {
-            cursor: crosshair !important;
-        }
-        /* Modal styles */
-        #quick-incident-modal {
-            transition: opacity 0.3s ease-in-out;
-            z-index: 1000;
         }
     </style>
 </head>
@@ -48,55 +43,89 @@
             
             <!-- HEADER WITH UNDO BUTTON -->
             <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl font-bold text-red-700">Local Dispatch Console</h1>
+                <h1 class="text-2xl font-bold text-red-700">Lokale Einsatzkonsole</h1>
                 <button id="undo-btn" class="flex items-center space-x-1 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-gray-800 disabled:text-white font-bold py-1 px-2 rounded transition duration-150 text-sm" disabled>
                     <!-- Back Arrow SVG Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                         <path fill-rule="evenodd" d="M15.312 8.412a1.002 1.002 0 0 1 .634.341c.288.354.341.854.148 1.256l-1.049 2.098a.75.75 0 0 0 1.295.648l1.049-2.098a2.502 2.502 0 0 0-.154-4.814 1 1 0 0 1-.692-.98 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 1.7 8.356a.75.75 0 0 0-.256.452l-.63 1.89c-.19.569.21.992.746.857l2.128-.532a.75.75 0 0 0 .584-.712c0-.398-.242-.71-.564-.812a4.002 4.002 0 0 0-.001-.001 1 1 0 0 1 1.004-.996c.555 0 1 .444 1 1a1 1 0 0 1-.996 1.004c-.001 0-.002 0-.003-.001h.001a2.502 2.502 0 0 0 2.501 2.396 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 3.737 4.08 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 2.825-1.127 1 1 0 0 1 1.414 1.414 6.002 6.002 0 0 1-4.239 1.693 1 1 0 0 1-.96-1.004 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 15.312 8.412Z" clip-rule="evenodd" />
                     </svg>
-                    <span>Undo</span>
+                    <span>Rückgängig</span>
                 </button>
             </div>
             <!-- END HEADER WITH UNDO BUTTON -->
 
             <!-- Status Indicator -->
-            <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Address Lookup Active</div>
+            <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Adresssuche aktiv</div>
+            
+            <!-- Einsatzabschnitte Management -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
+                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center">Einsatzabschnitte (EA)</h2>
+
+                <form id="section-form" class="mb-3 space-y-2">
+                    <input type="text" id="section-name" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Name des EA (z.B. Wasserversorgung)" required>
+                    <input type="text" id="section-responsible" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Verantwortlicher (z.B. OBM Meier)" required>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
+                        EA erstellen
+                    </button>
+                </form>
+
+                <div id="section-draw-panel" class="p-2 mb-3 bg-red-100 text-red-700 rounded-lg hidden">
+                    <p class="font-bold mb-1">EA-Zeichenmodus aktiv!</p>
+                    <p class="text-sm">Klicken Sie Punkte auf der Karte, um die Grenze zu definieren.</p>
+                    <div class="flex mt-2 space-x-2">
+                        <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
+                            Zeichnen beenden
+                        </button>
+                        <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
+                            Abbrechen
+                        </button>
+                    </div>
+                </div>
+
+                <div id="section-list" class="space-y-2 mt-3 text-sm">
+                    <!-- Section cards will be dynamically inserted here -->
+                </div>
+                <div id="section-message" class="hidden p-2 mt-2 text-xs rounded bg-red-100 text-red-700 font-medium"></div>
+            </div>
+            <!-- END EA Management -->
 
             <!-- Dispatch Form -->
-            <form id="dispatch-form" class="mb-6">
-                <div class="mb-4 relative">
-                    <label for="address" class="block text-gray-700 text-sm font-bold mb-2">Address</label>
-                    <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter address... (76... postcodes)" autocomplete="off">
+            <form id="dispatch-form" class="mb-6 border-t pt-4 border-gray-200">
+                <div class="mb-3 relative">
+                    <label for="address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
+                    <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
                     
-                    <!-- Hidden fields to store Lat/Lon upon suggestion click -->
                     <input type="hidden" id="lat-input" value="">
                     <input type="hidden" id="lon-input" value="">
 
                     <div id="address-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
                 </div>
-                <div class="mb-4">
-                    <label for="keyword" class="block text-gray-700 text-sm font-bold mb-2">Alarm Keyword</label>
-                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Tree down, Basement flooded" required>
+                <div class="mb-3">
+                    <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
+                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required>
                 </div>
+                
+                <!-- AUTOMATIC ASSIGNMENT DISPLAY (New) -->
+                <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
+                    <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
+                    <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
+                    <input type="hidden" id="final-section-assignment" value="">
+                </div>
+                <!-- END AUTOMATIC ASSIGNMENT DISPLAY -->
 
                 <!-- Error Message Display -->
                 <div id="form-message" class="hidden p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium"></div>
 
                 <button type="submit" id="submit-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150">
-                    Create Incident
+                    Einsatz erstellen
                 </button>
             </form>
 
-            <!-- Map Quick Incident Toggle -->
-            <button id="toggle-map-mode-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150 mt-4">
-                Toggle Map Creation Mode (OFF)
-            </button>
-            
             <hr class="my-4">
 
             <!-- Incident List (Active) -->
             <div>
-                <h2 class="text-xl font-bold text-gray-800 mb-3">Active Incidents</h2>
+                <h2 class="text-xl font-bold text-gray-800 mb-3">Aktive Einsätze</h2>
                 <div id="incident-list" class="space-y-3">
                     <!-- Active incidents will be dynamically inserted here -->
                 </div>
@@ -106,40 +135,17 @@
 
             <!-- Completed Incidents Section (Collapsible) -->
             <button id="completed-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center">
-                Completed Incidents (0) ▼
+                Abgeschlossene Einsätze (0) ▼
             </button>
             <div id="completed-incident-list" class="space-y-3 mt-3 hidden">
                 <!-- Completed incidents will be dynamically inserted here -->
             </div>
 
-            <p class="text-xs text-gray-500 mt-4 text-center">Data saved locally in this browser. Not synchronized.</p>
+            <p class="text-xs text-gray-500 mt-4 text-center">Daten werden lokal im Browser gespeichert.</p>
         </div>
 
         <!-- Map -->
         <div class="w-full md:w-2/3 h-64 md:h-full" id="map"></div>
-    </div>
-
-    <!-- Quick Incident Modal -->
-    <div id="quick-incident-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-sm">
-            <h3 class="text-xl font-bold mb-4 text-red-700">Quick Pin Drop</h3>
-            <p class="mb-4 text-gray-700">A pin was dropped at the clicked location. Enter the alarm keyword to create the incident.</p>
-            
-            <form id="quick-incident-form">
-                <div class="mb-4">
-                    <label for="quick-keyword" class="block text-gray-700 text-sm font-bold mb-2">Alarm Keyword</label>
-                    <input type="text" id="quick-keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Car accident, Medical aid" required>
-                </div>
-                <div class="flex justify-between space-x-2">
-                    <button type="button" id="cancel-quick-incident" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition duration-150 flex-grow">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150 flex-grow">
-                        Create Quick Incident
-                    </button>
-                </div>
-            </form>
-        </div>
     </div>
 
     <script>
@@ -163,42 +169,53 @@
 
 
         // --- Local State and Persistence ---
-        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v1";
-        const LOCAL_STORAGE_HISTORY_KEY = "localDispatchIncidentHistory_v1"; // New key for history
+        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v2"; // Version bump for EA Geo data
+        const LOCAL_STORAGE_SECTIONS_KEY = "localDispatchSections_v2"; // Version bump for EA Geo data
+        const LOCAL_STORAGE_HISTORY_KEY = "localDispatchIncidentHistory_v2"; 
         
         const incidents = new Map();
+        const sections = new Map(); 
         const markers = new Map();
+        const sectionPolygons = new Map(); // NEW: Map to store Leaflet Polygon layers
+        
         let selectedIncidentId = null; 
-        let statusHistory = []; // Stores { id, oldStatus, newStatus }
-
-        // Map Click Mode State
-        let mapClickMode = false;
-        let pendingQuickIncident = null; 
-
-        // Completed Section State
+        let statusHistory = []; 
         let isCompletedSectionOpen = false;
-
+        
+        // --- Drawing State (NEW) ---
+        let drawingSectionId = null;
+        let currentDrawPoints = []; // Array of [lat, lon]
+        const currentDrawLayer = new L.LayerGroup();
+        const drawingIcon = L.divIcon({ className: 'leaflet-drawing-icon' });
+        
         // --- UI Elements ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
-        const keywordInput = document.getElementById('keyword');
-        const incidentList = document.getElementById('incident-list'); // Active list
-        const completedIncidentList = document.getElementById('completed-incident-list'); // Completed list
+        const finalSectionAssignmentInput = document.getElementById('final-section-assignment'); // Hidden input for auto assignment
+        const autoSectionDisplay = document.getElementById('auto-section-display');
+        const incidentList = document.getElementById('incident-list');
+        const completedIncidentList = document.getElementById('completed-incident-list');
         const completedToggleBtn = document.getElementById('completed-toggle-btn');
         const statusIndicator = document.getElementById('status-indicator');
         const submitBtn = document.getElementById('submit-btn');
         const formMessage = document.getElementById('form-message');
         const latInput = document.getElementById('lat-input');
         const lonInput = document.getElementById('lon-input');
-        const toggleMapModeBtn = document.getElementById('toggle-map-mode-btn');
-        const quickIncidentModal = document.getElementById('quick-incident-modal');
-        const quickIncidentForm = document.getElementById('quick-incident-form');
-        const quickKeywordInput = document.getElementById('quick-keyword');
-        const cancelQuickIncidentBtn = document.getElementById('cancel-quick-incident');
         const sidebarContainer = document.getElementById('sidebar-container');
-        const undoBtn = document.getElementById('undo-btn'); // New undo button element
+        const undoBtn = document.getElementById('undo-btn'); 
+        
+        // EA Management UI
+        const sectionForm = document.getElementById('section-form');
+        const sectionNameInput = document.getElementById('section-name');
+        const sectionResponsibleInput = document.getElementById('section-responsible');
+        const sectionListContainer = document.getElementById('section-list');
+        const sectionMessage = document.getElementById('section-message');
+        const sectionDrawPanel = document.getElementById('section-draw-panel');
+        const finishDrawBtn = document.getElementById('finish-draw-btn');
+        const cancelDrawBtn = document.getElementById('cancel-draw-btn');
         
         let debounceTimer;
+        let geoSearchDebounceTimer;
         
         // --- Map Initialization (Leaflet.js) ---
         const map = L.map('map').setView([49.0069, 8.4037], 13); // Centered on Karlsruhe
@@ -207,21 +224,40 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        currentDrawLayer.addTo(map);
+        
+        // --- FIX: Define onMapClick to avoid ReferenceError at initialization ---
+        function onMapClick(e) {
+            // Only handle deselection if not in drawing mode
+            if (!drawingSectionId) {
+                selectedIncidentId = null;
+                renderAllIncidents();
+            }
+        }
+        
         map.on('click', onMapClick);
+        // --- END FIX ---
         
         // --- Utility Functions ---
 
-        function showFormMessage(message, isError = true) {
-            formMessage.textContent = message;
-            formMessage.classList.remove('hidden');
+        function showMessage(element, message, isError = true) {
+            element.textContent = message;
+            element.classList.remove('hidden');
             if (isError) {
-                 formMessage.className = 'p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium';
+                 element.className = 'p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium';
             } else {
-                 formMessage.className = 'p-2 mb-3 text-sm rounded bg-green-100 text-green-700 font-medium';
+                 element.className = 'p-2 mb-3 text-sm rounded bg-green-100 text-green-700 font-medium';
             }
             setTimeout(() => {
-                formMessage.classList.add('hidden');
+                element.classList.add('hidden');
             }, 7000);
+        }
+
+        function showFormMessage(message, isError = true) {
+            showMessage(formMessage, message, isError);
+        }
+        function showSectionMessage(message, isError = true) {
+            showMessage(sectionMessage, message, isError);
         }
 
         function formatGermanAddress(address) {
@@ -251,6 +287,7 @@
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=1`);
                 const data = await response.json();
 
+                // Simple check for Karlsruher postcode area (76)
                 const bestMatch = data.find(place => 
                     place.address && 
                     place.address.postcode && 
@@ -263,58 +300,126 @@
                 return null;
             }
         }
+        
+        /**
+         * Point-in-Polygon (PIP) Ray Casting Algorithm
+         * Checks if a point [lat, lon] is inside a polygon (array of [lat, lon] arrays).
+         * Uses the odd-even rule.
+         */
+        function isPointInPolygon(point, polygon) {
+            const x = point[0]; // Lat (latitude)
+            const y = point[1]; // Lon (longitude)
+            let inside = false;
+
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                let xi = polygon[i][0], yi = polygon[i][1];
+                let xj = polygon[j][0], yj = polygon[j][1];
+
+                // Check if the ray from the point crosses the segment
+                let intersect = ((yi > y) !== (yj > y))
+                    && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        /**
+         * Determines which EA (if any) contains the given coordinates.
+         * @param {number} lat - Incident latitude.
+         * @param {number} lon - Incident longitude.
+         * @returns {string | null} The ID of the containing section, or null.
+         */
+        function findContainingSection(lat, lon) {
+            let assignedSectionId = null;
+            
+            sections.forEach(section => {
+                if (section.boundary && section.boundary.length >= 3) {
+                    const point = [lat, lon];
+                    if (isPointInPolygon(point, section.boundary)) {
+                        assignedSectionId = section.id;
+                        // Prioritize the first match, assuming boundaries don't overlap or one is sufficient
+                    }
+                }
+            });
+            return assignedSectionId;
+        }
+
 
         // --- Persistence Logic ---
 
-        function saveIncidents() {
+        function saveState() {
             const incidentsArray = Array.from(incidents.values());
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(incidentsArray));
+            const sectionsArray = Array.from(sections.values());
             
-            // Save history stack
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(incidentsArray));
+            localStorage.setItem(LOCAL_STORAGE_SECTIONS_KEY, JSON.stringify(sectionsArray));
             localStorage.setItem(LOCAL_STORAGE_HISTORY_KEY, JSON.stringify(statusHistory));
             
-            console.log("Local state saved (incidents and history).");
+            console.log("Lokaler Status gespeichert (Einsätze, Abschnitte, Verlauf).");
         }
 
-        function loadIncidents() {
+        function loadState() {
+            // 1. Load Sections
+            const cachedSections = localStorage.getItem(LOCAL_STORAGE_SECTIONS_KEY);
+            if (cachedSections) {
+                try {
+                    const sectionsArray = JSON.parse(cachedSections);
+                    sectionsArray.forEach(section => {
+                        if (!section.id) section.id = generateUUID();
+                        if (typeof section.boundary === 'undefined') section.boundary = []; // NEW default
+                        sections.set(section.id, section);
+                    });
+                    console.log(`Geladen: ${sections.size} Einsatzabschnitte.`);
+                } catch (e) {
+                    console.error("Fehler beim Laden der Einsatzabschnitte:", e);
+                    localStorage.removeItem(LOCAL_STORAGE_SECTIONS_KEY);
+                }
+            }
+            
+            // 2. Load Incidents
             const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 try {
                     const incidentsArray = JSON.parse(cachedData);
                     incidentsArray.forEach(incident => {
                         if (!incident.id) incident.id = generateUUID(); 
+                        if (typeof incident.notes === 'undefined') incident.notes = '';
+                        if (typeof incident.sectionId === 'undefined') incident.sectionId = null; 
                         incidents.set(incident.id, incident);
                     });
-                    console.log(`Loaded ${incidents.size} incidents from local storage.`);
+                    console.log(`Geladen: ${incidents.size} Einsätze aus dem lokalen Speicher.`);
                 } catch (e) {
-                    console.error("Error loading incidents from local storage:", e);
+                    console.error("Fehler beim Laden der Einsätze:", e);
                     localStorage.removeItem(LOCAL_STORAGE_KEY);
                 }
             }
             
+            // 3. Load History
             const cachedHistory = localStorage.getItem(LOCAL_STORAGE_HISTORY_KEY);
             if (cachedHistory) {
                 try {
                     statusHistory = JSON.parse(cachedHistory);
                 } catch (e) {
-                    console.error("Error loading history:", e);
+                    console.error("Fehler beim Laden des Verlaufs:", e);
                     localStorage.removeItem(LOCAL_STORAGE_HISTORY_KEY);
                 }
             }
 
-            renderAllIncidents();
+            renderAll();
             updateUndoButtonState();
         }
-        
-        // --- Undo Logic ---
+
+        // --- Undo Logic (Simplifed to Incident Status only) ---
 
         function updateUndoButtonState() {
+            undoBtn.disabled = statusHistory.length === 0;
             if (statusHistory.length > 0) {
-                undoBtn.disabled = false;
-                undoBtn.classList.replace('text-white', 'text-gray-800'); 
+                undoBtn.classList.replace('disabled:bg-gray-400', 'bg-yellow-500');
+                undoBtn.classList.replace('disabled:text-white', 'text-gray-800'); 
             } else {
-                undoBtn.disabled = true;
-                undoBtn.classList.replace('text-gray-800', 'text-white');
+                undoBtn.classList.replace('bg-yellow-500', 'disabled:bg-gray-400');
+                undoBtn.classList.replace('text-gray-800', 'disabled:text-white');
             }
         }
 
@@ -325,18 +430,21 @@
             const incident = incidents.get(lastAction.id);
 
             if (incident) {
-                // Revert status
                 incident.status = lastAction.oldStatus;
+                if (incident.status !== 'completed') {
+                    // Re-run auto assignment if moving out of 'completed'
+                    incident.sectionId = findContainingSection(incident.lat, incident.lon); 
+                }
                 incidents.set(incident.id, incident);
                 
-                selectedIncidentId = null; // Clear selection after undo
-                saveIncidents();
-                renderAllIncidents();
+                selectedIncidentId = null; 
+                saveState();
+                renderAll();
                 
-                showFormMessage(`Undid action on incident ${lastAction.id.substring(0, 4)}... Reverted to ${lastAction.oldStatus.toUpperCase()}.`, false);
+                showFormMessage(`Aktion für Einsatz ${lastAction.id.substring(0, 4)}... erfolgreich rückgängig gemacht.`, false);
             } else {
-                showFormMessage("Error: Incident for undo action not found. History cleared.", true);
-                statusHistory = []; // Clear history if action points to non-existent ID
+                showFormMessage("Fehler: Einsatz für Rückgängig-Aktion nicht gefunden. Verlauf wurde gelöscht.", true);
+                statusHistory = []; 
             }
 
             updateUndoButtonState();
@@ -344,108 +452,205 @@
 
         undoBtn.addEventListener('click', undoLastAction);
         
-        // --- Map Click Mode Logic ---
-
-        function toggleMapMode() {
-            mapClickMode = !mapClickMode;
+        // --- EA Drawing Logic (NEW) ---
+        
+        function setDrawMode(isActive, sectionId = null) {
+            drawingSectionId = isActive ? sectionId : null;
             const mapContainer = map.getContainer();
-            if (mapClickMode) {
-                mapContainer.classList.add('map-click-mode');
-                toggleMapModeBtn.textContent = 'Toggle Map Creation Mode (ON)';
-                toggleMapModeBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+            
+            if (isActive) {
+                mapContainer.classList.add('map-draw-mode');
+                sectionDrawPanel.classList.remove('hidden');
+                sectionForm.querySelector('button[type="submit"]').disabled = true;
+                currentDrawPoints = [];
+                currentDrawLayer.clearLayers();
+                map.on('click', handleMapDrawClick);
             } else {
-                mapContainer.classList.remove('map-click-mode');
-                toggleMapModeBtn.textContent = 'Toggle Map Creation Mode (OFF)';
-                toggleMapModeBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+                mapContainer.classList.remove('map-draw-mode');
+                sectionDrawPanel.classList.add('hidden');
+                sectionForm.querySelector('button[type="submit"]').disabled = false;
+                currentDrawPoints = [];
+                currentDrawLayer.clearLayers();
+                map.off('click', handleMapDrawClick);
             }
+            
+            renderSectionManager(); 
         }
 
-        async function onMapClick(e) {
-            if (!mapClickMode) {
-                // If not in creation mode, clicking the map clears the current selection
-                if (selectedIncidentId) {
-                    selectedIncidentId = null;
-                    renderAllIncidents();
-                }
+        function handleMapDrawClick(e) {
+            if (!drawingSectionId) return;
+            
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+            currentDrawPoints.push([lat, lon]);
+            
+            // Add point marker
+            const marker = L.marker([lat, lon], { icon: drawingIcon, clickable: false }).addTo(currentDrawLayer);
+            
+            // Redraw polyline if there are at least 2 points
+            if (currentDrawPoints.length > 1) {
+                currentDrawLayer.eachLayer(layer => {
+                    if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+                        currentDrawLayer.removeLayer(layer);
+                    }
+                });
+                L.polyline(currentDrawPoints, { color: '#ef4444', weight: 3, opacity: 0.7 }).addTo(currentDrawLayer);
+            }
+            
+            const section = sections.get(drawingSectionId);
+            showSectionMessage(`Punkt hinzugefügt für EA "${section.name}". ${currentDrawPoints.length} Punkte.`, false);
+        }
+
+        finishDrawBtn.addEventListener('click', () => {
+            if (currentDrawPoints.length < 3) {
+                showSectionMessage("Ein Polygon benötigt mindestens 3 Punkte.", true);
                 return;
             }
 
-            const reverseGeocodeResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&zoom=18&addressdetails=1`);
-            const data = await reverseGeocodeResponse.json();
-            
-            let address = "Unknown Location (Map Click)";
-            if (data && data.display_name) {
-                address = data.display_name;
+            const section = sections.get(drawingSectionId);
+            if (section) {
+                section.boundary = currentDrawPoints;
+                sections.set(drawingSectionId, section);
+                saveState();
+                showSectionMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert.`, false);
             }
+            setDrawMode(false);
+        });
 
-            pendingQuickIncident = {
-                lat: e.latlng.lat,
-                lon: e.latlng.lng,
-                address: address
+        cancelDrawBtn.addEventListener('click', () => {
+            const section = sections.get(drawingSectionId);
+            showSectionMessage(`Zeichnen für EA "${section.name}" abgebrochen.`, true);
+            setDrawMode(false);
+        });
+        
+        // --- EA Management Logic ---
+
+        sectionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = sectionNameInput.value.trim();
+            const responsible = sectionResponsibleInput.value.trim();
+
+            if (!name || !responsible) {
+                showSectionMessage("Bitte füllen Sie beide Felder aus.", true);
+                return;
+            }
+            
+            const newSection = {
+                id: generateUUID(),
+                name: name,
+                responsible: responsible,
+                boundary: [] // NEW: Empty boundary array
             };
 
-            quickIncidentModal.classList.remove('hidden');
-            quickKeywordInput.focus();
+            sections.set(newSection.id, newSection);
+            saveState();
+            renderAll();
+            showSectionMessage(`EA "${name}" erfolgreich erstellt. Bitte definieren Sie nun die Grenze auf der Karte.`, false);
+            sectionForm.reset();
+        });
+
+        function deleteSection(id) {
+            if (!confirm("Sind Sie sicher, dass Sie diesen Einsatzabschnitt löschen möchten? Alle zugeordneten Einsätze werden freigegeben.")) return;
+
+            if (drawingSectionId === id) setDrawMode(false);
+
+            sections.delete(id);
+            // Unassign incidents from this section
+            incidents.forEach(incident => {
+                if (incident.sectionId === id) {
+                    incident.sectionId = null;
+                }
+            });
+
+            saveState();
+            renderAll();
+            showSectionMessage("EA gelöscht.", false);
         }
-
-        quickIncidentForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const keyword = quickKeywordInput.value.trim();
-
-            if (!keyword || !pendingQuickIncident) {
-                quickIncidentModal.classList.add('hidden');
-                return;
-            }
-
-            try {
-                const newIncident = {
-                    id: generateUUID(),
-                    formattedAddress: pendingQuickIncident.address,        
-                    keyword: keyword,
-                    lat: pendingQuickIncident.lat,
-                    lon: pendingQuickIncident.lon,
-                    status: 'open',
-                    createdAt: new Date().toISOString() 
-                };
-                
-                incidents.set(newIncident.id, newIncident);
-                saveIncidents();
-                renderAllIncidents(); 
-
-                showFormMessage("Quick incident created successfully!", false);
-
-            } catch (error) {
-                console.error("CRITICAL RUNTIME ERROR during quick incident creation:", error);
-                showFormMessage(`Critical Error: Quick incident failed: ${error.message}`, true);
-            } finally {
-                quickIncidentModal.classList.add('hidden');
-                quickIncidentForm.reset();
-                pendingQuickIncident = null;
-                toggleMapMode(); 
-            }
-        });
-
-        cancelQuickIncidentBtn.addEventListener('click', () => {
-            quickIncidentModal.classList.add('hidden');
-            quickIncidentForm.reset();
-            pendingQuickIncident = null;
-            toggleMapMode(); 
-        });
-
-        // --- Completed Section Toggle Logic ---
-
-        completedToggleBtn.addEventListener('click', () => {
-            isCompletedSectionOpen = !isCompletedSectionOpen;
-            if (isCompletedSectionOpen) {
-                completedIncidentList.classList.remove('hidden');
-            } else {
-                completedIncidentList.classList.add('hidden');
-            }
-            renderAllIncidents(); 
-        });
-
-
+        
         // --- UI Rendering ---
+
+        function renderSectionManager() {
+            sectionListContainer.innerHTML = '';
+            
+            if (sections.size === 0) {
+                sectionListContainer.innerHTML = '<p class="text-xs text-gray-500">Noch keine Einsatzabschnitte erstellt.</p>';
+            }
+            
+            // Clear existing polygons from map
+            sectionPolygons.forEach(polygon => map.removeLayer(polygon));
+            sectionPolygons.clear();
+
+            sections.forEach(section => {
+                const count = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status !== 'completed').length;
+                const hasBoundary = section.boundary && section.boundary.length >= 3;
+                
+                // 1. Render Section Polygon on Map
+                if (hasBoundary) {
+                    const polygon = L.polygon(section.boundary, {
+                        color: drawingSectionId === section.id ? '#ef4444' : '#4f46e5', // Indigo or Red if drawing
+                        fillColor: drawingSectionId === section.id ? '#fef2f2' : '#c7d2fe', // Light fill
+                        fillOpacity: 0.3,
+                        weight: 2
+                    }).addTo(map);
+                    
+                    polygon.bindPopup(`<b>EA: ${section.name}</b><br>Verantwortlich: ${section.responsible}<br>${count} aktive Einsätze`);
+                    sectionPolygons.set(section.id, polygon);
+                }
+
+                // 2. Render Sidebar Card
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'flex flex-col p-2 bg-white rounded border ' + (hasBoundary ? 'border-indigo-300' : 'border-red-300');
+                
+                const boundaryStatusText = hasBoundary ? 
+                    `<span class="text-xs font-medium text-green-700">✓ Grenze definiert</span>` : 
+                    `<span class="text-xs font-medium text-red-700">✕ Grenze fehlt</span>`;
+
+                const drawButtonHTML = hasBoundary ? 
+                    `<button data-id="${section.id}" class="draw-section-btn bg-yellow-500 hover:bg-yellow-600 text-gray-800 font-bold py-1 px-2 rounded flex-grow text-xs transition duration-150">
+                        Grenze bearbeiten
+                    </button>` :
+                    `<button data-id="${section.id}" class="draw-section-btn bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded flex-grow text-xs transition duration-150">
+                        Grenze zeichnen
+                    </button>`;
+
+
+                sectionDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <p class="font-semibold text-indigo-700">${section.name} <span class="text-xs bg-indigo-100 text-indigo-600 px-1 rounded ml-1">${count} Einsätze</span></p>
+                            <p class="text-xs text-gray-600">V: <span class="font-medium">${section.responsible}</span></p>
+                        </div>
+                        <button data-id="${section.id}" class="delete-section-btn text-red-500 hover:text-red-700 p-1 rounded transition duration-150" title="Abschnitt löschen">
+                            <!-- Trash Icon SVG -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
+                                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.5H2.75a.75.75 0 0 0 0 1.5h14.5a.75.75 0 0 0 0-1.5H14V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 6a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-1.5 0v-8.5A.75.75 0 0 1 10 6ZM6.75 9.25a.75.75 0 0 0-1.5 0v5.5a.75.75 0 0 0 1.5 0v-5.5ZM13.25 9.25a.75.75 0 0 0-1.5 0v5.5a.75.75 0 0 0 1.5 0v-5.5Z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center space-x-2 mt-1 pt-1 border-t border-gray-100">
+                        ${boundaryStatusText}
+                        ${drawButtonHTML}
+                    </div>
+                `;
+                sectionListContainer.appendChild(sectionDiv);
+            });
+            
+            // Add delegation for buttons
+            sectionListContainer.querySelectorAll('.delete-section-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    deleteSection(e.target.dataset.id);
+                });
+            });
+
+            sectionListContainer.querySelectorAll('.draw-section-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    setDrawMode(true, e.target.dataset.id);
+                    map.flyTo(map.getCenter(), 13); // Zoom to center to prepare for drawing
+                });
+            });
+        }
+        
+        // Removed renderIncidentSelectOptions as assignment is now automatic
 
         function getStatusColor(status) {
             if (status === 'open') return 'red';
@@ -474,8 +679,16 @@
             });
         }
 
+        function getGermanStatusText(status) {
+            if (status === 'open') return 'OFFEN';
+            if (status === 'dispatched') return 'ENTSANDT';
+            if (status === 'completed') return 'ABGESCHLOSSEN';
+            return 'UNBEKANNT';
+        }
+
         function renderIncidentCard(incident) {
             const isCompleted = incident.status === 'completed';
+            const currentSection = incident.sectionId ? sections.get(incident.sectionId) : null;
 
             const incidentElement = document.createElement('div');
             incidentElement.id = `incident-${incident.id}`;
@@ -485,21 +698,59 @@
             
             if (incident.status === 'open') {
                 statusColorClass = 'bg-red-100 text-red-800 border-l-4 border-red-500';
-                buttonHTML = `<button data-id="${incident.id}" class="update-status-btn dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
+                buttonHTML = `<button data-id="${incident.id}" class="update-status-btn dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Einheit entsenden</button>`;
             } else if (incident.status === 'dispatched') {
                 statusColorClass = 'bg-blue-100 text-blue-800 border-l-4 border-blue-500';
-                buttonHTML = `<button data-id="${incident.id}" class="update-status-btn complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
+                buttonHTML = `<button data-id="${incident.id}" class="update-status-btn complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Als abgeschlossen markieren</button>`;
             } else if (incident.status === 'completed') {
                 statusColorClass = 'bg-amber-100 text-amber-800 opacity-75 border-l-4 border-amber-500';
-                // No button for completed incidents (revert done via global Undo button)
-                buttonHTML = `<button disabled class="bg-gray-300 text-gray-700 text-sm font-bold py-1 px-3 rounded w-full cursor-not-allowed">Completed</button>`;
+                buttonHTML = `<button disabled class="bg-gray-300 text-gray-700 text-sm font-bold py-1 px-3 rounded w-full cursor-not-allowed">Abgeschlossen</button>`;
             }
             
             let selectionClass = '';
+            let notesSectionHTML = '';
+            let sectionInfoHTML = '';
+
+            // EA Info
+            if (currentSection) {
+                sectionInfoHTML = `<div class="mt-1 text-xs text-indigo-700 font-medium bg-indigo-100 p-1 rounded flex justify-between items-center">
+                    <span>EA: ${currentSection.name} (V: ${currentSection.responsible})</span>
+                    <button data-id="${incident.id}" class="unassign-section-btn text-red-500 hover:text-red-700 p-0.5 rounded transition duration-150" title="EA-Zuordnung manuell aufheben">
+                        <!-- X-icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
+                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                        </svg>
+                    </button>
+                </div>`;
+            } else if (!isCompleted) {
+                 sectionInfoHTML = `<div class="mt-1 text-xs text-gray-600 font-medium bg-gray-200 p-1 rounded">
+                    EA: Nicht zugeordnet (Keine Grenze gefunden)
+                </div>`;
+            }
+
+
             if (incident.id === selectedIncidentId) {
                 selectionClass = 'incident-selected';
+                setTimeout(() => incidentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+
+                // Notes Section (Active or Read-only for Completed)
                 if (!isCompleted) { 
-                    setTimeout(() => incidentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+                    notesSectionHTML = `
+                        <div class="mt-4 p-3 bg-white rounded-md border border-gray-300 shadow-inner">
+                            <label for="notes-${incident.id}" class="block text-gray-700 text-sm font-bold mb-1">Notizen/Details</label>
+                            <textarea id="notes-${incident.id}" class="notes-textarea shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="Geben Sie hier wichtige Informationen zum Einsatz ein...">${incident.notes || ''}</textarea>
+                            <button data-id="${incident.id}" class="save-notes-btn mt-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold py-1 px-3 rounded transition duration-150 w-full disabled:bg-indigo-300">
+                                Notizen speichern
+                            </button>
+                        </div>
+                    `;
+                } else if (incident.notes && incident.notes.trim() !== '') {
+                    notesSectionHTML = `
+                        <div class="mt-4 p-3 bg-gray-100 rounded-md border border-gray-300">
+                            <p class="text-xs font-bold text-gray-600 mb-1">Abgeschlossene Notizen:</p>
+                            <p class="text-sm text-gray-800 whitespace-pre-wrap">${incident.notes}</p>
+                        </div>
+                    `;
                 }
             }
 
@@ -508,8 +759,10 @@
                 <p class="font-semibold text-gray-800">${incident.keyword}</p>
                 <p class="text-sm text-gray-600">${incident.formattedAddress}</p>
                 <div class="mt-2">
-                    <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass.split(' ').filter(c => !c.startsWith('border-')).join(' ')}">${incident.status.toUpperCase()}</span>
+                    <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass.split(' ').filter(c => !c.startsWith('border-')).join(' ')}">${getGermanStatusText(incident.status)}</span>
                 </div>
+                ${sectionInfoHTML}
+                ${notesSectionHTML} 
                 <div class="button-container mt-2 space-y-2">${buttonHTML}</div>
             `;
             incidentElement.className = `p-3 bg-gray-50 border rounded-lg shadow-sm ${statusColorClass} ${selectionClass} ${isCompleted ? 'cursor-default' : 'cursor-pointer'}`;
@@ -541,28 +794,35 @@
 
                 // Attach click listener for zoom/selection on the card itself (only active cards)
                 incidentElement.addEventListener('click', (e) => {
-                    // Ignore clicks on buttons within the card
-                    if (e.target.closest('.update-status-btn') || e.target.closest('.button-container')) {
+                    // Ignore clicks on interactive elements
+                    if (e.target.closest('.update-status-btn') || e.target.closest('.button-container') || e.target.closest('.notes-textarea') || e.target.closest('.save-notes-btn') || e.target.closest('.unassign-section-btn')) {
                         return;
                     }
-                    selectedIncidentId = incident.id;
-                    renderAllIncidents(); 
-                    map.flyTo([incident.lat, incident.lon], 15); // Zoom level 15 for street level view
+
+                    if (selectedIncidentId === incident.id) {
+                        selectedIncidentId = null;
+                    } else {
+                        selectedIncidentId = incident.id;
+                        map.flyTo([incident.lat, incident.lon], 15); 
+                    }
+                    
+                    renderAll(); 
                 });
 
                 // 2. Render Map Marker
                 if (incident.lat && incident.lon) {
                     const color = getStatusColor(incident.status);
                     const newIcon = createMarkerIcon(color);
-                    const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${incident.status.toUpperCase()}`;
+                    const germanStatus = getGermanStatusText(incident.status);
+                    const sectionName = incident.sectionId ? sections.get(incident.sectionId).name : 'Kein EA';
+                    const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
                     
                     const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
                     newMarker.bindPopup(popupContent);
                     
-                    // Marker click listener to select the incident
                     newMarker.on('click', function(e) {
                         selectedIncidentId = incident.id;
-                        renderAllIncidents(); 
+                        renderAll(); 
                         map.flyTo([incident.lat, incident.lon], map.getZoom()); 
                     });
 
@@ -575,17 +835,32 @@
                 const incidentElement = renderIncidentCard(incident);
                 completedIncidentList.appendChild(incidentElement);
                 
-                // Completed markers remain on the map
+                 incidentElement.addEventListener('click', (e) => {
+                    if (e.target.closest('.update-status-btn') || e.target.closest('.button-container')) {
+                        return;
+                    }
+
+                    if (selectedIncidentId === incident.id) {
+                        selectedIncidentId = null;
+                    } else {
+                        selectedIncidentId = incident.id;
+                        map.flyTo([incident.lat, incident.lon], map.getZoom()); 
+                    }
+                    renderAll(); 
+                });
+
                 if (incident.lat && incident.lon) {
                     const color = getStatusColor(incident.status);
                     const newIcon = createMarkerIcon(color);
-                    const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${incident.status.toUpperCase()}`;
+                    const germanStatus = getGermanStatusText(incident.status);
+                    const sectionName = incident.sectionId ? sections.get(incident.sectionId).name : 'Kein EA';
+                    const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
                     
                     const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
                     newMarker.bindPopup(popupContent);
                     newMarker.on('click', function(e) {
                         selectedIncidentId = incident.id;
-                        renderAllIncidents(); 
+                        renderAll(); 
                         map.flyTo([incident.lat, incident.lon], map.getZoom()); 
                     });
 
@@ -595,11 +870,63 @@
 
             // 4. Update Completed Section Toggle
             const toggleIcon = isCompletedSectionOpen ? '▲' : '▼';
-            completedToggleBtn.innerHTML = `Completed Incidents (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIcon}</span>`;
+            completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIcon}</span>`;
             
             // 5. Ensure Undo button state is correct after rendering
             updateUndoButtonState();
         }
+
+        function renderAll() {
+            if (drawingSectionId) {
+                // Do not rerender sections/polygons if in drawing mode (to avoid breaking the current path)
+                renderSectionManager(); 
+            } else {
+                renderSectionManager();
+                renderAllIncidents();
+            }
+        }
+
+        // --- Notes Saving and EA Changing Logic ---
+        sidebarContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('save-notes-btn')) {
+                const id = e.target.dataset.id;
+                const incident = incidents.get(id);
+                const notesTextarea = document.getElementById(`notes-${id}`);
+
+                if (!incident || !notesTextarea) return;
+
+                incident.notes = notesTextarea.value.trim();
+                incidents.set(id, incident);
+                
+                saveState();
+                
+                const originalText = e.target.textContent;
+                e.target.textContent = 'Gespeichert!';
+                e.target.disabled = true;
+
+                setTimeout(() => {
+                    e.target.textContent = originalText;
+                    e.target.disabled = false;
+                }, 1500);
+                
+                selectedIncidentId = id; 
+                showFormMessage("Notizen erfolgreich gespeichert.", false);
+            } else if (e.target.classList.contains('unassign-section-btn')) {
+                // Manual unassign logic
+                const id = e.target.dataset.id;
+                const incident = incidents.get(id);
+                if (!incident) return;
+                
+                const oldSectionName = sections.get(incident.sectionId).name;
+                incident.sectionId = null; 
+                incidents.set(id, incident);
+                
+                saveState();
+                renderAll();
+                
+                showFormMessage(`EA-Zuordnung für Einsatz ${id.substring(0, 4)}... (vormals ${oldSectionName}) manuell aufgehoben.`, false);
+            }
+        });
 
         // --- General Status Update Listener using Event Delegation ---
         sidebarContainer.addEventListener('click', (e) => {
@@ -616,15 +943,14 @@
 
             if (e.target.classList.contains('dispatch-btn')) {
                 newStatus = 'dispatched';
-                message = 'dispatched.';
+                message = 'entsandt.';
             } else if (e.target.classList.contains('complete-btn')) {
                 newStatus = 'completed'; 
-                message = 'marked complete.';
+                message = 'als abgeschlossen markiert.';
             } else {
                 return; 
             }
 
-            // Record history only if the status is actually changing
             if (oldStatus !== newStatus) {
                 statusHistory.push({
                     id: id,
@@ -633,27 +959,31 @@
                 });
             }
             
-            // Apply the new status
             incident.status = newStatus;
+            
+            // If completed, unassign from EA
+            if (newStatus === 'completed') {
+                incident.sectionId = null; 
+            }
             
             incidents.set(id, incident);
             selectedIncidentId = null; 
-            saveIncidents();
-            renderAllIncidents(); // Re-render handles UI and map marker updates
-            showFormMessage(`Incident ${id.substring(0, 4)}... ${message}`, false);
+            saveState();
+            renderAll(); 
+            showFormMessage(`Einsatz ${id.substring(0, 4)}... ${message}`, false);
         });
 
 
-        // --- Network and Address Lookup Management (remains the same) ---
+        // --- Network and Address Lookup Management ---
         const suggestionsContainer = document.getElementById('address-suggestions');
         
         function setOnlineStatus(isOnline) {
             if (isOnline) {
-                statusIndicator.textContent = 'Online: Address Lookup Active';
+                statusIndicator.textContent = 'Online: Adresssuche aktiv';
                 statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700';
                 dispatchForm.classList.remove('offline-form');
             } else {
-                statusIndicator.textContent = 'Offline: Address Lookup Disabled';
+                statusIndicator.textContent = 'Offline: Adresssuche deaktiviert';
                 statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-yellow-100 text-yellow-700';
                 dispatchForm.classList.add('offline-form');
             }
@@ -663,7 +993,23 @@
         window.addEventListener('offline', () => setOnlineStatus(false));
         setOnlineStatus(navigator.onLine);
 
-        toggleMapModeBtn.addEventListener('click', toggleMapMode);
+
+        function updateAutoAssignment(lat, lon) {
+            const sectionId = findContainingSection(lat, lon);
+            
+            if (sectionId) {
+                const section = sections.get(sectionId);
+                autoSectionDisplay.textContent = `EA: ${section.name} (V: ${section.responsible})`;
+                autoSectionDisplay.classList.remove('text-red-700');
+                autoSectionDisplay.classList.add('text-indigo-700');
+                finalSectionAssignmentInput.value = sectionId;
+            } else {
+                autoSectionDisplay.textContent = 'Keinem EA zugeordnet';
+                autoSectionDisplay.classList.remove('text-indigo-700');
+                autoSectionDisplay.classList.add('text-red-700');
+                finalSectionAssignmentInput.value = '';
+            }
+        }
 
 
         addressInput.addEventListener('input', () => {
@@ -672,6 +1018,10 @@
             
             latInput.value = '';
             lonInput.value = '';
+            finalSectionAssignmentInput.value = '';
+            autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
+            autoSectionDisplay.classList.remove('text-red-700');
+            autoSectionDisplay.classList.add('text-gray-700');
 
             if (query.length < 3 || !navigator.onLine) {
                 suggestionsContainer.innerHTML = '';
@@ -698,10 +1048,19 @@
 
                         suggestionsContainer.classList.add('hidden');
                         suggestionsContainer.innerHTML = '';
+                        
+                        // Immediately update auto assignment display
+                        const lat = parseFloat(data.lat);
+                        const lon = parseFloat(data.lon);
+                        updateAutoAssignment(lat, lon);
                     });
                     suggestionsContainer.appendChild(suggestionItem);
                 } else {
-                    suggestionsContainer.innerHTML = '<div class="p-2 text-gray-500">No matching 76... address found.</div>';
+                    suggestionsContainer.innerHTML = '<div class="p-2 text-gray-500">Keine passende 76... Adresse gefunden.</div>';
+                    finalSectionAssignmentInput.value = '';
+                    autoSectionDisplay.textContent = 'Keine Geo-Daten gefunden';
+                    autoSectionDisplay.classList.remove('text-indigo-700');
+                    autoSectionDisplay.classList.add('text-red-700');
                 }
             }, 300);
         });
@@ -717,80 +1076,93 @@
         dispatchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const keyword = keywordInput.value.trim();
+            const keyword = document.getElementById('keyword').value.trim();
             const addressText = addressInput.value.trim();
-            const finalLat = latInput.value;
-            const finalLon = lonInput.value;
+            let incidentLat = parseFloat(latInput.value);
+            let incidentLon = parseFloat(lonInput.value);
+            const sectionId = finalSectionAssignmentInput.value || null; // NEW: Use auto-assigned ID
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
+            submitBtn.textContent = 'Verarbeite...';
             
             if (!keyword || !addressText) {
-                showFormMessage("Please enter both an address and an alarm keyword.");
+                showFormMessage("Bitte geben Sie sowohl eine Adresse als auch ein Alarmstichwort ein.");
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Incident';
+                submitBtn.textContent = 'Einsatz erstellen';
                 return;
             }
-
-            let incidentLat = parseFloat(finalLat);
-            let incidentLon = parseFloat(finalLon);
-            let finalAddressData = { lat: incidentLat, lon: incidentLon, address: {} }; 
             
-            if (!finalLat || !finalLon) {
+            if (isNaN(incidentLat) || isNaN(incidentLon)) {
+                // Fallback attempt to geocode if no coordinates were selected from suggestion
                 if (!navigator.onLine) {
-                    showFormMessage("Cannot look up address while offline.", true);
+                    showFormMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Create Incident';
+                    submitBtn.textContent = 'Einsatz erstellen';
                     return;
                 }
                 const fallbackLocation = await geocodeAddress(addressText);
                 
                 if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
-                    showFormMessage("Could not find map coordinates. Please try clicking the suggestion or ensure the address is complete.", true);
+                    showFormMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Vorschlag.", true);
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Create Incident';
+                    submitBtn.textContent = 'Einsatz erstellen';
                     return;
                 }
                 
                 incidentLat = parseFloat(fallbackLocation.lat);
                 incidentLon = parseFloat(fallbackLocation.lon);
-                finalAddressData.address = fallbackLocation.address;
             }
             
             try {
-                const displayAddress = finalAddressData.address.display_name ? formatGermanAddress(finalAddressData.address) : addressText;
-
+                // Final check for auto assignment right before saving, in case the user edited the address field
+                const finalSectionId = findContainingSection(incidentLat, incidentLon);
+                
                 const newIncident = {
                     id: generateUUID(),
-                    formattedAddress: displayAddress,        
+                    formattedAddress: addressText,        
                     keyword: keyword,
                     lat: incidentLat,
                     lon: incidentLon,
                     status: 'open',
+                    notes: '', 
+                    sectionId: finalSectionId, 
                     createdAt: new Date().toISOString() 
                 };
                 
                 incidents.set(newIncident.id, newIncident);
-                saveIncidents();
-                renderAllIncidents(); 
+                saveState();
+                renderAll(); 
                 
                 dispatchForm.reset();
                 latInput.value = '';
                 lonInput.value = '';
                 suggestionsContainer.classList.add('hidden');
-                showFormMessage("Incident created successfully!", false);
+                autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
+                
+                showFormMessage("Einsatz erfolgreich erstellt und automatisch zugeordnet.", false);
 
             } catch (error) {
-                console.error("CRITICAL RUNTIME ERROR during incident creation:", error);
-                showFormMessage(`Critical Error: Check your browser console for details: ${error.message}`, true);
+                console.error("KRITISCHER LAUFZEITFEHLER beim Erstellen des Einsatzes:", error);
+                showFormMessage(`Kritischer Fehler: Details in der Browser-Konsole prüfen: ${error.message}`, true);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Incident';
+                submitBtn.textContent = 'Einsatz erstellen';
             }
         });
         
+        // --- Completed Section Toggle Logic ---
+        completedToggleBtn.addEventListener('click', () => {
+            isCompletedSectionOpen = !isCompletedSectionOpen;
+            if (isCompletedSectionOpen) {
+                completedIncidentList.classList.remove('hidden');
+            } else {
+                completedIncidentList.classList.add('hidden');
+            }
+            renderAllIncidents(); 
+        });
+
         // --- Initialize on Load ---
-        window.onload = loadIncidents;
+        window.onload = loadState;
 
     </script>
 </body>
