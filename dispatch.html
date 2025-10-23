@@ -1,197 +1,460 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dispatching System</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-      background: #111;
-      color: #eee;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 16px;
-      max-width: 400px;
-    }
-    input, button {
-      padding: 8px;
-      border: none;
-      border-radius: 6px;
-    }
-    input {
-      width: 100%;
-    }
-    button {
-      background: #4f46e5;
-      color: white;
-      cursor: pointer;
-    }
-    #suggestions {
-      background: #222;
-      border-radius: 6px;
-      max-width: 400px;
-    }
-    .suggestion {
-      padding: 6px;
-      cursor: pointer;
-    }
-    .suggestion:hover {
-      background: #333;
-    }
-    #incidents {
-      margin-top: 20px;
-    }
-    .incident {
-      background: #222;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Department Dispatch System (Synchronized)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        #map { height: 100%; }
+        .leaflet-container {
+            border-radius: 0.5rem;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        /* Styles for when the application is truly offline/disconnected */
+        .offline .dispatch-btn,
+        .offline .complete-btn,
+        .offline button[type="submit"] {
+            pointer-events: none;
+            opacity: 0.5;
+            background-color: #9ca3af; /* gray-400 */
+        }
+    </style>
 </head>
-<body>
-  <h1>Dispatching System</h1>
+<body class="bg-gray-100 font-sans">
+    <div class="flex flex-col md:flex-row h-screen">
+        <!-- Sidebar -->
+        <div class="w-full md:w-1/3 bg-white p-4 overflow-y-auto shadow-lg">
+            <h1 class="text-2xl font-bold text-red-700 mb-4">Dispatch System (Live)</h1>
 
-  <form id="dispatchForm">
-    <label>Address</label>
-    <input type="text" id="address" placeholder="Enter address" autocomplete="off" />
+            <!-- Dispatch Form -->
+            <form id="dispatch-form" class="mb-6">
+                <div class="mb-4 relative">
+                    <label for="address" class="block text-gray-700 text-sm font-bold mb-2">Address</label>
+                    <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter address... (76... postcodes)" autocomplete="off">
+                    <div id="address-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
+                </div>
+                <div class="mb-4">
+                    <label for="keyword" class="block text-gray-700 text-sm font-bold mb-2">Alarm Keyword</label>
+                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Tree down, Basement flooded">
+                </div>
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150">
+                    Create Incident
+                </button>
+            </form>
 
-    <div id="suggestions" class="hidden"></div>
+            <!-- Incident List -->
+            <div>
+                <h2 class="text-xl font-bold text-gray-800 mb-3">Active Incidents</h2>
+                <div id="incident-list" class="space-y-3">
+                    <!-- Incidents will be dynamically inserted here -->
+                </div>
+                <p class="text-xs text-gray-500 mt-4 text-center">Data synchronized via Firestore for all users.</p>
+            </div>
+        </div>
 
-    <label>Keyword</label>
-    <input type="text" id="keyword" placeholder="Enter alarm keyword" />
+        <!-- Map -->
+        <div class="w-full md:w-2/3 h-64 md:h-full" id="map"></div>
+    </div>
 
-    <button type="submit">Create Incident</button>
-  </form>
+    <!-- Offline Overlay -->
+    <div id="offline-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+            <h3 class="text-xl font-bold text-yellow-600">Connection Interrupted</h3>
+            <p class="text-gray-700 mt-2">The system is relying on **cached data**. Inputs are disabled until connection is restored.</p>
+        </div>
+    </div>
 
-  <div id="incidents"></div>
+    <script type="module">
+        // --- Firebase Initialization ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  <script>
-    const addressInput = document.getElementById("address");
-    const keywordInput = document.getElementById("keyword");
-    const suggestionsContainer = document.getElementById("suggestions");
-    const dispatchForm = document.getElementById("dispatchForm");
-    const incidentsContainer = document.getElementById("incidents");
+        // Global variables provided by the environment (MANDATORY USE)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-dispatch-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "your-api-key", authDomain: "your-auth-domain", projectId: "your-project-id" };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        // setLogLevel('debug'); // Uncomment for debugging
 
-    let selectedLocation = null;
-    const incidents = new Map();
+        // --- UI Elements for Offline Mode ---
+        const dispatchForm = document.getElementById('dispatch-form');
+        const addressInput = document.getElementById('address');
+        const keywordInput = document.getElementById('keyword');
+        const submitButton = dispatchForm.querySelector('button[type="submit"]');
+        const offlineOverlay = document.getElementById('offline-overlay');
+        const incidentListContainer = document.getElementById('incident-list');
+        const incidentList = document.getElementById('incident-list');
 
-    function formatGermanAddress(addr) {
-      const parts = [];
-      if (addr.road) parts.push(addr.road);
-      if (addr.house_number) parts[parts.length - 1] += " " + addr.house_number;
-      if (addr.postcode && addr.city) parts.push(addr.postcode + " " + addr.city);
-      else if (addr.town) parts.push(addr.town);
-      else if (addr.village) parts.push(addr.village);
-      return parts.join(", ");
-    }
+        let userId;
+        let incidentsCollection;
+        
+        const incidents = new Map();
+        const markers = new Map();
 
-    async function fetchSuggestions(query) {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=5`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        // --- Map Initialization (Leaflet.js) ---
+        const map = L.map('map').setView([49.0069, 8.4037], 13); // Centered on Karlsruhe
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-      try {
-        const res = await fetch(proxyUrl);
-        const json = await res.json();
-        return JSON.parse(json.contents);
-      } catch (err) {
-        console.error("Error fetching suggestions:", err);
-        return [];
-      }
-    }
+        // --- Cache Management (For resilience during network drops) ---
+        const CACHE_KEY = `dispatchIncidentsCache_${appId}`;
 
-    addressInput.addEventListener("input", async () => {
-      const query = addressInput.value.trim();
-      selectedLocation = null;
-      if (query.length < 3) {
-        suggestionsContainer.innerHTML = "";
-        suggestionsContainer.classList.add("hidden");
-        return;
-      }
+        function saveIncidentsToCache() {
+            // Only save if we have data to prevent saving empty data on initial load
+            if (incidents.size > 0) {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(Array.from(incidents.entries())));
+                console.log("Incidents saved to cache.");
+            }
+        }
 
-      const results = await fetchSuggestions(query);
-      suggestionsContainer.innerHTML = "";
-      if (results.length === 0) {
-        suggestionsContainer.classList.add("hidden");
-        return;
-      }
+        function loadIncidentsFromCache() {
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                try {
+                    const cachedIncidents = new Map(JSON.parse(cachedData));
+                    if (cachedIncidents.size > 0) {
+                        console.log(`Loading ${cachedIncidents.size} incidents from cache.`);
+                        // Clear existing UI/map elements before loading cache
+                        incidentList.innerHTML = ''; 
+                        markers.forEach(marker => map.removeLayer(marker));
+                        markers.clear();
+                        incidents.clear(); 
 
-      results.forEach((r) => {
-        const div = document.createElement("div");
-        div.classList.add("suggestion");
-        div.textContent = formatGermanAddress(r.address);
-        div.addEventListener("click", () => {
-          addressInput.value = formatGermanAddress(r.address);
-          selectedLocation = r;
-          suggestionsContainer.innerHTML = "";
-          suggestionsContainer.classList.add("hidden");
+                        cachedIncidents.forEach(incident => {
+                            // Only load non-completed items from cache to keep the list clean
+                            if (incident.status !== 'completed') {
+                                incidents.set(incident.id, incident); 
+                                addIncidentToUI(incident);
+                                addMarkerToMap(incident);
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error loading cache:", e);
+                    localStorage.removeItem(CACHE_KEY); // Clear bad cache
+                }
+            }
+        }
+
+        // --- Offline Mode Management ---
+        function setOfflineMode(isOffline) {
+            if (isOffline) {
+                offlineOverlay.classList.remove('hidden');
+                document.body.classList.add('offline');
+                console.warn("Operating in network-disconnected mode.");
+            } else {
+                offlineOverlay.classList.add('hidden');
+                document.body.classList.remove('offline');
+                console.log("Network connection restored.");
+            }
+        }
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                console.log("User authenticated with ID:", userId);
+                // Public data path for multi-browser synchronization
+                incidentsCollection = collection(db, `/artifacts/${appId}/public/data/incidents`);
+                setupIncidentListener();
+            } else {
+                console.log("No user signed in.");
+            }
         });
-        suggestionsContainer.appendChild(div);
-      });
-      suggestionsContainer.classList.remove("hidden");
-    });
 
-    dispatchForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const keyword = keywordInput.value.trim();
-      const address = addressInput.value.trim();
+        async function authenticateUser() {
+            try {
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Authentication failed:", error);
+            }
+        }
+        
+        // Initial setup calls
+        loadIncidentsFromCache(); 
+        setOfflineMode(!navigator.onLine); 
+        authenticateUser();
 
-      if (!keyword || !address) {
-        alert("Please enter an address and keyword.");
-        return;
-      }
+        // Add network listeners for robust operation
+        window.addEventListener('offline', () => setOfflineMode(true));
+        window.addEventListener('online', () => setOfflineMode(false));
 
-      let location = selectedLocation;
+        // --- Map & UI Removal Helpers ---
+        function removeIncidentFromUI(id) {
+            const el = document.getElementById(`incident-${id}`);
+            if (el) el.remove();
+            incidents.delete(id);
+        }
 
-      // Try to geocode manually typed address if no suggestion chosen
-      if (!location) {
-        const results = await fetchSuggestions(address);
-        if (results.length > 0) location = results[0];
-      }
+        function removeMarkerFromMap(id) {
+            const marker = markers.get(id);
+            if (marker) map.removeLayer(marker);
+            markers.delete(id);
+        }
 
-      if (!location) {
-        alert("Could not resolve the address.");
-        return;
-      }
+        // --- Firestore Real-time Listener ---
+        function setupIncidentListener() {
+            onSnapshot(incidentsCollection, (snapshot) => {
+                let cacheNeedsUpdate = false;
+                
+                // Clear the incident lists/maps before processing changes to ensure only *active* incidents are shown
+                incidentList.innerHTML = '';
+                markers.forEach(marker => map.removeLayer(marker));
+                markers.clear();
+                incidents.clear();
 
-      const cleanAddress = formatGermanAddress(location.address);
-      const newIncident = {
-        id: crypto.randomUUID(),
-        formattedAddress: cleanAddress,
-        keyword: keyword,
-        lat: parseFloat(location.lat),
-        lon: parseFloat(location.lon),
-        status: "open",
-        createdAt: new Date().toISOString(),
-      };
+                snapshot.docs.forEach((doc) => {
+                    const incidentData = { id: doc.id, ...doc.data() };
+                    // Only show 'open' and 'dispatched' incidents on the dashboard
+                    if (incidentData.status === 'open' || incidentData.status === 'dispatched') {
+                        cacheNeedsUpdate = true;
+                        incidents.set(incidentData.id, incidentData);
+                        addIncidentToUI(incidentData); // Adds or updates UI element
+                        updateMarkerOnMap(incidentData);
+                    }
+                });
 
-      incidents.set(newIncident.id, newIncident);
-      renderAllIncidents();
+                if (cacheNeedsUpdate) {
+                    saveIncidentsToCache();
+                }
+            }, (error) => {
+                // Handle Firestore network error (triggers the setOfflineMode)
+                console.error("Firestore Listener Error:", error);
+                // Note: The Firestore SDK manages connection state, but we manually check
+                if (!navigator.onLine) {
+                    setOfflineMode(true);
+                }
+            });
+        }
 
-      dispatchForm.reset();
-      selectedLocation = null;
-      suggestionsContainer.classList.add("hidden");
-    });
+        // --- UI Management ---
+        function addIncidentToUI(incident) {
+            // Function handles rendering/re-rendering of the entire list based on the snapshot
+            const incidentElement = document.createElement('div');
+            incidentElement.id = `incident-${incident.id}`;
+            incidentElement.className = 'p-3 bg-gray-50 border rounded-lg shadow-sm';
+            
+            let statusColorClass = 'bg-gray-100 text-gray-800';
+            if (incident.status === 'open') {
+                statusColorClass = 'bg-red-100 text-red-800';
+            } else if (incident.status === 'dispatched') {
+                statusColorClass = 'bg-blue-100 text-blue-800';
+            } 
 
-    function renderAllIncidents() {
-      incidentsContainer.innerHTML = "";
-      incidents.forEach((inc) => {
-        const div = document.createElement("div");
-        div.classList.add("incident");
-        div.innerHTML = `
-          <strong>${inc.keyword}</strong><br>
-          ${inc.formattedAddress}<br>
-          <small>${inc.lat.toFixed(5)}, ${inc.lon.toFixed(5)}</small><br>
-          <small>${new Date(inc.createdAt).toLocaleString()}</small>
-        `;
-        incidentsContainer.appendChild(div);
-      });
-    }
-  </script>
+            let buttonHTML = '';
+            if (incident.status === 'open') {
+                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
+            } else if (incident.status === 'dispatched') {
+                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
+            }
+
+            incidentElement.innerHTML = `
+                <p class="font-semibold text-gray-800">${incident.keyword}</p>
+                <p class="text-sm text-gray-600">${incident.formattedAddress || incident.address}</p>
+                <div class="mt-2">
+                    <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass}">${incident.status.toUpperCase()}</span>
+                </div>
+                <div class="button-container mt-2 space-y-2">
+                    ${buttonHTML}
+                </div>
+            `;
+            incidentList.appendChild(incidentElement); // Append, as the listener handles full re-render/sorting
+        }
+
+        incidentList.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            if (!id || document.body.classList.contains('offline')) return;
+
+            const incidentRef = doc(db, `/artifacts/${appId}/public/data/incidents`, id);
+
+            try {
+                if (e.target.classList.contains('dispatch-btn')) {
+                    await updateDoc(incidentRef, { status: 'dispatched' });
+                } else if (e.target.classList.contains('complete-btn')) {
+                    // Mark as completed, which removes it from the 'open'/'dispatched' snapshot
+                    await updateDoc(incidentRef, { status: 'completed' }); 
+                }
+            } catch (error) { 
+                console.error("Error updating incident status:", error); 
+            }
+        });
+
+
+        // --- Map Management ---
+        function getStatusColor(status) {
+            if (status === 'open') return 'red';
+            if (status === 'dispatched') return 'blue';
+            if (status === 'completed') return 'yellow';
+            return 'grey';
+        }
+
+        function updateMarkerOnMap(incident) {
+            if (!incident.lat || !incident.lon) return;
+
+            const marker = markers.get(incident.id);
+            const color = getStatusColor(incident.status);
+            const newIcon = createMarkerIcon(color);
+            const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress || incident.address}`;
+
+            if (marker) {
+                 marker.setIcon(newIcon);
+                 marker.setPopupContent(popupContent);
+            } else {
+                const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
+                newMarker.bindPopup(popupContent);
+                markers.set(incident.id, newMarker);
+            }
+        }
+        
+        function createMarkerIcon(color) {
+            const svgIcon = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="36px" height="36px">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>`;
+            return L.divIcon({
+                html: svgIcon,
+                className: '',
+                iconSize: [36, 36],
+                iconAnchor: [18, 36],
+                popupAnchor: [0, -36]
+            });
+        }
+
+
+        // --- Address Autocomplete (Nominatim) ---
+        const suggestionsContainer = document.getElementById('address-suggestions');
+        let selectedLocation = null;
+        let debounceTimer;
+
+        function formatGermanAddress(address) {
+            const parts = [];
+            const street = address.road || '';
+            const houseNumber = address.house_number || '';
+            const postcode = address.postcode || '';
+            const city = address.city || address.town || address.village || '';
+
+            if (street) parts.push(`${street} ${houseNumber}`.trim());
+            if (postcode && city) parts.push(`${postcode} ${city}`);
+            else if (city && !parts.includes(city)) parts.push(city);
+            return parts.join(', ');
+        }
+
+        addressInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const query = addressInput.value;
+            
+            // Check network status before making external API call
+            if (query.length < 3 || !navigator.onLine) {
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.classList.add('hidden');
+                return;
+            }
+            
+            debounceTimer = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestionsContainer.innerHTML = '';
+                        suggestionsContainer.classList.remove('hidden');
+
+                        const filteredData = data.filter(place =>
+                            place.address &&
+                            place.address.postcode &&
+                            place.address.postcode.startsWith('76')
+                        );
+
+                        if (filteredData.length > 0) {
+                            filteredData.slice(0, 5).forEach(place => {
+                                const formattedAddress = formatGermanAddress(place.address);
+                                if (!formattedAddress) return; 
+
+                                const suggestionItem = document.createElement('div');
+                                suggestionItem.textContent = formattedAddress;
+                                suggestionItem.className = 'p-2 cursor-pointer suggestion-item';
+                                suggestionItem.addEventListener('click', () => {
+                                    addressInput.value = formattedAddress;
+                                    selectedLocation = place; 
+                                    suggestionsContainer.classList.add('hidden');
+                                    suggestionsContainer.innerHTML = '';
+                                });
+                                suggestionsContainer.appendChild(suggestionItem);
+                            });
+                        } else {
+                            suggestionsContainer.innerHTML = '<div class="p-2 text-gray-500">No results found in 76... area</div>';
+                        }
+                    }).catch(err => {
+                        console.error("Nominatim API error:", err);
+                        suggestionsContainer.innerHTML = '<div class="p-2 text-red-500">Could not fetch addresses (Network error)</div>';
+                        suggestionsContainer.classList.remove('hidden');
+                    });
+            }, 300);
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!suggestionsContainer.contains(e.target) && e.target !== addressInput) {
+                suggestionsContainer.classList.add('hidden');
+            }
+        });
+
+
+        // --- Form Submission (Uses Firestore) ---
+        dispatchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const keyword = keywordInput.value.trim();
+
+            if (!selectedLocation || !keyword) {
+                console.error("Please select a valid address and enter a keyword."); 
+                return;
+            }
+            // Block submission if offline
+            if (document.body.classList.contains('offline')) {
+                console.error("Cannot create new incident while offline.");
+                return;
+            }
+            
+            try {
+                const cleanAddress = formatGermanAddress(selectedLocation.address);
+                
+                const newIncident = {
+                    address: selectedLocation.display_name, 
+                    formattedAddress: cleanAddress,        
+                    keyword: keyword,
+                    lat: parseFloat(selectedLocation.lat),
+                    lon: parseFloat(selectedLocation.lon),
+                    status: 'open',
+                    createdAt: new Date().toISOString() 
+                };
+                
+                // Add to Firestore (will automatically update all clients via onSnapshot)
+                const docRef = await addDoc(incidentsCollection, newIncident);
+                console.log("Incident created with ID: ", docRef.id);
+                
+                dispatchForm.reset();
+                selectedLocation = null;
+                addressInput.value = '';
+                suggestionsContainer.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+            }
+        });
+
+    </script>
 </body>
 </html>
