@@ -24,6 +24,21 @@
         .offline-form button[type="submit"] {
             background-color: #9ca3af;
         }
+        /* Style for the selected incident card */
+        .incident-selected {
+            border-color: #ef4444 !important; /* red-500 */
+            box-shadow: 0 0 0 3px #f87171, 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* ring effect */
+            background-color: #fef2f2 !important; /* red-50 for subtle highlight */
+        }
+        /* Map click cursor */
+        .map-click-mode {
+            cursor: crosshair !important;
+        }
+        /* Modal styles */
+        #quick-incident-modal {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -60,18 +75,59 @@
                 </button>
             </form>
 
-            <!-- Incident List -->
+            <!-- Map Quick Incident Toggle -->
+            <button id="toggle-map-mode-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150 mt-4">
+                Toggle Map Creation Mode (OFF)
+            </button>
+            
+            <hr class="my-4">
+
+            <!-- Incident List (Active) -->
             <div>
                 <h2 class="text-xl font-bold text-gray-800 mb-3">Active Incidents</h2>
                 <div id="incident-list" class="space-y-3">
-                    <!-- Incidents will be dynamically inserted here -->
+                    <!-- Active incidents will be dynamically inserted here -->
                 </div>
-                <p class="text-xs text-gray-500 mt-4 text-center">Data saved locally in this browser. Not synchronized.</p>
             </div>
+
+            <hr class="my-4">
+
+            <!-- Completed Incidents Section (Collapsible) -->
+            <button id="completed-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center">
+                Completed Incidents (0) ▼
+            </button>
+            <div id="completed-incident-list" class="space-y-3 mt-3 hidden">
+                <!-- Completed incidents will be dynamically inserted here -->
+            </div>
+
+            <p class="text-xs text-gray-500 mt-4 text-center">Data saved locally in this browser. Not synchronized.</p>
         </div>
 
         <!-- Map -->
         <div class="w-full md:w-2/3 h-64 md:h-full" id="map"></div>
+    </div>
+
+    <!-- Quick Incident Modal -->
+    <div id="quick-incident-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4 text-red-700">Quick Pin Drop</h3>
+            <p class="mb-4 text-gray-700">A pin was dropped at the clicked location. Enter the alarm keyword to create the incident.</p>
+            
+            <form id="quick-incident-form">
+                <div class="mb-4">
+                    <label for="quick-keyword" class="block text-gray-700 text-sm font-bold mb-2">Alarm Keyword</label>
+                    <input type="text" id="quick-keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., Car accident, Medical aid" required>
+                </div>
+                <div class="flex justify-between space-x-2">
+                    <button type="button" id="cancel-quick-incident" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition duration-150 flex-grow">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150 flex-grow">
+                        Create Quick Incident
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -98,17 +154,32 @@
         const LOCAL_STORAGE_KEY = "localDispatchIncidents_v1";
         const incidents = new Map();
         const markers = new Map();
+        let selectedIncidentId = null; 
+        
+        // Map Click Mode State
+        let mapClickMode = false;
+        let pendingQuickIncident = null; 
+
+        // NEW: Completed Section State
+        let isCompletedSectionOpen = false;
 
         // --- UI Elements ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
         const keywordInput = document.getElementById('keyword');
-        const incidentList = document.getElementById('incident-list');
+        const incidentList = document.getElementById('incident-list'); // Active list
+        const completedIncidentList = document.getElementById('completed-incident-list'); // Completed list
+        const completedToggleBtn = document.getElementById('completed-toggle-btn');
         const statusIndicator = document.getElementById('status-indicator');
         const submitBtn = document.getElementById('submit-btn');
         const formMessage = document.getElementById('form-message');
         const latInput = document.getElementById('lat-input');
         const lonInput = document.getElementById('lon-input');
+        const toggleMapModeBtn = document.getElementById('toggle-map-mode-btn');
+        const quickIncidentModal = document.getElementById('quick-incident-modal');
+        const quickIncidentForm = document.getElementById('quick-incident-form');
+        const quickKeywordInput = document.getElementById('quick-keyword');
+        const cancelQuickIncidentBtn = document.getElementById('cancel-quick-incident');
         
         let debounceTimer;
         
@@ -118,8 +189,10 @@
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+
+        map.on('click', onMapClick);
         
-        // --- Utility Functions ---
+        // --- Utility Functions (Geocoding, Status, etc. remains the same) ---
 
         function showFormMessage(message, isError = true) {
             formMessage.textContent = message;
@@ -177,7 +250,6 @@
         // --- Persistence Logic ---
 
         function saveIncidents() {
-            // Save ALL incidents now, including 'completed', to maintain history
             const incidentsArray = Array.from(incidents.values());
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(incidentsArray));
             console.log("Local incidents saved.");
@@ -201,12 +273,113 @@
             }
         }
         
+        // --- Map Click Mode Logic (same as before) ---
+
+        function toggleMapMode() {
+            mapClickMode = !mapClickMode;
+            const mapContainer = map.getContainer();
+            if (mapClickMode) {
+                mapContainer.classList.add('map-click-mode');
+                toggleMapModeBtn.textContent = 'Toggle Map Creation Mode (ON)';
+                toggleMapModeBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+            } else {
+                mapContainer.classList.remove('map-click-mode');
+                toggleMapModeBtn.textContent = 'Toggle Map Creation Mode (OFF)';
+                toggleMapModeBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+            }
+        }
+
+        async function onMapClick(e) {
+            if (!mapClickMode) {
+                // If not in creation mode, clicking the map clears the current selection
+                if (selectedIncidentId) {
+                    selectedIncidentId = null;
+                    renderAllIncidents();
+                }
+                return;
+            }
+
+            const reverseGeocodeResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&zoom=18&addressdetails=1`);
+            const data = await reverseGeocodeResponse.json();
+            
+            let address = "Unknown Location (Map Click)";
+            if (data && data.display_name) {
+                address = data.display_name;
+            }
+
+            pendingQuickIncident = {
+                lat: e.latlng.lat,
+                lon: e.latlng.lng,
+                address: address
+            };
+
+            quickIncidentModal.classList.remove('hidden');
+            quickKeywordInput.focus();
+        }
+
+        quickIncidentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const keyword = quickKeywordInput.value.trim();
+
+            if (!keyword || !pendingQuickIncident) {
+                quickIncidentModal.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const newIncident = {
+                    id: generateUUID(),
+                    formattedAddress: pendingQuickIncident.address,        
+                    keyword: keyword,
+                    lat: pendingQuickIncident.lat,
+                    lon: pendingQuickIncident.lon,
+                    status: 'open',
+                    createdAt: new Date().toISOString() 
+                };
+                
+                incidents.set(newIncident.id, newIncident);
+                saveIncidents();
+                renderAllIncidents(); 
+
+                showFormMessage("Quick incident created successfully!", false);
+
+            } catch (error) {
+                console.error("CRITICAL RUNTIME ERROR during quick incident creation:", error);
+                showFormMessage(`Critical Error: Quick incident failed: ${error.message}`, true);
+            } finally {
+                quickIncidentModal.classList.add('hidden');
+                quickIncidentForm.reset();
+                pendingQuickIncident = null;
+                toggleMapMode(); 
+            }
+        });
+
+        cancelQuickIncidentBtn.addEventListener('click', () => {
+            quickIncidentModal.classList.add('hidden');
+            quickIncidentForm.reset();
+            pendingQuickIncident = null;
+            toggleMapMode(); 
+        });
+
+        // --- Completed Section Toggle Logic ---
+
+        completedToggleBtn.addEventListener('click', () => {
+            isCompletedSectionOpen = !isCompletedSectionOpen;
+            if (isCompletedSectionOpen) {
+                completedIncidentList.classList.remove('hidden');
+            } else {
+                completedIncidentList.classList.add('hidden');
+            }
+            renderAllIncidents(); // Re-render to update the arrow icon
+        });
+
+
         // --- UI Rendering ---
 
         function getStatusColor(status) {
             if (status === 'open') return 'red';
             if (status === 'dispatched') return 'blue';
-            if (status === 'completed') return 'amber'; // Used for completed status
+            if (status === 'completed') return 'amber'; 
             return 'grey';
         }
 
@@ -214,7 +387,7 @@
             const hexColor = {
                 'red': '#ef4444', 
                 'blue': '#3b82f6', 
-                'amber': '#f59e0b', // Yellow/Amber for completed
+                'amber': '#f59e0b',
                 'grey': '#6b7280'
             }[color];
             const svgIcon = `
@@ -230,45 +403,80 @@
             });
         }
 
+        function renderIncidentCard(incident) {
+            const isCompleted = incident.status === 'completed';
+
+            const incidentElement = document.createElement('div');
+            incidentElement.id = `incident-${incident.id}`;
+            
+            let statusColorClass = 'bg-gray-100 text-gray-800 border-l-4 border-gray-300';
+            let buttonHTML = '';
+            
+            if (incident.status === 'open') {
+                statusColorClass = 'bg-red-100 text-red-800 border-l-4 border-red-500';
+                buttonHTML = `<button data-id="${incident.id}" class="update-status-btn dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
+            } else if (incident.status === 'dispatched') {
+                statusColorClass = 'bg-blue-100 text-blue-800 border-l-4 border-blue-500';
+                buttonHTML = `<button data-id="${incident.id}" class="update-status-btn complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
+            } else if (incident.status === 'completed') {
+                statusColorClass = 'bg-amber-100 text-amber-800 opacity-75 border-l-4 border-amber-500';
+                buttonHTML = `<button disabled class="bg-gray-300 text-gray-700 text-sm font-bold py-1 px-3 rounded w-full cursor-not-allowed">Completed</button>`;
+            }
+            
+            let selectionClass = '';
+            if (incident.id === selectedIncidentId) {
+                selectionClass = 'incident-selected';
+                if (!isCompleted) { // Only scroll to active incidents
+                    setTimeout(() => incidentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+                }
+            }
+
+
+            incidentElement.innerHTML = `
+                <p class="font-semibold text-gray-800">${incident.keyword}</p>
+                <p class="text-sm text-gray-600">${incident.formattedAddress}</p>
+                <div class="mt-2">
+                    <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass.split(' ').filter(c => !c.startsWith('border-')).join(' ')}">${incident.status.toUpperCase()}</span>
+                </div>
+                ${!isCompleted ? `<div class="button-container mt-2 space-y-2">${buttonHTML}</div>` : ''}
+            `;
+            incidentElement.className = `p-3 bg-gray-50 border rounded-lg shadow-sm ${statusColorClass} ${selectionClass} ${isCompleted ? 'cursor-default' : 'cursor-pointer'}`;
+            return incidentElement;
+        }
+
+
         function renderAllIncidents() {
             incidentList.innerHTML = '';
+            completedIncidentList.innerHTML = '';
             markers.forEach(marker => map.removeLayer(marker));
             markers.clear();
             
-            incidents.forEach(incident => {
-                // RENDER ALL incidents
-                
-                const incidentElement = document.createElement('div');
-                incidentElement.id = `incident-${incident.id}`;
-                incidentElement.className = 'p-3 bg-gray-50 border rounded-lg shadow-sm';
-                
-                let statusColorClass = 'bg-gray-100 text-gray-800';
-                let buttonHTML = '';
-                
-                if (incident.status === 'open') {
-                    statusColorClass = 'bg-red-100 text-red-800 border-l-4 border-red-500';
-                    buttonHTML = `<button data-id="${incident.id}" class="update-status-btn dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
-                } else if (incident.status === 'dispatched') {
-                    statusColorClass = 'bg-blue-100 text-blue-800 border-l-4 border-blue-500';
-                    buttonHTML = `<button data-id="${incident.id}" class="update-status-btn complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
-                } else if (incident.status === 'completed') {
-                    // NEW: Completed status styling (Yellow/Amber)
-                    statusColorClass = 'bg-amber-100 text-amber-800 opacity-75 border-l-4 border-amber-500';
-                    buttonHTML = `<button disabled class="bg-gray-300 text-gray-700 text-sm font-bold py-1 px-3 rounded w-full cursor-not-allowed">Completed</button>`;
-                }
+            const activeIncidents = [];
+            const completedIncidents = [];
 
-                incidentElement.innerHTML = `
-                    <p class="font-semibold text-gray-800">${incident.keyword}</p>
-                    <p class="text-sm text-gray-600">${incident.formattedAddress}</p>
-                    <div class="mt-2">
-                        <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass.split(' ').filter(c => !c.startsWith('border-')).join(' ')}">${incident.status.toUpperCase()}</span>
-                    </div>
-                    <div class="button-container mt-2 space-y-2">
-                        ${buttonHTML}
-                    </div>
-                `;
-                incidentElement.className = `${incidentElement.className} ${statusColorClass}`;
+            incidents.forEach(incident => {
+                if (incident.status === 'completed') {
+                    completedIncidents.push(incident);
+                } else {
+                    activeIncidents.push(incident);
+                }
+            });
+
+            // 1. Render Active Incidents
+            activeIncidents.forEach(incident => {
+                const incidentElement = renderIncidentCard(incident);
                 incidentList.appendChild(incidentElement);
+
+                // Attach click listener for zoom/selection on the card itself
+                incidentElement.addEventListener('click', (e) => {
+                    // Prevent card click from triggering if a button inside was clicked
+                    if (e.target.closest('.update-status-btn') || e.target.closest('.button-container')) {
+                        return;
+                    }
+                    selectedIncidentId = incident.id;
+                    renderAllIncidents(); 
+                    map.flyTo([incident.lat, incident.lon], 15); // Zoom level 15 for street level view
+                });
 
                 // 2. Render Map Marker
                 if (incident.lat && incident.lon) {
@@ -278,12 +486,48 @@
                     
                     const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
                     newMarker.bindPopup(popupContent);
+                    
+                    // Marker click listener to select the incident
+                    newMarker.on('click', function(e) {
+                        selectedIncidentId = incident.id;
+                        renderAllIncidents(); 
+                        map.flyTo([incident.lat, incident.lon], map.getZoom()); 
+                    });
+
                     markers.set(incident.id, newMarker);
                 }
             });
+
+            // 3. Render Completed Incidents
+            completedIncidents.forEach(incident => {
+                const incidentElement = renderIncidentCard(incident);
+                completedIncidentList.appendChild(incidentElement);
+                
+                // Completed markers remain on the map as well
+                if (incident.lat && incident.lon) {
+                    const color = getStatusColor(incident.status);
+                    const newIcon = createMarkerIcon(color);
+                    const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${incident.status.toUpperCase()}`;
+                    
+                    const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
+                    newMarker.bindPopup(popupContent);
+                    newMarker.on('click', function(e) {
+                        selectedIncidentId = incident.id;
+                        renderAllIncidents(); 
+                        map.flyTo([incident.lat, incident.lon], map.getZoom()); 
+                    });
+
+                    markers.set(incident.id, newMarker);
+                }
+            });
+
+            // 4. Update Completed Section Toggle
+            const toggleIcon = isCompletedSectionOpen ? '▲' : '▼';
+            completedToggleBtn.innerHTML = `Completed Incidents (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIcon}</span>`;
         }
 
         incidentList.addEventListener('click', (e) => {
+            // This listener is only for the status update buttons
             if (!e.target.classList.contains('update-status-btn')) return;
 
             const id = e.target.dataset.id;
@@ -294,17 +538,17 @@
             if (e.target.classList.contains('dispatch-btn')) {
                 incident.status = 'dispatched';
             } else if (e.target.classList.contains('complete-btn')) {
-                // Ensure status is set to 'completed'
                 incident.status = 'completed'; 
             }
             
             incidents.set(id, incident);
+            selectedIncidentId = null; 
             saveIncidents();
             renderAllIncidents();
         });
 
 
-        // --- Network and Address Lookup Management ---
+        // --- Network and Address Lookup Management (remains the same) ---
         const suggestionsContainer = document.getElementById('address-suggestions');
         
         function setOnlineStatus(isOnline) {
@@ -323,12 +567,13 @@
         window.addEventListener('offline', () => setOnlineStatus(false));
         setOnlineStatus(navigator.onLine);
 
+        toggleMapModeBtn.addEventListener('click', toggleMapMode);
+
 
         addressInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             const query = addressInput.value;
             
-            // Clear hidden coordinates whenever the user types
             latInput.value = '';
             lonInput.value = '';
 
@@ -351,7 +596,6 @@
                     suggestionItem.className = 'p-2 cursor-pointer suggestion-item';
                     
                     suggestionItem.addEventListener('click', () => {
-                        // Write coordinates directly to hidden inputs
                         addressInput.value = formattedAddress;
                         latInput.value = data.lat; 
                         lonInput.value = data.lon;
@@ -396,7 +640,6 @@
             let incidentLon = parseFloat(finalLon);
             let finalAddressData = { lat: incidentLat, lon: incidentLon, address: {} }; 
             
-            // --- Fallback Geocoding if hidden inputs are empty ---
             if (!finalLat || !finalLon) {
                 if (!navigator.onLine) {
                     showFormMessage("Cannot look up address while offline.", true);
@@ -418,7 +661,6 @@
                 finalAddressData.address = fallbackLocation.address;
             }
             
-            // --- Incident Creation ---
             try {
                 const displayAddress = finalAddressData.address.display_name ? formatGermanAddress(finalAddressData.address) : addressText;
 
@@ -436,7 +678,6 @@
                 saveIncidents();
                 renderAllIncidents(); 
                 
-                // Clear form state
                 dispatchForm.reset();
                 latInput.value = '';
                 lonInput.value = '';
