@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex">
-    <title>Fire Department Dispatch System</title>
+    <title>Fire Department Dispatch System (Local Storage)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -16,9 +15,10 @@
         .suggestion-item:hover {
             background-color: #f0f0f0;
         }
-        /* Styles for offline mode */
+        /* Styles for offline mode: geolocation (Nominatim) and status changes rely on network for now */
         .offline .dispatch-btn,
-        .offline .complete-btn {
+        .offline .complete-btn,
+        .offline button[type="submit"] {
             pointer-events: none;
             opacity: 0.5;
             background-color: #9ca3af; /* gray-400 */
@@ -53,6 +53,7 @@
                 <div id="incident-list" class="space-y-3">
                     <!-- Incidents will be dynamically inserted here -->
                 </div>
+                <p id="local-storage-info" class="text-xs text-gray-500 mt-4 text-center">Data is stored locally in your browser.</p>
             </div>
         </div>
 
@@ -64,25 +65,12 @@
     <div id="offline-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl text-center">
             <h3 class="text-xl font-bold text-yellow-600">Connection Lost</h3>
-            <p class="text-gray-700 mt-2">You are offline. Inputs are disabled to protect data.<br>Last known incidents are shown.</p>
+            <p class="text-gray-700 mt-2">You are offline. Geolocation and status updates are disabled.<br>Local data is preserved.</p>
         </div>
     </div>
 
-    <script type="module">
-        // --- Firebase Initialization ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-dispatch-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "your-api-key", authDomain: "your-auth-domain", projectId: "your-project-id" };
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        // setLogLevel('debug');
-
-        // --- UI Elements for Offline Mode ---
+    <script>
+        // --- UI Elements ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
         const keywordInput = document.getElementById('keyword');
@@ -91,9 +79,7 @@
         const incidentListContainer = document.getElementById('incident-list');
         const incidentList = document.getElementById('incident-list');
 
-        let userId;
-        let incidentsCollection;
-        
+        // Global map to hold incident data, replacing Firestore's role
         const incidents = new Map();
         const markers = new Map();
 
@@ -104,34 +90,42 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // --- Cache Management ---
-        const CACHE_KEY = `dispatchIncidentsCache_${appId}`;
+        // --- Local Storage Persistence ---
+        const STORAGE_KEY = `dispatchIncidentsLocal`;
 
-        function saveIncidentsToCache() {
-            // Only save if we're online; don't save an empty map if we load offline
-            if (navigator.onLine) {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(Array.from(incidents.entries())));
-                console.log("Incidents saved to cache.");
+        /**
+         * Saves the current incidents Map to localStorage.
+         */
+        function saveIncidents() {
+            try {
+                // Convert Map to an array of [key, value] pairs for JSON stringification
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(incidents.entries())));
+            } catch (e) {
+                console.error("Error saving incidents to local storage:", e);
             }
         }
 
-        function loadIncidentsFromCache() {
-            const cachedData = localStorage.getItem(CACHE_KEY);
+        /**
+         * Loads incidents from localStorage and populates the Map, UI, and Map.
+         */
+        function loadIncidents() {
+            const cachedData = localStorage.getItem(STORAGE_KEY);
             if (cachedData) {
                 try {
                     const cachedIncidents = new Map(JSON.parse(cachedData));
-                    if (cachedIncidents.size > 0) {
-                        console.log(`Loading ${cachedIncidents.size} incidents from cache.`);
-                        incidentList.innerHTML = ''; // Clear list to prevent duplicates
-                        cachedIncidents.forEach(incident => {
-                            incidents.set(incident.id, incident); // Populate in-memory map
-                            addIncidentToUI(incident);
-                            addMarkerToMap(incident);
-                        });
-                    }
+                    incidentList.innerHTML = ''; // Clear list
+                    markers.forEach(marker => map.removeLayer(marker)); // Clear map markers
+                    markers.clear();
+                    
+                    cachedIncidents.forEach(incident => {
+                        incidents.set(incident.id, incident); // Populate in-memory map
+                        addIncidentToUI(incident);
+                        addMarkerToMap(incident);
+                    });
+                    console.log(`Loaded ${incidents.size} incidents from local storage.`);
                 } catch (e) {
                     console.error("Error loading cache:", e);
-                    localStorage.removeItem(CACHE_KEY); // Clear bad cache
+                    localStorage.removeItem(STORAGE_KEY); // Clear bad cache
                 }
             }
         }
@@ -140,52 +134,22 @@
         function setOfflineMode(isOffline) {
             if (isOffline) {
                 offlineOverlay.classList.remove('hidden');
-                addressInput.disabled = true;
-                keywordInput.disabled = true;
-                submitButton.disabled = true;
-                incidentListContainer.classList.add('offline');
+                document.body.classList.add('offline');
+                console.warn("Operating in offline mode.");
             } else {
                 offlineOverlay.classList.add('hidden');
-                addressInput.disabled = false;
-                keywordInput.disabled = false;
-                submitButton.disabled = false;
-                incidentListContainer.classList.remove('offline');
+                document.body.classList.remove('offline');
+                console.log("Back online.");
             }
         }
 
-        // Initial Load:
-        loadIncidentsFromCache(); // Load from cache first
-        setOfflineMode(!navigator.onLine); // Set initial online/offline state
+        // Initial Load and Setup:
+        loadIncidents(); 
+        setOfflineMode(!navigator.onLine); 
 
         // Add listeners
         window.addEventListener('offline', () => setOfflineMode(true));
         window.addEventListener('online', () => setOfflineMode(false));
-
-        // --- Authentication ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                console.log("User authenticated with ID:", userId);
-                incidentsCollection = collection(db, `/artifacts/${appId}/public/data/incidents`);
-                setupIncidentListener();
-            } else {
-                console.log("No user signed in.");
-            }
-        });
-
-        async function authenticateUser() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Authentication failed:", error);
-            }
-        }
-        authenticateUser(); // Call authentication
-
 
         // --- UI & Map Removal Helpers ---
         function removeIncidentFromUI(id) {
@@ -198,41 +162,6 @@
             const marker = markers.get(id);
             if (marker) map.removeLayer(marker);
             markers.delete(id);
-        }
-
-        // --- Firestore Real-time Listener ---
-        function setupIncidentListener() {
-            onSnapshot(incidentsCollection, (snapshot) => {
-                let cacheNeedsUpdate = false;
-                snapshot.docChanges().forEach((change) => {
-                    cacheNeedsUpdate = true;
-                    const incidentData = { id: change.doc.id, ...change.doc.data() };
-                    
-                    if (change.type === "added") {
-                        const existingEl = document.getElementById(`incident-${incidentData.id}`);
-                        incidents.set(incidentData.id, incidentData);
-                        if (existingEl) {
-                            updateIncidentInUI(incidentData); // Update cached item
-                        } else {
-                            addIncidentToUI(incidentData); // Add new item
-                        }
-                        updateMarkerOnMap(incidentData); // Use update to handle add/move
-                    }
-                    if (change.type === "modified") {
-                        incidents.set(incidentData.id, incidentData);
-                        updateIncidentInUI(incidentData);
-                        updateMarkerOnMap(incidentData);
-                    }
-                    if (change.type === "removed") {
-                        removeIncidentFromUI(incidentData.id);
-                        removeMarkerFromMap(incidentData.id);
-                    }
-                });
-
-                if (cacheNeedsUpdate) {
-                    saveIncidentsToCache();
-                }
-            });
         }
 
         // --- UI Management ---
@@ -254,9 +183,9 @@
             // Determine button HTML
             let buttonHTML = '';
             if (incident.status === 'open') {
-                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full">Dispatch Unit</button>`;
+                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
             } else if (incident.status === 'dispatched') {
-                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full">Mark as Completed</button>`;
+                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
             }
 
             incidentElement.innerHTML = `
@@ -274,7 +203,7 @@
 
         function updateIncidentInUI(incident) {
             const el = document.getElementById(`incident-${incident.id}`);
-            if (!el) { // If element doesn't exist (e.g., from cache), create it
+            if (!el) {
                 addIncidentToUI(incident);
                 return;
             }
@@ -292,27 +221,34 @@
             const buttonContainer = el.querySelector('.button-container');
             let buttonHTML = '';
             if (incident.status === 'open') {
-                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full">Dispatch Unit</button>`;
+                buttonHTML = `<button data-id="${incident.id}" class="dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Dispatch Unit</button>`;
             } else if (incident.status === 'dispatched') {
-                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full">Mark as Completed</button>`;
+                buttonHTML = `<button data-id="${incident.id}" class="complete-btn bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Mark as Completed</button>`;
             }
             buttonContainer.innerHTML = buttonHTML;
         }
 
-        incidentList.addEventListener('click', async (e) => {
+        incidentList.addEventListener('click', (e) => {
+             const id = e.target.dataset.id;
+             if (!id) return; // Not a button
+             
+             const incidentToUpdate = incidents.get(id);
+             if (!incidentToUpdate) return;
+
              if (e.target.classList.contains('dispatch-btn')) {
-                const id = e.target.dataset.id;
-                const incidentRef = doc(db, `/artifacts/${appId}/public/data/incidents`, id);
-                try {
-                    await updateDoc(incidentRef, { status: 'dispatched' });
-                } catch (error) { console.error("Error updating incident status:", error); }
+                 incidentToUpdate.status = 'dispatched';
              } else if (e.target.classList.contains('complete-btn')) {
-                const id = e.target.dataset.id;
-                const incidentRef = doc(db, `/artifacts/${appId}/public/data/incidents`, id);
-                try {
-                    await updateDoc(incidentRef, { status: 'completed' });
-                } catch (error) { console.error("Error updating incident status:", error); }
+                 // For local storage, we can delete completed incidents or keep them.
+                 // Let's mark as completed for now. To delete, you'd call removeIncidentFromUI(id) and removeMarkerFromMap(id)
+                 incidentToUpdate.status = 'completed'; 
+             } else {
+                return;
              }
+             
+             incidents.set(id, incidentToUpdate);
+             updateIncidentInUI(incidentToUpdate);
+             updateMarkerOnMap(incidentToUpdate);
+             saveIncidents(); // Save changes to local storage
         });
 
 
@@ -343,13 +279,13 @@
         }
 
         function addMarkerToMap(incident) {
-           updateMarkerOnMap(incident); // This function now handles both adding and updating
+           updateMarkerOnMap(incident); 
         }
 
         function createMarkerIcon(color) {
             const svgIcon = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="36px" height="36px">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                 </svg>`;
             return L.divIcon({
                 html: svgIcon,
@@ -382,13 +318,12 @@
         addressInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             const query = addressInput.value;
-            if (query.length < 3) {
+            if (query.length < 3 || !navigator.onLine) {
                 suggestionsContainer.innerHTML = '';
                 suggestionsContainer.classList.add('hidden');
                 return;
             }
             debounceTimer = setTimeout(() => {
-                // Removed the viewbox to not over-constrain the search
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1`)
                     .then(response => response.json())
                     .then(data => {
@@ -423,7 +358,7 @@
                         }
                     }).catch(err => {
                         console.error("Nominatim API error:", err);
-                        suggestionsContainer.innerHTML = '<div class="p-2 text-red-500">Could not fetch addresses</div>';
+                        suggestionsContainer.innerHTML = '<div class="p-2 text-red-500">Could not fetch addresses (Network error)</div>';
                         suggestionsContainer.classList.remove('hidden');
                     });
             }, 300);
@@ -436,41 +371,55 @@
         });
 
 
-        // --- Form Submission ---
+        // --- Form Submission (Now uses localStorage) ---
         dispatchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const keyword = keywordInput.value;
+            const keyword = keywordInput.value.trim();
 
             if (!selectedLocation || !keyword) {
-                alert("Please select a valid address and enter a keyword."); // Simple alert for now
+                // Replacing alert with a simple console error and visual cue
+                console.error("Please select a valid address and enter a keyword."); 
                 return;
             }
             
             try {
                 const cleanAddress = formatGermanAddress(selectedLocation.address);
+                
+                // Use crypto.randomUUID() for a unique local identifier
+                const newId = crypto.randomUUID(); 
+
                 const newIncident = {
+                    id: newId,
                     address: selectedLocation.display_name, 
-                    formattedAddress: cleanAddress,         
+                    formattedAddress: cleanAddress,        
                     keyword: keyword,
                     lat: parseFloat(selectedLocation.lat),
                     lon: parseFloat(selectedLocation.lon),
                     status: 'open',
-                    createdAt: new Date()
+                    createdAt: new Date().toISOString() // Store time as ISO string
                 };
                 
-                const docRef = await addDoc(incidentsCollection, newIncident);
-                console.log("Incident created with ID: ", docRef.id);
+                // 1. Update in-memory Map
+                incidents.set(newIncident.id, newIncident);
+
+                // 2. Update UI and Map
+                addIncidentToUI(newIncident);
+                addMarkerToMap(newIncident);
+
+                // 3. Persist to Local Storage
+                saveIncidents();
                 
                 dispatchForm.reset();
                 selectedLocation = null;
+                addressInput.value = ''; // Clear address input visually
+                suggestionsContainer.classList.add('hidden');
 
             } catch (error) {
-                console.error("Error adding document: ", error);
+                console.error("Error creating new incident: ", error);
             }
         });
 
     </script>
 </body>
 </html>
-
