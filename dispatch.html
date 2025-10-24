@@ -226,12 +226,57 @@
 
 
     <script>
-        // --- AAO KEYWORDS (Schlagwörter from PDF) ---
+        // --- AAO KEYWORDS ---
         const AAO_KEYWORD_CATEGORIES = {
             "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
-            "B 2 - Mittelbrand": ["B 2"],
-            "B 3 - Großbrand (Standard)": ["B 3"],
-            
+            "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz", "B - Explosion im Freien", "B - Fahrzeug sonstiges", "B - Garage / Carport / Gartenhaus", "B - Gasaustritt im Freien klein", "B - Lagerplatz klein", "B - Land- / Forst- / Baumaschine", "B - LKW / Kleintransporter", "B - Maschine", "B - mehrere PKW / Kleinbusse", "B - Person im Freien", "B - PKW / Kleinbus außerorts", "B - Spielplatz", "B - Wald klein (< 10m x 10m)", "B - Wohnmobil / Wohnanhänger"],
+            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sonstiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B -  Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
+			"B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
+			"B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
+			"B 6": ["B - Alarmstufenerhöhung auf B 6"],
+			"B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
+			"B - Bio": ["B - Bio"],
+			"B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage","B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
+			"B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
+			"B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
+			"B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
+			"B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
+			"B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
+			"B - Metall": ["B - Metall"],
+			"B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
+			"B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
+			"B - Straßentunnel": ["B - Tunnel / Unterführung"],
+			"B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
+			"B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
+			"S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
+			"S - First Responder": ["S - First Responder"],
+            "S - Sonstiges": ["S - Ausfall Notruf / Alarmierung", "S - Bedrohungslage", "S - Bereitstellungsraum besetzen", "S - Bombendrohung", "S - Drohendes Attentat", "S - Einsatzalarm überörtlich (ca. 12h)", "S - Einsatzalarm überregional (ca. 24h)", "S - Einsatzbereitschaft herstellen", "S - Führungshaus besetzen", "S - Große Polizeilage (Amok / Terror)", "S - Grundschutz sicherstellen", "S - Maßnahmenstufe 1", "S - Maßnahmenstufe 2", "S - Maßnahmenstufe 3", "S - Stabseinsatz", "S - Vorabinformation / Einsatzanfrage", "S - Voralarm überörtlich (ca. 12h)", "S - Voralarm überregional (ca. 24h)", "S - Wachbesetzung", "S - Überlandhilfe Feuerwehr (außerhalb SK & LK KA)"],
+			"TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
+			"TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
+			"TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
+			"TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
+			"TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
+			"TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
+			"TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
+			"TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
+			"TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
+			"TH - Person im Rhein": ["TH - Person im Rhein"],
+			"TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
+			"TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
+			"TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
+			"TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
+			"TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
+			"TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
+			"TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
+			"TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
+			"TH U - Bio": ["TH U - Bio"],
+			"TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
+			"TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
+			"TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
+			"TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
+			"TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
+			"TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
+			"TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
         };
         // --- END AAO KEYWORDS ---
         
@@ -253,6 +298,56 @@
             });
         }
         // --- END COMPATIBILITY FIX ---
+
+        // --- NEW: Helper function for category colors ---
+        /**
+         * Returns Tailwind CSS classes based on the category prefix.
+         * @param {string} categoryName - The name of the category (e.g., "B 1", "S Erkundung").
+         * @returns {{header: string, hover: string}}
+         */
+        function getCategoryColors(categoryName) {
+            // "TH VU" (Dark Blue) must be checked before "TH U" and "TH"
+            if (categoryName.startsWith("TH VU")) {
+                return { 
+                    header: 'text-blue-800 bg-blue-50 border-blue-200', 
+                    hover: 'hover:bg-blue-100' 
+                };
+            }
+            // "TH U" (Green) must be checked before "TH"
+            if (categoryName.startsWith("TH U")) {
+                return { 
+                    header: 'text-green-700 bg-green-50 border-green-200', 
+                    hover: 'hover:bg-green-100' 
+                };
+            }
+            // "TH" (Light Blue)
+            if (categoryName.startsWith("TH")) {
+                return { 
+                    header: 'text-sky-700 bg-sky-50 border-sky-200', 
+                    hover: 'hover:bg-sky-100' 
+                };
+            }
+            // "B" (Red)
+            if (categoryName.startsWith("B")) {
+                return { 
+                    header: 'text-red-700 bg-red-50 border-red-200', 
+                    hover: 'hover:bg-red-100' 
+                };
+            }
+            // "S" (Yellow)
+            if (categoryName.startsWith("S")) {
+                return { 
+                    header: 'text-yellow-700 bg-yellow-50 border-yellow-200', 
+                    hover: 'hover:bg-yellow-100' 
+                };
+            }
+            // Default (Grey)
+            return { 
+                header: 'text-gray-700 bg-gray-50 border-gray-200', 
+                hover: 'hover:bg-gray-100' 
+            };
+        }
+        // --- END NEW Helper ---
 
 
         // --- Local State and Persistence ---
@@ -1152,7 +1247,7 @@
                         selectedIncidentId = null;
                     } else {
                         selectedIncidentId = incident.id;
-                        map.flyTo([incident.lat, incident.lon], map.getZoom()); 
+                        map.flyTo([incident.lat, incident.lon], 15); 
                     }
                     renderAll(); 
                 });
@@ -1502,7 +1597,7 @@
         });
 
 
-        // --- KEYWORD AUTOCOMPLETE LOGIC (UPDATED FOR CATEGORY SEARCH) ---
+        // --- KEYWORD AUTOCOMPLETE LOGIC (UPDATED FOR CATEGORY SEARCH & COLORS) ---
         keywordInput.addEventListener('input', () => {
             const query = keywordInput.value.trim().toLowerCase();
             keywordSuggestionsContainer.innerHTML = '';
@@ -1532,15 +1627,20 @@
                 if (matchesInThisCategory.length > 0) {
                     hasMatches = true;
 
+                    // --- UPDATED: Get dynamic colors ---
+                    const colors = getCategoryColors(category);
+
                     const categoryHeader = document.createElement('div');
                     categoryHeader.textContent = category;
-                    categoryHeader.className = 'p-2 mt-1 font-bold text-xs uppercase text-red-700 bg-red-50 border-t border-red-200';
+                    // --- UPDATED: Apply dynamic header classes ---
+                    categoryHeader.className = `p-2 mt-1 font-bold text-xs uppercase border-t ${colors.header}`;
                     fragment.appendChild(categoryHeader);
 
                     matchesInThisCategory.forEach(keyword => {
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = keyword;
-                        suggestionItem.className = 'p-2 cursor-pointer hover:bg-red-100 transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0 pl-4';
+                        // --- UPDATED: Apply dynamic hover class ---
+                        suggestionItem.className = `p-2 cursor-pointer ${colors.hover} transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0 pl-4`;
                         
                         suggestionItem.addEventListener('click', () => {
                             keywordInput.value = keyword;
@@ -1681,4 +1781,3 @@
     </script>
 </body>
 </html>
-
