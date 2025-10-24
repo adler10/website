@@ -35,7 +35,7 @@
             box-shadow: 0 0 0 3px #f87171, 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* ring effect */
             background-color: #fef2f2 !important; /* red-50 for subtle highlight */
         }
-        /* NEW: Offline Overlay Z-Index Fix */
+        /* Offline Overlay Z-Index Fix */
         #offline-overlay {
             z-index: 5000 !important; /* Ensure it's on top of Leaflet UI */
         }
@@ -210,8 +210,10 @@
 
                 <!-- Incident List -->
                 <div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Aktive Einsätze</h3>
-                    <div id="offline-incident-list" class="space-y-3">
+                    <!-- UPDATED: Title changed -->
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Einsatz-Übersicht</h3>
+                    <!-- UPDATED: ID changed -->
+                    <div id="offline-incident-report" class="space-y-3">
                         <!-- Incidents will be populated here by JS -->
                     </div>
                 </div>
@@ -319,7 +321,8 @@
         // Offline Overlay & Data Containers (Updated)
         const offlineOverlay = document.getElementById('offline-overlay');
         const offlineEaList = document.getElementById('offline-ea-list');
-        const offlineIncidentList = document.getElementById('offline-incident-list');
+        // UPDATED: Variable name changed
+        const offlineIncidentReport = document.getElementById('offline-incident-report');
 
         let debounceTimer;
         
@@ -1274,6 +1277,56 @@
         });
 
 
+        // --- NEW: Helper for Offline Report ---
+        /**
+         * Builds an HTML block for a specific category of incidents for the offline report.
+         * @param {string} title - The title of the category (e.g., "Offene Einsätze").
+         * @param {Array} incidentArray - The array of incident objects.
+         * @param {string} titleColorClass - The Tailwind CSS class for the title color.
+         * @returns {string} The generated HTML string.
+         */
+        function buildOfflineIncidentCategory(title, incidentArray, titleColorClass) {
+            let html = `<div class="mb-4">
+                            <h4 class="text-lg font-bold ${titleColorClass} mb-2 pb-1 border-b border-gray-300">${title} (${incidentArray.length})</h4>`;
+            
+            if (incidentArray.length > 0) {
+                html += '<div class="space-y-3">';
+                incidentArray.forEach(incident => {
+                    const section = incident.sectionId ? sections.get(incident.sectionId) : null;
+                    // Handle display for completed incidents
+                    const sectionName = section ? `${section.name} (${section.responsible})` : (incident.status === 'completed' ? 'N/A (Abgeschlossen)' : 'Kein EA');
+                    
+                    let notesHTML = '';
+                    if (incident.notes && incident.notes.trim() !== '') {
+                        notesHTML = `
+                            <div class="mt-2 pt-2 border-t border-gray-200">
+                                <p class="text-xs font-bold text-gray-600 mb-1">Notizen:</p>
+                                <p class="text-sm text-gray-800 whitespace-pre-wrap">${incident.notes}</p>
+                            </div>`;
+                    } else {
+                        notesHTML = `
+                            <div class="mt-2 pt-2 border-t border-gray-200">
+                                <p class="text-sm text-gray-500 italic">Keine Notizen.</p>
+                            </div>`;
+                    }
+
+                    html += `
+                        <div class="p-3 bg-white border border-gray-300 rounded shadow-sm">
+                            <p class="font-bold text-lg text-gray-800">${incident.keyword}</p>
+                            <p class="text-sm font-medium text-gray-800">${incident.formattedAddress}</p>
+                            <p class="text-sm text-indigo-700 font-semibold mt-1">EA: ${sectionName}</p>
+                            ${notesHTML}
+                        </div>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<p class="text-sm text-gray-500 italic">Keine Einsätze in dieser Kategorie.</p>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+
         // --- Network and Address Lookup Management (REBUILT FOR SAFE STATE) ---
         
         function setOnlineStatus(isOnline) {
@@ -1287,7 +1340,7 @@
                 
                 // Clear the report data
                 offlineEaList.innerHTML = '';
-                offlineIncidentList.innerHTML = '';
+                offlineIncidentReport.innerHTML = '';
 
                 // Re-enable map interactions
                 map.dragging.enable();
@@ -1319,7 +1372,7 @@
                 
                 // 1. Clear old data
                 offlineEaList.innerHTML = '';
-                offlineIncidentList.innerHTML = '';
+                offlineIncidentReport.innerHTML = '';
                 
                 // 2. Populate EAs
                 if (sections.size > 0) {
@@ -1336,44 +1389,14 @@
                     offlineEaList.innerHTML = '<p class="text-sm text-gray-500 italic">Keine Einsatzabschnitte definiert.</p>';
                 }
 
-                // 3. Populate Active Incidents
-                const activeIncidents = Array.from(incidents.values()).filter(i => i.status !== 'completed');
-                
-                if (activeIncidents.length > 0) {
-                    activeIncidents.forEach(incident => {
-                        const section = incident.sectionId ? sections.get(incident.sectionId) : null;
-                        const sectionName = section ? `${section.name} (${section.responsible})` : 'Kein EA';
-                        
-                        const incidentDiv = document.createElement('div');
-                        incidentDiv.className = 'p-3 bg-white border border-gray-300 rounded shadow-sm';
-                        
-                        let notesHTML = '';
-                        if (incident.notes && incident.notes.trim() !== '') {
-                            notesHTML = `
-                                <div class="mt-2 pt-2 border-t border-gray-200">
-                                    <p class="text-xs font-bold text-gray-600 mb-1">Notizen:</p>
-                                    <p class="text-sm text-gray-800 whitespace-pre-wrap">${incident.notes}</p>
-                                </div>
-                            `;
-                        } else {
-                             notesHTML = `
-                                <div class="mt-2 pt-2 border-t border-gray-200">
-                                    <p class="text-sm text-gray-500 italic">Keine Notizen.</p>
-                                </div>
-                            `;
-                        }
+                // 3. Populate Incidents by Category (UPDATED)
+                const openIncidents = Array.from(incidents.values()).filter(i => i.status === 'open');
+                const dispatchedIncidents = Array.from(incidents.values()).filter(i => i.status === 'dispatched');
+                const completedIncidents = Array.from(incidents.values()).filter(i => i.status === 'completed');
 
-                        incidentDiv.innerHTML = `
-                            <p class="font-bold text-lg text-red-700">${incident.keyword}</p>
-                            <p class="text-sm font-medium text-gray-800">${incident.formattedAddress}</p>
-                            <p class="text-sm text-indigo-700 font-semibold mt-1">EA: ${sectionName}</p>
-                            ${notesHTML}
-                        `;
-                        offlineIncidentList.appendChild(incidentDiv);
-                    });
-                } else {
-                    offlineIncidentList.innerHTML = '<p class="text-sm text-gray-500 italic">Keine aktiven Einsätze.</p>';
-                }
+                offlineIncidentReport.innerHTML += buildOfflineIncidentCategory('Offene Einsätze', openIncidents, 'text-red-700');
+                offlineIncidentReport.innerHTML += buildOfflineIncidentCategory('Entsandte Einsätze', dispatchedIncidents, 'text-blue-700');
+                offlineIncidentReport.innerHTML += buildOfflineIncidentCategory('Abgeschlossene Einsätze', completedIncidents, 'text-amber-700');
                 
                 // --- END POPULATE OFFLINE REPORT ---
                 
@@ -1389,8 +1412,6 @@
                 
                 // Save state one last time (just in case)
                 saveState();
-                
-                // No need for showFormMessage, the overlay is the message
             }
         }
         
@@ -1595,6 +1616,7 @@
             }
             
             try {
+                // Final check for section assignment, now that we guarantee lat/lon
                 const finalSectionId = findContainingSection(incidentLat, incidentLon);
                 
                 const newIncident = {
