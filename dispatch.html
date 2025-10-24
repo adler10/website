@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex">
-    <title>Einsatzleitsystem der Feuerwehr (Mit Geo-Einsatzabschnitten und Autocomplete)</title>
+    <title>Einsatzleitsystem der Feuerwehr (Mit Geo-Einsatzabschnitten und Kategorisiertem Autocomplete)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -116,7 +115,7 @@
                     <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
                     
                     <!-- Autocomplete Suggestions Container (New) -->
-                    <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-48 overflow-y-auto"></div>
+                    <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-80 overflow-y-auto"></div>
                 </div>
                 
                 <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
@@ -164,11 +163,13 @@
 
     <script>
         // --- AAO KEYWORDS (Schlagwörter from PDF) ---
-        // Extracted keywords from the provided document snippet for the autocomplete feature.
-        const AAO_KEYWORDS = [
-            "B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien",
-			"B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"
-        ].sort();
+        // New structure: Object mapping main Stichwort to an array of related Schlagwörter.
+        const AAO_KEYWORD_CATEGORIES = {
+            "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
+            "B 2 - Mittelbrand": ["B 2"],
+            "B 3 - Großbrand (Standard)": ["B 3"],
+            
+        };
         // --- END AAO KEYWORDS ---
         
         
@@ -214,8 +215,8 @@
         // --- UI Elements ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
-        const keywordInput = document.getElementById('keyword'); // NEW
-        const keywordSuggestionsContainer = document.getElementById('keyword-suggestions'); // NEW
+        const keywordInput = document.getElementById('keyword'); 
+        const keywordSuggestionsContainer = document.getElementById('keyword-suggestions'); 
         const finalSectionAssignmentInput = document.getElementById('final-section-assignment'); 
         const autoSectionDisplay = document.getElementById('auto-section-display');
         const incidentList = document.getElementById('incident-list');
@@ -228,7 +229,7 @@
         const lonInput = document.getElementById('lon-input');
         const sidebarContainer = document.getElementById('sidebar-container');
         const undoBtn = document.getElementById('undo-btn'); 
-        const suggestionsContainer = document.getElementById('address-suggestions'); // For Address Autocomplete
+        const suggestionsContainer = document.getElementById('address-suggestions'); 
         
         // EA Management UI
         const sectionHeader = document.getElementById('section-header');
@@ -317,7 +318,7 @@
             
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=1`);
-                const data = await response.json();
+                const data = await await response.json();
 
                 // Simple check for Karlsruher postcode area (76)
                 const bestMatch = data.find(place => 
@@ -1235,7 +1236,7 @@
         });
 
 
-        // --- KEYWORD AUTOCOMPLETE LOGIC (NEW) ---
+        // --- KEYWORD AUTOCOMPLETE LOGIC (UPDATED) ---
 
         keywordInput.addEventListener('input', () => {
             const query = keywordInput.value.trim().toLowerCase();
@@ -1246,29 +1247,52 @@
                 return;
             }
 
-            const matches = AAO_KEYWORDS.filter(keyword => 
-                keyword.toLowerCase().includes(query)
-            ).slice(0, 10); // Limit to 10 suggestions
+            const fragment = document.createDocumentFragment();
+            let hasMatches = false;
 
-            if (matches.length > 0) {
-                matches.forEach(keyword => {
-                    const suggestionItem = document.createElement('div');
-                    suggestionItem.textContent = keyword;
-                    suggestionItem.className = 'p-2 cursor-pointer hover:bg-red-100 transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0';
-                    
-                    suggestionItem.addEventListener('click', () => {
-                        keywordInput.value = keyword;
-                        keywordSuggestionsContainer.classList.add('hidden');
-                        keywordSuggestionsContainer.innerHTML = '';
-                        keywordInput.focus(); // Keep focus after selection
+            // Iterate through the categories
+            for (const category in AAO_KEYWORD_CATEGORIES) {
+                const keywords = AAO_KEYWORD_CATEGORIES[category];
+                
+                // Filter keywords within the current category
+                const matchesInThisCategory = keywords.filter(keyword => 
+                    keyword.toLowerCase().includes(query)
+                );
+
+                if (matchesInThisCategory.length > 0) {
+                    hasMatches = true;
+
+                    // 1. Add Category Header
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.textContent = category;
+                    categoryHeader.className = 'p-2 mt-1 font-bold text-xs uppercase text-red-700 bg-red-50 border-t border-red-200';
+                    fragment.appendChild(categoryHeader);
+
+                    // 2. Add individual keyword suggestions
+                    matchesInThisCategory.forEach(keyword => {
+                        const suggestionItem = document.createElement('div');
+                        suggestionItem.textContent = keyword;
+                        suggestionItem.className = 'p-2 cursor-pointer hover:bg-red-100 transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0 pl-4';
+                        
+                        suggestionItem.addEventListener('click', () => {
+                            keywordInput.value = keyword;
+                            keywordSuggestionsContainer.classList.add('hidden');
+                            keywordSuggestionsContainer.innerHTML = '';
+                            keywordInput.focus(); // Keep focus after selection
+                        });
+                        fragment.appendChild(suggestionItem);
                     });
-                    keywordSuggestionsContainer.appendChild(suggestionItem);
-                });
+                }
+            }
+
+            if (hasMatches) {
+                keywordSuggestionsContainer.appendChild(fragment);
                 keywordSuggestionsContainer.classList.remove('hidden');
             } else {
                 keywordSuggestionsContainer.classList.add('hidden');
             }
         });
+
 
         // --- Final Submission Logic (unchanged) ---
         dispatchForm.addEventListener('submit', async (e) => {
