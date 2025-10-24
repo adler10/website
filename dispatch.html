@@ -35,6 +35,10 @@
             box-shadow: 0 0 0 3px #f87171, 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* ring effect */
             background-color: #fef2f2 !important; /* red-50 for subtle highlight */
         }
+        /* NEW: Offline Overlay Z-Index Fix */
+        #offline-overlay {
+            z-index: 5000 !important; /* Ensure it's on top of Leaflet UI */
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -179,15 +183,41 @@
         <div class="w-full md:w-2/3 h-64 md:h-full" id="map"></div>
     </div>
 
-    <!-- NEW: Offline Overlay -->
-    <div id="offline-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-50 flex items-center justify-center p-8 hidden">
-        <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-lg">
-            <svg class="w-16 h-16 text-red-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-            </svg>
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">VERBINDUNG VERLOREN</h2>
-            <p class="text-lg font-medium text-gray-700 mb-4">Der Offline-Modus ist aktiv. Die Dateneingabe ist gesperrt, um Datenverlust zu verhindern.</p>
-            <p class="text-sm text-gray-600">Alle bestehenden Einsätze werden angezeigt, damit Sie diese manuell auf eine physische Karte übertragen können. Die Anwendung wird automatisch reaktiviert, sobald die Verbindung wiederhergestellt ist.</p>
+    <!-- UPDATED: Offline Overlay with Data Report -->
+    <div id="offline-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 sm:p-8 hidden">
+        <!-- Main content box -->
+        <div class="bg-white p-6 sm:p-8 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <!-- Header -->
+            <div class="flex-shrink-0 text-center mb-4">
+                <svg class="w-12 h-12 sm:w-16 sm:h-16 text-red-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                </svg>
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">VERBINDUNG VERLOREN</h2>
+                <p class="text-base sm:text-lg font-medium text-gray-700 mb-4">SAFE-MODUS AKTIV</p>
+                <p class="text-xs sm:text-sm text-gray-600">Alle Eingaben sind gesperrt. Daten zur manuellen Übertragung:</p>
+            </div>
+            
+            <!-- Scrollable Data Report -->
+            <div id="offline-data-report" class="flex-grow overflow-y-auto bg-gray-50 p-4 rounded border border-gray-300 space-y-6">
+                
+                <!-- EA List -->
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Einsatzabschnitte (EA)</h3>
+                    <div id="offline-ea-list" class="space-y-2">
+                        <!-- EAs will be populated here by JS -->
+                    </div>
+                </div>
+
+                <!-- Incident List -->
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Aktive Einsätze</h3>
+                    <div id="offline-incident-list" class="space-y-3">
+                        <!-- Incidents will be populated here by JS -->
+                    </div>
+                </div>
+
+            </div>
+            <!-- End Scrollable Data Report -->
         </div>
     </div>
     <!-- END: Offline Overlay -->
@@ -243,7 +273,7 @@
         const currentDrawLayer = new L.LayerGroup();
         const drawingIcon = L.divIcon({ className: 'leaflet-drawing-icon' });
 
-        // --- Incident Add Mode State (New) ---
+        // --- Incident Add Mode State ---
         let isIncidentAddMode = false;
         
         // --- UI Elements ---
@@ -281,13 +311,15 @@
         const finishDrawBtn = document.getElementById('finish-draw-btn');
         const cancelDrawBtn = document.getElementById('cancel-draw-btn');
 
-        // Incident Add Mode UI (New)
+        // Incident Add Mode UI
         const addIncidentMapBtn = document.getElementById('add-incident-map-btn');
         const incidentAddPanel = document.getElementById('incident-add-panel');
         const cancelAddIncidentBtn = document.getElementById('cancel-add-incident-btn');
         
-        // Offline Overlay (New)
+        // Offline Overlay & Data Containers (Updated)
         const offlineOverlay = document.getElementById('offline-overlay');
+        const offlineEaList = document.getElementById('offline-ea-list');
+        const offlineIncidentList = document.getElementById('offline-incident-list');
 
         let debounceTimer;
         
@@ -326,6 +358,9 @@
         // --- Utility Functions ---
 
         function showMessage(element, message, isError = true) {
+            // Don't show messages if offline
+            if (!offlineOverlay.classList.contains('hidden')) return;
+
             element.textContent = message;
             element.classList.remove('hidden');
             if (isError) {
@@ -662,7 +697,7 @@
         });
 
 
-        // --- NEW: Incident Add Mode Logic ---
+        // --- Incident Add Mode Logic ---
         function setIncidentAddMode(isActive) {
             if (isActive) {
                 // Ensure draw mode is off
@@ -732,7 +767,6 @@
                 sectionForm.querySelector('button[type="submit"]').disabled = true;
                 currentDrawPoints = sections.get(sectionId)?.boundary ? [...sections.get(sectionId).boundary] : []; 
                 currentDrawLayer.clearLayers();
-                // map.on('click', handleMapDrawClick); // Removed: Handled by central click handler
                 
                 if (currentDrawPoints.length > 0) {
                     currentDrawPoints.forEach(p => {
@@ -749,7 +783,6 @@
                 sectionForm.querySelector('button[type="submit"]').disabled = false;
                 currentDrawPoints = [];
                 currentDrawLayer.clearLayers();
-                // map.off('click', handleMapDrawClick); // Removed: Handled by central click handler
             }
             
             renderSectionManager(); 
@@ -783,12 +816,10 @@
                 return;
             }
             
-            // --- Intersection Check ---
             if (checkExistingEAOverlaps(currentDrawPoints, drawingSectionId)) {
                 showSectionMessage("FEHLER: Die neue Grenze überschneidet oder überlappt einen bestehenden Einsatzabschnitt. Dies ist nicht erlaubt.", true);
                 return;
             }
-            // --- End Intersection Check ---
 
             const section = sections.get(drawingSectionId);
             if (section) {
@@ -796,7 +827,6 @@
                 sections.set(drawingSectionId, section);
                 saveState();
                 
-                // NEW: Re-evaluate all active incidents
                 reEvaluateIncidents();
                 
                 showSectionMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert. ${sections.get(drawingSectionId).boundary.length} Punkte.`, false);
@@ -838,20 +868,18 @@
         });
 
         function deleteSection(id) {
-            if (!confirm("Sind Sie sicher, dass Sie diesen Einsatzabschnitt löschen möchten? Alle zugeordneten Einsätze werden freigageben.")) return;
+            if (!confirm("Sind Sie sicher, dass Sie diesen Einsatzabschnitt löschen möchten? Alle zugeordneten Einsätze werden freigegeben.")) return;
 
             if (drawingSectionId === id) setDrawMode(false);
 
             sections.delete(id);
             
-            // Unassign incidents from this section and re-evaluate against others
             incidents.forEach(incident => {
                 if (incident.sectionId === id) {
                     incident.sectionId = null;
                 }
             });
 
-            // Re-evaluate all incidents now that the section is gone
             reEvaluateIncidents(); 
             
             saveState();
@@ -868,7 +896,6 @@
                 sectionListContainer.innerHTML = '<p class="text-xs text-gray-500">Noch keine Einsatzabschnitte erstellt.</p>';
             }
             
-            // Clear existing polygons from map
             sectionPolygons.forEach(polygon => map.removeLayer(polygon));
             sectionPolygons.clear();
 
@@ -876,7 +903,6 @@
                 const count = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status !== 'completed').length;
                 const hasBoundary = section.boundary && section.boundary.length >= 3;
                 
-                // 1. Render Section Polygon on Map
                 if (hasBoundary) {
                     const isDrawing = drawingSectionId === section.id;
                     const polygon = L.polygon(section.boundary, {
@@ -890,7 +916,6 @@
                     sectionPolygons.set(section.id, polygon);
                 }
 
-                // 2. Render Sidebar Card
                 const sectionDiv = document.createElement('div');
                 sectionDiv.className = 'flex flex-col p-2 bg-white rounded border ' + (hasBoundary ? 'border-indigo-300' : 'border-red-300');
                 
@@ -914,7 +939,6 @@
                             <p class="text-xs text-gray-600">V: <span class="font-medium">${section.responsible}</span></p>
                         </div>
                         <button data-id="${section.id}" class="delete-section-btn text-red-500 hover:text-red-700 p-1 rounded transition duration-150" title="Abschnitt löschen">
-                            <!-- Trash Icon SVG -->
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
                                 <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.5H2.75a.75.75 0 0 0 0 1.5h14.5a.75.75 0 0 0 0-1.5H14V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 6a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-1.5 0v-8.5A.75.75 0 0 1 10 6ZM6.75 9.25a.75.75 0 0 0-1.5 0v5.5a.75.75 0 0 0 1.5 0v-5.5ZM13.25 9.25a.75.75 0 0 0-1.5 0v5.5a.75.75 0 0 0 1.5 0v-5.5Z" clip-rule="evenodd" />
                             </svg>
@@ -928,7 +952,6 @@
                 sectionListContainer.appendChild(sectionDiv);
             });
             
-            // Add delegation for buttons
             sectionListContainer.querySelectorAll('.delete-section-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     deleteSection(e.target.dataset.id);
@@ -1002,12 +1025,10 @@
             let notesSectionHTML = '';
             let sectionInfoHTML = '';
 
-            // EA Info
             if (currentSection) {
                 sectionInfoHTML = `<div class="mt-1 text-xs text-indigo-700 font-medium bg-indigo-100 p-1 rounded flex justify-between items-center">
                     <span>EA: ${currentSection.name} (V: ${currentSection.responsible})</span>
                     <button data-id="${incident.id}" class="unassign-section-btn text-red-500 hover:text-red-700 p-0.5 rounded transition duration-150" title="EA-Zuordnung manuell aufheben">
-                        <!-- X-icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
                             <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
                         </svg>
@@ -1019,12 +1040,10 @@
                 </div>`;
             }
 
-
             if (incident.id === selectedIncidentId) {
                 selectionClass = 'incident-selected';
                 setTimeout(() => incidentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 
-                // Notes Section (Active or Read-only for Completed)
                 if (!isCompleted) { 
                     notesSectionHTML = `
                         <div class="mt-4 p-3 bg-white rounded-md border border-gray-300 shadow-inner">
@@ -1078,14 +1097,11 @@
                 }
             });
 
-            // 1. Render Active Incidents & Markers
             activeIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 incidentList.appendChild(incidentElement);
 
-                // Attach click listener for zoom/selection on the card itself (only active cards)
                 incidentElement.addEventListener('click', (e) => {
-                    // Ignore clicks on interactive elements
                     if (e.target.closest('.update-status-btn') || e.target.closest('.button-container') || e.target.closest('.notes-textarea') || e.target.closest('.save-notes-btn') || e.target.closest('.unassign-section-btn')) {
                         return;
                     }
@@ -1100,7 +1116,6 @@
                     renderAll(); 
                 });
 
-                // 2. Render Map Marker
                 if (incident.lat && incident.lon) {
                     const color = getStatusColor(incident.status);
                     const newIcon = createMarkerIcon(color);
@@ -1121,7 +1136,6 @@
                 }
             });
 
-            // 3. Render Completed Incidents & Markers
             completedIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 completedIncidentList.appendChild(incidentElement);
@@ -1159,11 +1173,9 @@
                 }
             });
 
-            // 4. Update Completed Section Toggle
             const toggleIconText = isCompletedSectionOpen ? '▲' : '▼';
             completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIconText}</span>`;
             
-            // 5. Ensure Undo button state is correct after rendering
             updateUndoButtonState();
         }
 
@@ -1273,6 +1285,10 @@
                 // Hide the overlay
                 offlineOverlay.classList.add('hidden');
                 
+                // Clear the report data
+                offlineEaList.innerHTML = '';
+                offlineIncidentList.innerHTML = '';
+
                 // Re-enable map interactions
                 map.dragging.enable();
                 map.touchZoom.enable();
@@ -1285,6 +1301,82 @@
                 statusIndicator.textContent = 'OFFLINE - SICHERHEITSMODUS';
                 statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-bold transition duration-300 bg-red-700 text-white animate-pulse';
 
+                // Cancel any active modes BEFORE showing overlay
+                if (drawingSectionId) {
+                    setDrawMode(false);
+                }
+                if (isIncidentAddMode) {
+                    setIncidentAddMode(false);
+                }
+                
+                // Ensure no incident is selected (to close notes)
+                if (selectedIncidentId) {
+                    selectedIncidentId = null;
+                    renderAll(); // Re-render to close notes box
+                }
+
+                // --- POPULATE OFFLINE REPORT ---
+                
+                // 1. Clear old data
+                offlineEaList.innerHTML = '';
+                offlineIncidentList.innerHTML = '';
+                
+                // 2. Populate EAs
+                if (sections.size > 0) {
+                    sections.forEach(section => {
+                        const eaDiv = document.createElement('div');
+                        eaDiv.className = 'p-2 bg-white border border-indigo-200 rounded';
+                        eaDiv.innerHTML = `
+                            <p class="font-bold text-indigo-700">${section.name}</p>
+                            <p class="text-sm text-gray-600">Verantwortlich: ${section.responsible}</p>
+                        `;
+                        offlineEaList.appendChild(eaDiv);
+                    });
+                } else {
+                    offlineEaList.innerHTML = '<p class="text-sm text-gray-500 italic">Keine Einsatzabschnitte definiert.</p>';
+                }
+
+                // 3. Populate Active Incidents
+                const activeIncidents = Array.from(incidents.values()).filter(i => i.status !== 'completed');
+                
+                if (activeIncidents.length > 0) {
+                    activeIncidents.forEach(incident => {
+                        const section = incident.sectionId ? sections.get(incident.sectionId) : null;
+                        const sectionName = section ? `${section.name} (${section.responsible})` : 'Kein EA';
+                        
+                        const incidentDiv = document.createElement('div');
+                        incidentDiv.className = 'p-3 bg-white border border-gray-300 rounded shadow-sm';
+                        
+                        let notesHTML = '';
+                        if (incident.notes && incident.notes.trim() !== '') {
+                            notesHTML = `
+                                <div class="mt-2 pt-2 border-t border-gray-200">
+                                    <p class="text-xs font-bold text-gray-600 mb-1">Notizen:</p>
+                                    <p class="text-sm text-gray-800 whitespace-pre-wrap">${incident.notes}</p>
+                                </div>
+                            `;
+                        } else {
+                             notesHTML = `
+                                <div class="mt-2 pt-2 border-t border-gray-200">
+                                    <p class="text-sm text-gray-500 italic">Keine Notizen.</p>
+                                </div>
+                            `;
+                        }
+
+                        incidentDiv.innerHTML = `
+                            <p class="font-bold text-lg text-red-700">${incident.keyword}</p>
+                            <p class="text-sm font-medium text-gray-800">${incident.formattedAddress}</p>
+                            <p class="text-sm text-indigo-700 font-semibold mt-1">EA: ${sectionName}</p>
+                            ${notesHTML}
+                        `;
+                        offlineIncidentList.appendChild(incidentDiv);
+                    });
+                } else {
+                    offlineIncidentList.innerHTML = '<p class="text-sm text-gray-500 italic">Keine aktiven Einsätze.</p>';
+                }
+                
+                // --- END POPULATE OFFLINE REPORT ---
+                
                 // Show the overlay to block all clicks
                 offlineOverlay.classList.remove('hidden');
 
@@ -1294,45 +1386,18 @@
                 map.doubleClickZoom.disable();
                 map.scrollWheelZoom.disable();
                 map.boxZoom.disable();
-
-                // Cancel any active modes
-                if (drawingSectionId) {
-                    setDrawMode(false);
-                }
-                if (isIncidentAddMode) {
-                    setIncidentAddMode(false);
-                }
-                
-                // Expand all collapsible sections to show data
-                // 1. Expand EA Section
-                if (!isEAMenuOpen) {
-                    toggleEAMenu(); // This function handles the UI
-                }
-                
-                // 2. Expand Completed Incidents Section
-                if (!isCompletedSectionOpen) {
-                    isCompletedSectionOpen = true;
-                    completedIncidentList.classList.remove('hidden');
-                    renderAllIncidents(); // This will update the button text
-                }
-
-                // 3. Ensure no incident is selected (to close notes)
-                if (selectedIncidentId) {
-                    selectedIncidentId = null;
-                    renderAllIncidents();
-                }
                 
                 // Save state one last time (just in case)
                 saveState();
                 
-                showFormMessage("Offline-Modus: Alle Eingaben gesperrt. Daten werden zur Ansicht eingeblendet.", true);
+                // No need for showFormMessage, the overlay is the message
             }
         }
         
         window.addEventListener('online', () => setOnlineStatus(true));
         window.addEventListener('offline', () => setOnlineStatus(false));
         // Initial check on load
-        setOnlineStatus(navigator.onLine);
+        // setOnlineStatus(navigator.onLine); // Set in window.onload
 
 
         function updateAutoAssignment(lat, lon) {
@@ -1410,7 +1475,6 @@
                 suggestionsContainer.classList.add('hidden');
             }
             
-            // Also hide keyword suggestions if user clicks elsewhere
             if (!keywordSuggestionsContainer.contains(e.target) && e.target !== keywordInput) {
                 keywordSuggestionsContainer.classList.add('hidden');
             }
@@ -1418,7 +1482,6 @@
 
 
         // --- KEYWORD AUTOCOMPLETE LOGIC (UPDATED FOR CATEGORY SEARCH) ---
-
         keywordInput.addEventListener('input', () => {
             const query = keywordInput.value.trim().toLowerCase();
             keywordSuggestionsContainer.innerHTML = '';
@@ -1431,7 +1494,6 @@
             const fragment = document.createDocumentFragment();
             let hasMatches = false;
 
-            // Iterate through the categories
             for (const category in AAO_KEYWORD_CATEGORIES) {
                 const keywords = AAO_KEYWORD_CATEGORIES[category];
                 const categoryMatchesQuery = category.toLowerCase().includes(query);
@@ -1439,28 +1501,21 @@
                 let matchesInThisCategory = [];
 
                 if (categoryMatchesQuery) {
-                    // --- NEW LOGIC ---
-                    // If the category name itself matches the query, show ALL keywords from that category.
                     matchesInThisCategory = keywords;
                 } else {
-                    // --- ORIGINAL LOGIC ---
-                    // Otherwise, filter for individual keywords within the category.
                     matchesInThisCategory = keywords.filter(keyword => 
                         keyword.toLowerCase().includes(query)
                     );
                 }
 
-
                 if (matchesInThisCategory.length > 0) {
                     hasMatches = true;
 
-                    // 1. Add Category Header
                     const categoryHeader = document.createElement('div');
                     categoryHeader.textContent = category;
                     categoryHeader.className = 'p-2 mt-1 font-bold text-xs uppercase text-red-700 bg-red-50 border-t border-red-200';
                     fragment.appendChild(categoryHeader);
 
-                    // 2. Add individual keyword suggestions
                     matchesInThisCategory.forEach(keyword => {
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = keyword;
@@ -1470,7 +1525,7 @@
                             keywordInput.value = keyword;
                             keywordSuggestionsContainer.classList.add('hidden');
                             keywordSuggestionsContainer.innerHTML = '';
-                            keywordInput.focus(); // Keep focus after selection
+                            keywordInput.focus(); 
                         });
                         fragment.appendChild(suggestionItem);
                     });
@@ -1514,7 +1569,6 @@
                 return;
             }
             
-            // If lat/lon are still missing (e.g., user typed address but didn't click suggestion)
             if (isNaN(incidentLat) || isNaN(incidentLon)) {
                 if (!navigator.onLine) {
                     showFormMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
@@ -1536,13 +1590,11 @@
                 incidentLat = parseFloat(fallbackLocation.lat);
                 incidentLon = parseFloat(fallbackLocation.lon);
                 
-                // Update form with found coordinates
                 latInput.value = incidentLat;
                 lonInput.value = incidentLon;
             }
             
             try {
-                // Final check for section assignment, now that we guarantee lat/lon
                 const finalSectionId = findContainingSection(incidentLat, incidentLon);
                 
                 const newIncident = {
@@ -1607,3 +1659,4 @@
     </script>
 </body>
 </html>
+
