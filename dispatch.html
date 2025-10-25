@@ -13,31 +13,62 @@
         .leaflet-container {
             border-radius: 0.5rem;
         }
-        /* Highlight cursor when in drawing mode */
-        .map-draw-mode {
+        /* Highlight cursor when in drawing/pin mode */
+        .map-draw-mode, .map-pin-mode { /* ADDED .map-pin-mode */
             cursor: crosshair !important;
         }
         /* Custom styles for Leaflet Draw markers */
         .leaflet-drawing-icon {
-            background-color: #ef4444; /* red-500 */
-            border: 2px solid #b91c1c; /* red-700 */
-            width: 12px;
-            height: 12px;
+            background-color: #fef08a; /* yellow-200 */
+            border: 2px solid #eab308; /* yellow-500 */
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            margin-top: -6px;
-            margin-left: -6px;
+            margin-top: -7px;
+            margin-left: -7px;
             position: absolute;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.4);
+            cursor: move !important; /* Draggable cursor */
+        }
+        .leaflet-drawing-icon:hover {
+            background-color: #eab308; /* yellow-500 */
         }
         /* Style for the selected incident card */
         .incident-selected {
-            border-color: #ef4444 !important; /* red-500 */
-            box-shadow: 0 0 0 3px #f87171, 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* ring effect */
-            background-color: #fef2f2 !important; /* red-50 for subtle highlight */
+            border-color: #E600E6 !important; /* Magenta color */
+            /* FIX: Removed box-shadow (glow) and light background */
+            /* box-shadow: 0 0 0 3px rgba(230, 0, 230, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.05); */
+            /* background-color: #FFB8FF !important; */
+            background-color: #f9fafb !important; /* Use a standard gray-50 */
         }
         /* Offline Overlay Z-Index Fix */
         #offline-overlay {
             z-index: 5000 !important; /* Ensure it's on top of Leaflet UI */
+        }
+        /* Modals Z-Index */
+        #end-shift-modal, #ea-management-modal, #incident-creation-modal, #incident-edit-modal { /* ADDED incident edit modal */
+            z-index: 6000 !important; /* Ensure it's on top of everything */
+        }
+        /* Custom label for EA polygons */
+        .ea-label {
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        /* NEW: Toast Notification Styling */
+        .toast-notification {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast-notification.fade-out {
+            opacity: 0;
+            transform: translateX(100%);
         }
     </style>
 </head>
@@ -62,105 +93,31 @@
             <!-- Status Indicator -->
             <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Adresssuche aktiv</div>
             
-            <!-- Einsatzabschnitte Management (COLLAPSIBLE) -->
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
-                <h2 id="section-header" class="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between cursor-pointer">
-                    <span>Einsatzabschnitte (EA)</span>
-                    <button id="toggle-ea-menu" class="text-gray-500 hover:text-gray-700 transition duration-150">
-                        <!-- Down Arrow -->
-                        <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 transition-transform duration-300">
-                            <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 0 1.06 1.06L10 6.56l3.72 3.72a.75.75 0 1 0 1.06-1.06L10 4.44 5.22 8.22Z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </h2>
-                
-                <div id="ea-content-wrapper" class="space-y-4">
-                    <form id="section-form" class="space-y-2">
-                        <input type="text" id="section-name" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Name des EA (z.B. Wasserversorgung)" required>
-                        <input type="text" id="section-responsible" class="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-sm" placeholder="Verantwortlicher (z.B. OBM Meier)" required>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
-                            EA erstellen
-                        </button>
-                    </form>
+            <!-- NEW: EA Management Button -->
+            <button type="button" id="manage-ea-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
+                Einsatzabschnitte verwalten
+            </button>
+            <!-- END NEW: EA Management Button -->
 
-                    <div id="section-draw-panel" class="p-2 mb-3 bg-red-100 text-red-700 rounded-lg hidden">
-                        <p class="font-bold mb-1">EA-Zeichenmodus aktiv!</p>
-                        <p class="text-sm">Klicken Sie Punkte auf der Karte, um die Grenze zu definieren.</p>
-                        <div class="flex mt-2 space-x-2">
-                            <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
-                                Zeichnen beenden
-                            </button>
-                            <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded flex-grow text-xs">
-                                Abbrechen
-                            </button>
-                        </div>
-                    </div>
+            <!-- MOVED: Dispatch Form is now in a modal -->
+            
+            <!-- NEW: Button to open Incident Creation Modal -->
+            <button type="button" id="open-create-incident-modal-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
+                Neuen Einsatz erstellen
+            </button>
+            <!-- END NEW Button -->
 
-                    <div id="section-list" class="space-y-2 mt-3 text-sm">
-                        <!-- Section cards will be dynamically inserted here -->
-                    </div>
-                    <div id="section-message" class="hidden p-2 mt-2 text-xs rounded bg-red-100 text-red-700 font-medium"></div>
-                </div>
-            </div>
-            <!-- END EA Management -->
 
-            <!-- Dispatch Form -->
-            <form id="dispatch-form" class="mb-6 border-t pt-4 border-gray-200">
-                
-                <!-- Incident Add Panel (New) -->
-                <div id="incident-add-panel" class="p-2 mb-3 bg-red-100 text-red-700 rounded-lg hidden">
-                    <p class="font-bold mb-1">Einsatz-Hinzufügen-Modus aktiv!</p>
-                    <p class="text-sm">Klicken Sie auf die Karte, um die Adresse automatisch zu füllen.</p>
-                    <div class="flex mt-2 space-x-2">
-                        <button type="button" id="cancel-add-incident-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
-                            Abbrechen
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Add Incident on Map Button (New) -->
-                <button type="button" id="add-incident-map-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150 mb-3">
-                    Einsatz auf Karte hinzufügen
-                </button>
-
-                <div class="mb-3 relative">
-                    <label for="address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                    <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
-                    
-                    <input type="hidden" id="lat-input" value="">
-                    <input type="hidden" id="lon-input" value="">
-
-                    <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
-                </div>
-                <div class="mb-3 relative">
-                    <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                    <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
-                    
-                    <!-- Autocomplete Suggestions Container -->
-                    <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-80 overflow-y-auto"></div>
-                </div>
-                
-                <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
-                <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
-                    <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
-                    <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
-                    <input type="hidden" id="final-section-assignment" value="">
-                </div>
-                <!-- END AUTOMATIC ASSIGNMENT DISPLAY -->
-
-                <!-- Error Message Display -->
-                <div id="form-message" class="hidden p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium"></div>
-
-                <button type="submit" id="submit-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150">
-                    Einsatz erstellen
-                </button>
-            </form>
+            <!-- DELETED: Form Message Div (now a toast) -->
 
             <hr class="my-4">
 
             <!-- Incident List (Active) -->
             <div>
-                <h2 class="text-xl font-bold text-gray-800 mb-3">Aktive Einsätze</h2>
+                <!-- NEW: Active Incidents Toggle Button -->
+                <button id="active-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center mb-3">
+                    Aktive Einsätze (0) ▼
+                </button>
                 <div id="incident-list" class="space-y-3">
                     <!-- Active incidents will be dynamically inserted here -->
                 </div>
@@ -175,6 +132,14 @@
             <div id="completed-incident-list" class="space-y-3 mt-3 hidden">
                 <!-- Completed incidents will be dynamically inserted here -->
             </div>
+
+            <!-- NEW: End Shift Button -->
+            <hr class="my-4">
+            <button id="end-shift-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded w-full transition duration-150">
+                Schicht beenden & Bericht erstellen
+            </button>
+            <!-- END NEW: End Shift Button -->
+
 
             <p class="text-xs text-gray-500 mt-4 text-center">Daten werden lokal im Browser gespeichert.</p>
         </div>
@@ -224,13 +189,306 @@
     </div>
     <!-- END: Offline Overlay -->
 
+    <!-- NEW: Incident Creation Modal -->
+    <div id="incident-creation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 class="text-2xl font-bold text-gray-900">Neuen Einsatz erstellen</h2>
+                <button id="close-incident-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Scrollable Content Area -->
+            <div class="overflow-y-auto">
+                <!-- Dispatch Form (MOVED) -->
+                <form id="dispatch-form" class="border-t pt-4 border-gray-200">
+                    
+                    <!-- Incident Add Panel (New) -->
+                    <!-- This panel is now outside the modal, near the end of <body> -->
+
+                    <!-- Add Incident on Map Button (New) -->
+                    <button type="button" id="add-incident-map-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150 mb-3">
+                        Einsatz auf Karte hinzufügen (Pin-Tool)
+                    </button>
+
+                    <div class="mb-3 relative">
+                        <label for="address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
+                        <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
+                        
+                        <input type="hidden" id="lat-input" value="">
+                        <input type="hidden" id="lon-input" value="">
+
+                        <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
+                    </div>
+                    <div class="mb-3 relative">
+                        <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
+                        <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
+                        
+                        <!-- Autocomplete Suggestions Container -->
+                        <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-80 overflow-y-auto"></div>
+                    </div>
+                    
+                    <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
+                    <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
+                        <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
+                        <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
+                        <input type="hidden" id="final-section-assignment" value="">
+                    </div>
+                    <!-- END AUTOMATIC ASSIGNMENT DISPLAY -->
+
+                    <!-- Error Message Display (DELETED, now a toast) -->
+                    <!-- <div id="form-message" class="hidden p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium"></div> -->
+
+                    <button type="submit" id="submit-btn" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150" disabled>
+                        Einsatz erstellen
+                    </button>
+                </form>
+                <!-- END Dispatch Form -->
+            </div>
+        </div>
+    </div>
+    <!-- END: Incident Creation Modal -->
+
+
+    <!-- NEW: Incident Edit Modal -->
+    <div id="incident-edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 class="text-2xl font-bold text-gray-900">Einsatz bearbeiten</h2>
+                <button id="close-incident-edit-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Scrollable Content Area -->
+            <div class="overflow-y-auto">
+                <form id="incident-edit-form" class="border-t pt-4 border-gray-200 space-y-4">
+                    
+                    <!-- Add Incident on Map Button (New) -->
+                    <button type="button" id="edit-incident-map-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
+                        Neue Adresse von Karte wählen (Pin-Tool)
+                    </button>
+
+                    <div class="relative">
+                        <label for="edit-address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
+                        <input type="text" id="edit-address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
+                        
+                        <input type="hidden" id="edit-lat-input" value="">
+                        <input type="hidden" id="edit-lon-input" value="">
+
+                        <div id="edit-address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
+                    </div>
+                    <div class="relative">
+                        <label for="edit-keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
+                        <input type="text" id="edit-keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
+                        
+                        <!-- Autocomplete Suggestions Container -->
+                        <div id="edit-keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                    </div>
+
+                    <!-- FIX: Replaced Status Dropdown with Buttons -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                        <input type="hidden" id="edit-status-hidden" value="">
+                        <div class="flex w-full rounded-md shadow-sm">
+                            <button type="button" id="edit-status-btn-open" data-status="open" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
+                                Offen
+                            </button>
+                            <button type="button" id="edit-status-btn-dispatched" data-status="dispatched" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
+                                Entsandt
+                            </button>
+                            <button type="button" id="edit-status-btn-completed" data-status="completed" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
+                                Abgeschlossen
+                            </button>
+                        </div>
+                    </div>
+                    <!-- END FIX -->
+                    
+                    <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
+                    <div class="p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
+                        <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
+                        <p id="edit-auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
+                    </div>
+
+                    <hr class="my-2">
+                    
+                    <!-- Action Buttons -->
+                    <!-- FIX: Made buttons equal width (w-1/2) -->
+                    <div class="flex justify-between items-center space-x-3">
+                        <button type="button" id="delete-incident-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-150 w-1/2">
+                            Einsatz Löschen
+                        </button>
+                        <button type="submit" id="save-incident-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-1/2 transition duration-150">
+                            Änderungen speichern
+                        </button>
+                    </div>
+                    <!-- END FIX -->
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- END: Incident Edit Modal -->
+
+
+    <!-- NEW: End Shift Modal -->
+    <div id="end-shift-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Schicht beenden & Bericht erstellen</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner (Name/Namen)</label>
+                    <input type="text" id="lagezeichner-input" class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="z.B. OBM Meier, HBM Schmidt">
+                </div>
+
+                <!-- DELETED: Modal Error Message (now a toast) -->
+                <!-- <div id="modal-error-message" class="hidden p-2 text-sm rounded bg-red-100 text-red-700 font-medium"></div> -->
+
+                <!-- Report Summary -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Zusammenfassung</h3>
+                    <ul class="space-y-1 text-sm text-gray-700">
+                        <li><strong>Einsätze Gesamt:</strong> <span id="report-stats-incidents" class="font-medium">...</span></li>
+                        <li><strong>Einsatzabschnitte:</strong> <span id="report-stats-eas" class="font-medium">...</span></li>
+                        <li><strong>Berichtsdatum:</strong> <span id="report-stats-date" class="font-medium">...</span></li>
+                    </ul>
+                </div>
+
+                <!-- Modal Buttons -->
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="cancel-report-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
+                        Abbrechen
+                    </button>
+                    <button id="create-report-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                        Bericht erstellen & Herunterladen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END: End Shift Modal -->
+
+    <!-- NEW: EA Management Modal -->
+    <div id="ea-management-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 class="text-2xl font-bold text-gray-900">Einsatzabschnitte verwalten</h2>
+                <button id="close-ea-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Scrollable Content Area for EA Management -->
+            <div id="ea-modal-content" class="overflow-y-auto space-y-4">
+                
+                <!-- EA Creation Form (Moved from sidebar) -->
+                <form id="section-form" class="space-y-3 p-4 bg-gray-50 rounded-lg shadow-inner">
+                    <h3 class="text-lg font-bold text-gray-800">Neuen EA erstellen</h3>
+                    <div>
+                        <label for="section-name" class="block text-sm font-medium text-gray-700">Name des EA</label>
+                        <input type="text" id="section-name" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="z.B. Wasserversorgung" required>
+                    </div>
+                    <div>
+                        <label for="section-responsible" class="block text-sm font-medium text-gray-700">Verantwortlicher</label>
+                        <input type="text" id="section-responsible" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="z.B. OBM Meier" required>
+                    </div>
+                    <div>
+                        <label for="section-color" class="block text-sm font-medium text-gray-700">Farbe</label>
+                        <input type="color" id="section-color" class="mt-1 shadow appearance-none border rounded w-full h-10" value="#4f46e5">
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded w-full text-sm transition duration-150">
+                        EA erstellen
+                    </button>
+                </form>
+
+                <!-- EA Drawing Panel (MOVED) -->
+                <!-- This panel is now outside the modal, near the end of <body> -->
+
+                <!-- EA List (Moved from sidebar) -->
+                <div class="space-y-4">
+                     <h3 class="text-lg font-bold text-gray-800">Bestehende EAs</h3>
+                    <div id="section-list" class="space-y-3 text-sm">
+                        <!-- Section cards will be dynamically inserted here -->
+                    </div>
+                    <!-- DELETED: Section Message (now a toast) -->
+                    <!-- <div id="section-message" class="hidden p-2 mt-2 text-xs rounded bg-red-100 text-red-700 font-medium"></div> -->
+                </div>
+
+            </div>
+            <!-- End Scrollable Content -->
+        </div>
+    </div>
+    <!-- END: EA Management Modal -->
+
+
+    <!-- NEW: Global Toast Notification Container -->
+    <!-- Z-index 7000 is higher than modals (6000) -->
+    <!-- UPDATED: Added space-y-3 to ensure toasts stack correctly -->
+    <!-- FIX: Moved toasts to top-8 to avoid conflict with toolboxes -->
+    <div id="toast-container" class="fixed top-8 right-8 z-[7000] w-full max-w-xs sm:max-w-md space-y-3">
+        <!-- Toasts will be dynamically added here -->
+    </div>
+    <!-- END: Global Toast Notification Container -->
+
+
+    <!-- MOVED: EA Drawing Panel -->
+    <!-- This panel is now fixed to the bottom-right of the viewport and is only visible when drawingSectionId is active -->
+    <!-- Z-index 1000 is fine, it's below modals/toasts -->
+    <div id="section-draw-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-red-100 text-red-700 rounded-lg hidden shadow-xl w-72">
+        <p class="font-bold mb-2">EA-Zeichenmodus aktiv</p>
+        <p class="text-sm">Klicken Sie auf die Karte, um Punkte hinzuzufügen.</p>
+        <p class="text-sm mt-1">Klicken Sie auf Punkte, um sie zu löschen.</p>
+        <div class="flex mt-3 space-x-2">
+            <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
+                Zeichnen beenden
+            </button>
+            <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
+                Abbrechen
+            </button>
+        </div>
+    </div>
+    <!-- END MOVED: EA Drawing Panel -->
+
+    <!-- NEW: Incident Add Panel (MOVED) -->
+    <div id="incident-add-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-blue-100 text-blue-700 rounded-lg hidden shadow-xl w-72">
+        <p class="font-bold mb-1">Einsatz-Hinzufügen-Modus</p>
+        <p class="text-sm">Klicken Sie auf die Karte, um die Adresse zu füllen.</p>
+        <div class="flex mt-2 space-x-2">
+            <button type="button" id="cancel-add-incident-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
+                Abbrechen
+            </button>
+        </div>
+    </div>
+    <!-- END NEW: Incident Add Panel -->
+    
+    <!-- NEW: Incident Edit Panel (for map pin) -->
+    <div id="incident-edit-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden shadow-xl w-72">
+        <p class="font-bold mb-1">Einsatz-Bearbeiten-Modus</p>
+        <p class="text-sm">Klicken Sie auf die Karte, um die Adresse zu ändern.</p>
+        <div class="flex mt-2 space-x-2">
+            <button type="button" id="cancel-edit-incident-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
+                Abbrechen
+            </button>
+        </div>
+    </div>
+    <!-- END NEW: Incident Edit Panel -->
+
 
     <script>
         // --- AAO KEYWORDS ---
         const AAO_KEYWORD_CATEGORIES = {
             "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
             "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz", "B - Explosion im Freien", "B - Fahrzeug sonstiges", "B - Garage / Carport / Gartenhaus", "B - Gasaustritt im Freien klein", "B - Lagerplatz klein", "B - Land- / Forst- / Baumaschine", "B - LKW / Kleintransporter", "B - Maschine", "B - mehrere PKW / Kleinbusse", "B - Person im Freien", "B - PKW / Kleinbus außerorts", "B - Spielplatz", "B - Wald klein (< 10m x 10m)", "B - Wohnmobil / Wohnanhänger"],
-            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sonstiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B -  Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
+            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sontiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B -  Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
 			"B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
 			"B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
 			"B 6": ["B - Alarmstufenerhöhung auf B 6"],
@@ -349,6 +607,25 @@
         }
         // --- END NEW Helper ---
 
+        // --- NEW: Helper to convert Hex to RGBA ---
+        function hexToRgba(hex, alpha) {
+            let r = 0, g = 0, b = 0;
+            if (hex.length == 4) { // #RGB
+                r = "0x" + hex[1] + hex[1];
+                g = "0x" + hex[2] + hex[2];
+                b = "0x" + hex[3] + hex[3];
+            } else if (hex.length == 7) { // #RRGGBB
+                r = "0x" + hex[1] + hex[2];
+                g = "0x" + hex[3] + hex[4];
+                b = "0x" + hex[5] + hex[6];
+            }
+            // Fallback for invalid hex
+            if (isNaN(r) || isNaN(g) || isNaN(b)) {
+                return `rgba(79, 70, 229, ${alpha})`; // Default indigo
+            }
+            return `rgba(${+r},${+g},${+b},${alpha})`;
+        }
+
 
         // --- Local State and Persistence ---
         const LOCAL_STORAGE_KEY = "localDispatchIncidents_v2"; 
@@ -361,65 +638,119 @@
         const sectionPolygons = new Map(); // Map to store Leaflet Polygon layers
         
         let selectedIncidentId = null; 
+        let editingIncidentId = null; // NEW: For edit modal
         let statusHistory = []; 
         let isCompletedSectionOpen = false;
+        let isActiveSectionOpen = true; // NEW: State for active list
         
         // --- Drawing State ---
         let drawingSectionId = null;
         let currentDrawPoints = []; // Array of [lat, lon]
         const currentDrawLayer = new L.LayerGroup();
         const drawingIcon = L.divIcon({ className: 'leaflet-drawing-icon' });
+        // NEW: Advanced drawing state
+        let currentVertexMarkers = [];
+        let currentPolyline = null;
+        const SNAP_DISTANCE_PX = 20; // 20 pixels tolerance for snapping
 
-        // --- Incident Add Mode State ---
+        // --- Incident Mode State ---
         let isIncidentAddMode = false;
+        let isIncidentEditMode = false; // NEW
         
         // --- UI Elements ---
+        
+        // --- Incident Creation Modal ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
         const keywordInput = document.getElementById('keyword'); 
         const keywordSuggestionsContainer = document.getElementById('keyword-suggestions'); 
         const finalSectionAssignmentInput = document.getElementById('final-section-assignment'); 
         const autoSectionDisplay = document.getElementById('auto-section-display');
-        const incidentList = document.getElementById('incident-list');
-        const completedIncidentList = document.getElementById('completed-incident-list');
-        const completedToggleBtn = document.getElementById('completed-toggle-btn');
-        const statusIndicator = document.getElementById('status-indicator');
         const submitBtn = document.getElementById('submit-btn');
-        const formMessage = document.getElementById('form-message');
         const latInput = document.getElementById('lat-input');
         const lonInput = document.getElementById('lon-input');
-        const sidebarContainer = document.getElementById('sidebar-container');
-        const undoBtn = document.getElementById('undo-btn'); 
         const suggestionsContainer = document.getElementById('address-suggestions'); 
-        
-        // EA Management UI
-        const sectionHeader = document.getElementById('section-header');
-        const toggleEAMenuBtn = document.getElementById('toggle-ea-menu');
-        const toggleIcon = document.getElementById('toggle-icon');
-        const eaContentWrapper = document.getElementById('ea-content-wrapper');
-        let isEAMenuOpen = true; 
-        
-        const sectionForm = document.getElementById('section-form');
-        const sectionNameInput = document.getElementById('section-name');
-        const sectionResponsibleInput = document.getElementById('section-responsible');
-        const sectionListContainer = document.getElementById('section-list');
-        const sectionMessage = document.getElementById('section-message');
-        const sectionDrawPanel = document.getElementById('section-draw-panel');
-        const finishDrawBtn = document.getElementById('finish-draw-btn');
-        const cancelDrawBtn = document.getElementById('cancel-draw-btn');
-
-        // Incident Add Mode UI
+        // Incident Add Mode UI (Global Panel)
         const addIncidentMapBtn = document.getElementById('add-incident-map-btn');
         const incidentAddPanel = document.getElementById('incident-add-panel');
         const cancelAddIncidentBtn = document.getElementById('cancel-add-incident-btn');
+
+
+        // Sidebar UI
+        const sidebarContainer = document.getElementById('sidebar-container');
+        const incidentList = document.getElementById('incident-list');
+        const completedIncidentList = document.getElementById('completed-incident-list');
+        const completedToggleBtn = document.getElementById('completed-toggle-btn');
+        const activeToggleBtn = document.getElementById('active-toggle-btn'); // NEW
+        const statusIndicator = document.getElementById('status-indicator');
+        const undoBtn = document.getElementById('undo-btn'); 
+        
+        // --- NEW: Incident Creation Modal UI ---
+        const openCreateIncidentModalBtn = document.getElementById('open-create-incident-modal-btn');
+        const incidentCreationModal = document.getElementById('incident-creation-modal');
+        const closeIncidentModalBtn = document.getElementById('close-incident-modal-btn');
+        
+        // --- NEW: Incident Edit Modal UI ---
+        const incidentEditModal = document.getElementById('incident-edit-modal');
+        const incidentEditForm = document.getElementById('incident-edit-form');
+        const closeIncidentEditModalBtn = document.getElementById('close-incident-edit-modal-btn');
+        const editIncidentMapBtn = document.getElementById('edit-incident-map-btn');
+        const editAddressInput = document.getElementById('edit-address');
+        const editLatInput = document.getElementById('edit-lat-input');
+        const editLonInput = document.getElementById('edit-lon-input');
+        const editAddressSuggestions = document.getElementById('edit-address-suggestions');
+        const editKeywordInput = document.getElementById('edit-keyword');
+        const editKeywordSuggestions = document.getElementById('edit-keyword-suggestions');
+        // const editStatusSelect = document.getElementById('edit-status'); // DELETED
+        const editAutoSectionDisplay = document.getElementById('edit-auto-section-display');
+        const deleteIncidentBtn = document.getElementById('delete-incident-btn');
+        const saveIncidentBtn = document.getElementById('save-incident-btn');
+        // Incident Edit Mode UI (Global Panel)
+        const incidentEditPanel = document.getElementById('incident-edit-panel');
+        const cancelEditIncidentBtn = document.getElementById('cancel-edit-incident-btn');
+        // --- END NEW ---
+
+        // --- NEW: EA Modal UI ---
+        const manageEABtn = document.getElementById('manage-ea-btn');
+        const eaManagementModal = document.getElementById('ea-management-modal');
+        const closeEAModalBtn = document.getElementById('close-ea-modal-btn');
+        
+        // EA Management UI (now inside modal)
+        const sectionForm = document.getElementById('section-form');
+        const sectionNameInput = document.getElementById('section-name');
+        const sectionResponsibleInput = document.getElementById('section-responsible');
+        const sectionColorInput = document.getElementById('section-color'); // New
+        let sectionListContainer = document.getElementById('section-list'); // Changed to let for re-assignment
+        // const sectionMessage = document.getElementById('section-message'); // DELETED
+
+        // NEW: Toast Container
+        const toastContainer = document.getElementById('toast-container');
+        
+        // MOVED: EA Draw Panel (now global)
+        const sectionDrawPanel = document.getElementById('section-draw-panel');
+        const finishDrawBtn = document.getElementById('finish-draw-btn');
+        const cancelDrawBtn = document.getElementById('cancel-draw-btn');
         
         // Offline Overlay & Data Containers (Updated)
         const offlineOverlay = document.getElementById('offline-overlay');
         const offlineEaList = document.getElementById('offline-ea-list');
-        // UPDATED: Variable name changed
         const offlineIncidentReport = document.getElementById('offline-incident-report');
 
+        // --- NEW: End Shift Modal UI ---
+        const endShiftBtn = document.getElementById('end-shift-btn');
+        const endShiftModal = document.getElementById('end-shift-modal');
+        const cancelReportBtn = document.getElementById('cancel-report-btn');
+        const createReportBtn = document.getElementById('create-report-btn');
+        const lagezeichnerInput = document.getElementById('lagezeichner-input');
+        // const modalErrorMessage = document.getElementById('modal-error-message'); // DELETED
+        // Report Stat Placeholders
+        const reportStatsIncidents = document.getElementById('report-stats-incidents');
+        const reportStatsEas = document.getElementById('report-stats-eas');
+        const reportStatsDate = document.getElementById('report-stats-date');
+        // --- END NEW ---
+
         let debounceTimer;
+        let editDebounceTimer; // NEW
         
         // --- Map Initialization (Leaflet.js) ---
         const map = L.map('map').setView([49.0069, 8.4037], 13); // Centered on Karlsruhe
@@ -440,13 +771,18 @@
             if (isIncidentAddMode) {
                 // Handle adding an incident via map click
                 handleMapAddIncidentClick(e);
+            } else if (isIncidentEditMode) { // NEW
+                // Handle editing an incident via map click
+                handleMapEditIncidentClick(e);
             } else if (drawingSectionId) {
                 // Handle drawing a section boundary
                 handleMapDrawClick(e);
             } else {
                 // Handle default deselection logic
-                selectedIncidentId = null;
-                renderAllIncidents();
+                if (selectedIncidentId) { // Only re-render if something was selected
+                    selectedIncidentId = null;
+                    renderAllIncidents(); // Only re-render incidents
+                }
             }
         }
         
@@ -455,29 +791,73 @@
         
         // --- Utility Functions ---
 
-        function showMessage(element, message, isError = true) {
+        /**
+         * NEW: Creates a global toast notification.
+         * @param {string} message - The text to display.
+         * @param {boolean} isError - True for red (error), false for green (success).
+         * @param {number} duration - How long to show the toast in ms. 0 for permanent.
+         */
+        function showMessage(message, isError = true, duration = 7000) {
             // Don't show messages if offline
             if (!offlineOverlay.classList.contains('hidden')) return;
 
-            element.textContent = message;
-            element.classList.remove('hidden');
-            if (isError) {
-                 element.className = 'p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium';
-            } else {
-                 element.className = 'p-2 mb-3 text-sm rounded bg-green-100 text-green-700 font-medium';
-            }
-            // Clear message after 7 seconds
-            setTimeout(() => {
-                element.classList.add('hidden');
-            }, 7000);
-        }
+            const toast = document.createElement('div');
+            const iconSVG = isError ? 
+                `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-3 flex-shrink-0"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.28-4.47a.75.75 0 0 0-1.06-1.06L10 10.94l-1.72-1.72a.75.75 0 0 0-1.06 1.06L8.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 12l1.72-1.72Z" clip-rule="evenodd" /></svg>` :
+                `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-3 flex-shrink-0"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" /></svg>`;
+            
+            // NEW: Close button
+            // FIX: Replaced 'X' icon path with a more standard one.
+            const closeBtnHTML = `
+                <button class="toast-close-btn ml-3 -mr-1 p-1 rounded-full hover:bg-black hover:bg-opacity-10 transition-colors flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
+                        <path d="M4.75 4.75a.75.75 0 0 0 0 1.06L8.94 10l-4.19 4.19a.75.75 0 0 0 1.06 1.06L10 11.06l4.19 4.19a.75.75 0 0 0 1.06-1.06L11.06 10l4.19-4.19a.75.75 0 0 0-1.06-1.06L10 8.94 5.81 4.75a.75.75 0 0 0-1.06 0Z" />
+                    </svg>
+                </button>`;
 
-        function showFormMessage(message, isError = true) {
-            showMessage(formMessage, message, isError);
+            const baseClasses = 'p-4 rounded-lg shadow-lg flex items-start text-sm font-medium w-full toast-notification';
+            const colorClasses = isError ? 
+                'bg-red-100 text-red-700' : 
+                'bg-green-100 text-green-700';
+
+            toast.className = `${baseClasses} ${colorClasses}`;
+            // UPDATED: Inner HTML with close button
+            toast.innerHTML = `${iconSVG} <span class="flex-grow">${message}</span> ${closeBtnHTML}`;
+            
+            // Append to the *top* of the container
+            toastContainer.prepend(toast);
+
+            // Trigger enter animation
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            let autoDismissTimer;
+
+            const removeToast = () => {
+                clearTimeout(autoDismissTimer); // Clear auto-dismiss if manually closed
+                toast.classList.remove('show');
+                toast.classList.add('fade-out');
+                // Remove element after fade-out animation completes
+                toast.addEventListener('transitionend', () => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, { once: true }); // Ensure listener fires only once
+            };
+
+            // Add listener to the close button
+            toast.querySelector('.toast-close-btn').addEventListener('click', removeToast);
+            
+            if(duration > 0) {
+                // Set timeout to fade out and remove
+                autoDismissTimer = setTimeout(removeToast, duration);
+            }
         }
-        function showSectionMessage(message, isError = true) {
-            showMessage(sectionMessage, message, isError);
-        }
+        
+        // --- DEPRECATED: showSectionMessage, showFormMessage, showModalErrorMessage ---
+        // All now use showMessage()
+
 
         function formatGermanAddress(address) {
             const parts = [];
@@ -524,7 +904,7 @@
         // --- NEW: Reverse Geocoding Function ---
         async function reverseGeocode(lat, lon) {
             if (!navigator.onLine) {
-                showFormMessage("Offline: Reverse-Geocoding nicht möglich.", true);
+                showMessage("Offline: Reverse-Geocoding nicht möglich.", true);
                 return null;
             }
             try {
@@ -617,7 +997,7 @@
             let intersectionFound = false;
 
             sections.forEach(section => {
-                if (section.id === excludeSectionId || section.boundary.length < 3) {
+                if (section.id === excludeSectionId || !section.boundary || section.boundary.length < 3) {
                     return; 
                 }
                 
@@ -695,6 +1075,7 @@
                     sectionsArray.forEach(section => {
                         if (!section.id) section.id = generateUUID();
                         if (typeof section.boundary === 'undefined') section.boundary = []; 
+                        if (!section.color) section.color = '#4f46e5'; // Add default color
                         sections.set(section.id, section);
                     });
                     console.log(`Geladen: ${sections.size} Einsatzabschnitte.`);
@@ -758,16 +1139,21 @@
 
             if (incident) {
                 incident.status = lastAction.oldStatus;
-                incident.sectionId = findContainingSection(incident.lat, incident.lon); 
+                // Re-assign to EA if being un-completed
+                if (incident.status !== 'completed') {
+                    incident.sectionId = findContainingSection(incident.lat, incident.lon); 
+                } else {
+                    incident.sectionId = null;
+                }
                 incidents.set(incident.id, incident);
                 
                 selectedIncidentId = null; 
                 saveState();
-                renderAll();
+                renderAll(); 
                 
-                showFormMessage(`Aktion für Einsatz ${lastAction.id.substring(0, 4)}... erfolgreich rückgängig gemacht.`, false);
+                showMessage(`Aktion für Einsatz ${lastAction.id.substring(0, 4)}... erfolgreich rückgängig gemacht.`, false);
             } else {
-                showFormMessage("Fehler: Einsatz für Rückgängig-Aktion nicht gefunden. Verlauf wurde gelöscht.", true);
+                showMessage("Fehler: Einsatz für Rückgängig-Aktion nicht gefunden. Verlauf wurde gelöscht.", true);
                 statusHistory = []; 
             }
 
@@ -776,48 +1162,63 @@
 
         undoBtn.addEventListener('click', undoLastAction);
         
-        // --- EA Menu Toggle Logic ---
-        function toggleEAMenu() {
-            isEAMenuOpen = !isEAMenuOpen;
-            if (isEAMenuOpen) {
-                eaContentWrapper.classList.remove('hidden');
-                toggleIcon.style.transform = 'rotate(0deg)'; 
-            } else {
-                eaContentWrapper.classList.add('hidden');
-                toggleIcon.style.transform = 'rotate(-90deg)'; 
-            }
-        }
-        
-        sectionHeader.addEventListener('click', toggleEAMenu);
-        toggleEAMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            toggleEAMenu();
+        // --- NEW: EA Modal Logic ---
+        manageEABtn.addEventListener('click', () => {
+            selectedIncidentId = null; // NEW: Collapse incident
+            renderAllIncidents(); // NEW: Update UI
+            eaManagementModal.classList.remove('hidden');
+            renderSectionManager(); // Re-render list when opening
         });
 
+        closeEAModalBtn.addEventListener('click', () => {
+            if (drawingSectionId) {
+                setDrawMode(false); // Cancel drawing if modal is closed
+            }
+            eaManagementModal.classList.add('hidden');
+            renderAll(); // Re-render map polygons
+        });
 
-        // --- Incident Add Mode Logic ---
+        // FIX: Add click-off-to-close listener
+        eaManagementModal.addEventListener('click', (e) => {
+            if (e.target === eaManagementModal) {
+                if (drawingSectionId) {
+                    setDrawMode(false); 
+                }
+                eaManagementModal.classList.add('hidden');
+                renderAll(); 
+            }
+        });
+        
+        // --- REMOVED: Old listener for responsible person change ---
+        // This is now handled by the "Save" button in the edit panel
+
+
+        // --- Incident Add Mode Logic (UPDATED for Modal Flow) ---
         function setIncidentAddMode(isActive) {
             if (isActive) {
-                // Ensure draw mode is off
+                // NEW: Ensure other modes are off
                 setDrawMode(false);
+                setIncidentEditMode(false);
+                selectedIncidentId = null;
+                renderAllIncidents(); // Collapse any open incidents
             }
             
             isIncidentAddMode = isActive;
             const mapContainer = map.getContainer();
 
             if (isActive) {
-                mapContainer.classList.add('map-draw-mode'); // Use same crosshair
-                incidentAddPanel.classList.remove('hidden');
+                mapContainer.classList.add('map-pin-mode'); // Use crosshair
+                incidentAddPanel.classList.remove('hidden'); // Show global panel
                 addIncidentMapBtn.disabled = true;
-                submitBtn.disabled = true;
+                submitBtn.disabled = true; // Keep submit disabled
                 addIncidentMapBtn.textContent = 'Modus aktiv...';
-                incidentAddPanel.querySelector('p.text-sm').textContent = 'Klicken Sie auf die Karte, um die Adresse automatisch zu füllen.'; // Reset panel text
             } else {
-                mapContainer.classList.remove('map-draw-mode');
-                incidentAddPanel.classList.add('hidden');
+                mapContainer.classList.remove('map-pin-mode');
+                incidentAddPanel.classList.add('hidden'); // Hide global panel
                 addIncidentMapBtn.disabled = false;
-                submitBtn.disabled = false;
-                addIncidentMapBtn.textContent = 'Einsatz auf Karte hinzufügen';
+                // Re-validate form to see if submit should be enabled
+                validateIncidentForm(); 
+                addIncidentMapBtn.textContent = 'Einsatz auf Karte hinzufügen (Pin-Tool)';
             }
         }
 
@@ -827,8 +1228,8 @@
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;
 
-            // Show loading state
-            incidentAddPanel.querySelector('p.text-sm').textContent = 'Suche Adresse für Koordinaten...';
+            // Show loading state in panel
+            incidentAddPanel.querySelector('p.text-sm').textContent = 'Suche Adresse...';
             
             const result = await reverseGeocode(lat, lon);
             
@@ -837,23 +1238,190 @@
                 latInput.value = result.lat;
                 lonInput.value = result.lon;
                 
-                updateAutoAssignment(result.lat, result.lon);
+                updateAutoAssignment(result.lat, result.lon, 'auto-section-display');
                 
-                showFormMessage("Adresse von Karte übernommen. Bitte Stichwort eingeben.", false);
-                keywordInput.focus();
+                showMessage("Adresse von Karte übernommen. Bitte Stichwort eingeben.", false);
+                
                 setIncidentAddMode(false); // Turn off mode on success
+                incidentCreationModal.classList.remove('hidden'); // RE-OPEN MODAL
+                
+                keywordInput.focus();
+                validateIncidentForm(); // Check if form is now valid
             } else {
-                showFormMessage("Adresse für den geklickten Punkt konnte nicht gefunden werden.", true);
-                incidentAddPanel.querySelector('p.text-sm').textContent = 'Klicken Sie auf die Karte, um die Adresse automatisch zu füllen.'; // Reset panel text
+                showMessage("Adresse für den geklickten Punkt konnte nicht gefunden werden.", true);
+                setIncidentAddMode(false); // Turn off mode on fail
+                incidentCreationModal.classList.remove('hidden'); // RE-OPEN MODAL
+            }
+            // Reset panel text
+            incidentAddPanel.querySelector('p.text-sm').textContent = 'Klicken Sie auf die Karte, um die Adresse zu füllen.';
+        }
+        
+        // --- NEW: Incident Edit Mode Logic ---
+        function setIncidentEditMode(isActive) {
+            if (isActive) {
+                // Ensure other modes are off
+                setDrawMode(false);
+                setIncidentAddMode(false);
+                selectedIncidentId = null;
+                renderAllIncidents(); // Collapse any open incidents
+            }
+            
+            isIncidentEditMode = isActive;
+            const mapContainer = map.getContainer();
+
+            if (isActive) {
+                mapContainer.classList.add('map-pin-mode'); // Use crosshair
+                incidentEditPanel.classList.remove('hidden'); // Show global panel
+                editIncidentMapBtn.disabled = true;
+                editIncidentMapBtn.textContent = 'Modus aktiv...';
+            } else {
+                mapContainer.classList.remove('map-pin-mode');
+                incidentEditPanel.classList.add('hidden'); // Hide global panel
+                editIncidentMapBtn.disabled = false;
+                editIncidentMapBtn.textContent = 'Neue Adresse von Karte wählen (Pin-Tool)';
+            }
+        }
+        
+        async function handleMapEditIncidentClick(e) {
+            if (!isIncidentEditMode) return;
+
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+
+            // Show loading state in panel
+            incidentEditPanel.querySelector('p.text-sm').textContent = 'Suche Adresse...';
+            
+            const result = await reverseGeocode(lat, lon);
+            
+            if (result) {
+                // Update fields in the hidden edit modal
+                editAddressInput.value = result.formattedAddress;
+                editLatInput.value = result.lat;
+                editLonInput.value = result.lon;
+                
+                updateAutoAssignment(result.lat, result.lon, 'edit-auto-section-display');
+                
+                showMessage("Neue Adresse von Karte übernommen.", false);
+                
+                setIncidentEditMode(false); // Turn off mode on success
+                incidentEditModal.classList.remove('hidden'); // RE-OPEN MODAL
+                
+                editAddressInput.focus();
+            } else {
+                showMessage("Adresse für den geklickten Punkt konnte nicht gefunden werden.", true);
+                setIncidentEditMode(false); // Turn off mode on fail
+                incidentEditModal.classList.remove('hidden'); // RE-OPEN MODAL
+            }
+            // Reset panel text
+            incidentEditPanel.querySelector('p.text-sm').textContent = 'Klicken Sie auf die Karte, um die Adresse zu ändern.';
+        }
+
+
+        // --- EA Drawing Logic (REFACTORED) ---
+        
+        /**
+         * Finds the closest vertex (snap point) from other EAs within SNAP_DISTANCE_PX.
+         */
+        function findSnapPoint(clickedLatLng, excludeSectionId) {
+            const clickedPoint = map.latLngToContainerPoint(clickedLatLng);
+            let bestSnap = null;
+            let minDistance = SNAP_DISTANCE_PX;
+
+            sections.forEach((section, id) => {
+                if (id === excludeSectionId || !section.boundary || section.boundary.length === 0) return;
+
+                section.boundary.forEach(vertex => {
+                    const vertexLatLng = L.latLng(vertex[0], vertex[1]);
+                    const vertexPoint = map.latLngToContainerPoint(vertexLatLng);
+                    const distance = clickedPoint.distanceTo(vertexPoint);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        bestSnap = vertexLatLng;
+                    }
+                });
+            });
+            return bestSnap;
+        }
+
+        /**
+         * Updates the visual polyline based on the current state of currentDrawPoints.
+         */
+        function updateDrawPolyline() {
+            const latlngs = currentDrawPoints.map(p => L.latLng(p[0], p[1]));
+            if (currentPolyline) {
+                currentPolyline.setLatLngs(latlngs);
+            } else {
+                currentPolyline = L.polyline(latlngs, { 
+                    color: '#ef4444', 
+                    weight: 3, 
+                    opacity: 0.7 
+                }).addTo(currentDrawLayer);
             }
         }
 
-        // --- EA Drawing Logic (Modified) ---
-        
+        /**
+         * Creates a single draggable vertex marker.
+         */
+        function createVertexMarker(lat, lon, index) {
+            const marker = L.marker([lat, lon], { 
+                draggable: true, 
+                icon: drawingIcon,
+                autoPan: true
+            }).addTo(currentDrawLayer);
+            
+            marker._vertexIndex = index; // Store index
+
+            marker.on('drag', (e) => {
+                const draggedMarker = e.target;
+                const index = draggedMarker._vertexIndex;
+                const newLatLng = draggedMarker.getLatLng();
+                currentDrawPoints[index] = [newLatLng.lat, newLatLng.lng];
+                updateDrawPolyline();
+            });
+
+            marker.on('click', (e) => {
+                L.DomEvent.stopPropagation(e); // Stop click from propagating to map
+                const clickedMarker = e.target;
+                const indexToRemove = clickedMarker._vertexIndex;
+                currentDrawPoints.splice(indexToRemove, 1);
+                refreshDrawLayer(); // Rebuild all markers and polyline
+            });
+            
+            currentVertexMarkers.push(marker);
+            return marker;
+        }
+
+        /**
+         * Rebuilds all markers and the polyline from currentDrawPoints.
+         * Used after deleting a point to re-calculate indices.
+         */
+        function refreshDrawLayer() {
+            currentDrawLayer.clearLayers();
+            currentVertexMarkers = [];
+            currentPolyline = null;
+            
+            const pointsToDraw = [...currentDrawPoints]; // Copy
+            currentDrawPoints = []; // Reset
+
+            pointsToDraw.forEach((p, i) => {
+                createVertexMarker(p[0], p[1], i);
+                currentDrawPoints.push([p[0], p[1]]); // Re-add to array in correct order
+            });
+            
+            updateDrawPolyline();
+        }
+
         function setDrawMode(isActive, sectionId = null) {
             if (isActive) {
-                // Ensure incident add mode is off
+                // NEW: Turn off other modes
                 setIncidentAddMode(false);
+                setIncidentEditMode(false);
+                selectedIncidentId = null;
+                renderAllIncidents(); // Collapse any open incidents
+                
+                incidentCreationModal.classList.add('hidden'); // Close incident modal if open
+                incidentEditModal.classList.add('hidden'); // Close edit modal
             }
 
             drawingSectionId = isActive ? sectionId : null;
@@ -861,82 +1429,90 @@
             
             if (isActive) {
                 mapContainer.classList.add('map-draw-mode');
+                // Show the global draw panel
                 sectionDrawPanel.classList.remove('hidden');
-                sectionForm.querySelector('button[type="submit"]').disabled = true;
-                currentDrawPoints = sections.get(sectionId)?.boundary ? [...sections.get(sectionId).boundary] : []; 
-                currentDrawLayer.clearLayers();
-                
-                if (currentDrawPoints.length > 0) {
-                    currentDrawPoints.forEach(p => {
-                        L.marker(p, { icon: drawingIcon, clickable: false }).addTo(currentDrawLayer);
-                    });
-                    if (currentDrawPoints.length > 1) {
-                        L.polyline(currentDrawPoints, { color: '#ef4444', weight: 3, opacity: 0.7 }).addTo(currentDrawLayer);
-                    }
+                // Disable create button in modal (just in case)
+                if (sectionForm) {
+                    sectionForm.querySelector('button[type="submit"]').disabled = true;
                 }
-
+                
+                // Load existing points
+                currentDrawPoints = sections.get(sectionId)?.boundary ? [...sections.get(sectionId).boundary] : []; 
+                refreshDrawLayer(); // Initial draw
             } else {
                 mapContainer.classList.remove('map-draw-mode');
+                // Hide the global draw panel
                 sectionDrawPanel.classList.add('hidden');
-                sectionForm.querySelector('button[type="submit"]').disabled = false;
-                currentDrawPoints = [];
+                // Re-enable create button in modal
+                if (sectionForm) {
+                    sectionForm.querySelector('button[type="submit"]').disabled = false;
+                }
+                
+                // Clear all drawing layers
                 currentDrawLayer.clearLayers();
+                currentDrawPoints = [];
+                currentVertexMarkers = [];
+                currentPolyline = null;
             }
             
-            renderSectionManager(); 
+            // Re-render the modal list (to update button states)
+            renderSectionManager();
         }
 
         function handleMapDrawClick(e) {
             if (!drawingSectionId) return;
             
-            const lat = e.latlng.lat;
-            const lon = e.latlng.lng;
-            currentDrawPoints.push([lat, lon]);
+            // Find snap point
+            const snappedLatLng = findSnapPoint(e.latlng, drawingSectionId);
+            const newLat = snappedLatLng ? snappedLatLng.lat : e.latlng.lat;
+            const newLon = snappedLatLng ? snappedLatLng.lng : e.latlng.lng;
             
-            // Add point marker
-            L.marker([lat, lon], { icon: drawingIcon, clickable: false }).addTo(currentDrawLayer);
+            const newIndex = currentDrawPoints.length;
+            currentDrawPoints.push([newLat, newLon]);
+            createVertexMarker(newLat, newLon, newIndex);
+            updateDrawPolyline();
             
-            // Clear old line and draw new line/polygon outline
-            currentDrawLayer.eachLayer(layer => {
-                if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-                    currentDrawLayer.removeLayer(layer);
-                }
-            });
-            L.polyline(currentDrawPoints, { color: '#ef4444', weight: 3, opacity: 0.7 }).addTo(currentDrawLayer);
-            
+            // Show message as a TOAST
             const section = sections.get(drawingSectionId);
-            showSectionMessage(`Punkt hinzugefügt für EA "${section.name}". ${currentDrawPoints.length} Punkte.`, false);
+            showMessage(`Punkt ${newIndex + 1} hinzugefügt für EA "${section.name}". ${snappedLatLng ? '(An Punkt angedockt)' : ''}`, false, 3000);
         }
 
         finishDrawBtn.addEventListener('click', () => {
+            // Final points are already in currentDrawPoints, updated by drag events
             if (currentDrawPoints.length < 3) {
-                showSectionMessage("Ein Polygon benötigt mindestens 3 Punkte.", true);
+                // Show message as a TOAST
+                showMessage("Ein Polygon benötigt mindestens 3 Punkte.", true);
                 return;
             }
             
             if (checkExistingEAOverlaps(currentDrawPoints, drawingSectionId)) {
-                showSectionMessage("FEHLER: Die neue Grenze überschneidet oder überlappt einen bestehenden Einsatzabschnitt. Dies ist nicht erlaubt.", true);
+                // Show message as a TOAST
+                showMessage("FEHLER: Die neue Grenze überschneidet oder überlappt einen bestehenden Einsatzabschnitt. Dies ist nicht erlaubt.", true);
                 return;
             }
 
             const section = sections.get(drawingSectionId);
             if (section) {
-                section.boundary = currentDrawPoints;
+                section.boundary = [...currentDrawPoints]; // Save a copy
                 sections.set(drawingSectionId, section);
                 saveState();
                 
                 reEvaluateIncidents();
                 
-                showSectionMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert. ${sections.get(drawingSectionId).boundary.length} Punkte.`, false);
+                // Show message as a TOAST
+                showMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert. ${section.boundary.length} Punkte.`, false);
             }
             setDrawMode(false);
-            renderAll();
+            renderAll(); // Re-render map and sidebar
         });
 
         cancelDrawBtn.addEventListener('click', () => {
             const section = sections.get(drawingSectionId);
-            showSectionMessage(`Zeichnen für EA "${section.name}" abgebrochen. Die alte Grenze (falls vorhanden) bleibt erhalten.`, true);
+            // Show message as a TOAST
+            showMessage(`Zeichnen für EA "${section.name}" abgebrochen. Die alte Grenze (falls vorhanden) bleibt erhalten.`, true);
             setDrawMode(false);
+            renderSectionManager(); // Re-render EA list
+            renderAllIncidents(); // Re-render map polygons
         });
         
         // --- EA Management Logic ---
@@ -945,9 +1521,10 @@
             e.preventDefault();
             const name = sectionNameInput.value.trim();
             const responsible = sectionResponsibleInput.value.trim();
+            const color = sectionColorInput.value;
 
             if (!name || !responsible) {
-                showSectionMessage("Bitte füllen Sie beide Felder aus.", true);
+                showMessage("Bitte füllen Sie alle Felder aus.", true);
                 return;
             }
             
@@ -955,67 +1532,124 @@
                 id: generateUUID(),
                 name: name,
                 responsible: responsible,
-                boundary: [] 
+                boundary: [],
+                color: color
             };
 
             sections.set(newSection.id, newSection);
             saveState();
-            renderAll();
-            showSectionMessage(`EA "${name}" erfolgreich erstellt. Bitte definieren Sie nun die Grenze auf der Karte.`, false);
+            renderSectionManager(); // Only re-render the modal list
+            showMessage(`EA "${name}" erfolgreich erstellt. Bitte definieren Sie nun die Grenze auf der Karte.`, false);
             sectionForm.reset();
+            sectionColorInput.value = '#4f46e5'; // Reset color picker
         });
 
         function deleteSection(id) {
-            if (!confirm("Sind Sie sicher, dass Sie diesen Einsatzabschnitt löschen möchten? Alle zugeordneten Einsätze werden freigegeben.")) return;
-
-            if (drawingSectionId === id) setDrawMode(false);
-
-            sections.delete(id);
+            // Do not use confirm() as it's blocked
+            const section = sections.get(id);
+            if (!section) return;
             
-            incidents.forEach(incident => {
-                if (incident.sectionId === id) {
-                    incident.sectionId = null;
+            // This is tricky. The old logic added a button to a message div.
+            // The new logic uses toasts, which disappear.
+            // For this *one case*, I will create a special persistent error toast.
+            const toastMessage = `SIND SIE SICHER, dass Sie "${section.name}" löschen möchten? Alle Zuordnungen werden entfernt. 
+                <button id="confirm-delete-${id}" class="mt-2 bg-red-700 text-white px-3 py-1 rounded text-xs font-bold w-full hover:bg-red-800">JA, LÖSCHEN</button>`;
+            
+            showMessage(toastMessage, true, 0); // Duration 0 means it stays until clicked
+
+            // Need to add listener to the new button inside the toast
+            // Use a timeout to ensure the element exists in the DOM
+            setTimeout(() => {
+                const confirmBtn = document.getElementById(`confirm-delete-${id}`);
+                if (confirmBtn) {
+                    confirmBtn.onclick = (e) => {
+                        e.stopPropagation(); // Stop click from propagating
+                        
+                        if (drawingSectionId === id) setDrawMode(false);
+
+                        sections.delete(id);
+                        
+                        incidents.forEach(incident => {
+                            if (incident.sectionId === id) {
+                                incident.sectionId = null;
+                            }
+                        });
+
+                        reEvaluateIncidents(); 
+                        
+                        saveState();
+                        renderAll(); // Full re-render
+                        
+                        // Manually close the toast
+                        const parentToast = confirmBtn.closest('.toast-notification');
+                        if (parentToast) {
+                            parentToast.classList.remove('show');
+                            parentToast.classList.add('fade-out');
+                            parentToast.addEventListener('transitionend', () => {
+                                if (parentToast.parentNode) {
+                                    parentToast.parentNode.removeChild(parentToast);
+                                }
+                            }, { once: true });
+                        }
+                        
+                        showMessage("EA gelöscht.", false); // Show new confirmation toast
+                    };
                 }
-            });
-
-            reEvaluateIncidents(); 
-            
-            saveState();
-            renderAll();
-            showSectionMessage("EA gelöscht.", false);
+            }, 100); // 100ms delay
         }
         
         // --- UI Rendering ---
 
         function renderSectionManager() {
+            // Only render if modal is visible
+            if (eaManagementModal.classList.contains('hidden') && !drawingSectionId) {
+                return;
+            }
+
+            if (!sectionListContainer) return; // Guard if element not found
             sectionListContainer.innerHTML = '';
             
             if (sections.size === 0) {
                 sectionListContainer.innerHTML = '<p class="text-xs text-gray-500">Noch keine Einsatzabschnitte erstellt.</p>';
             }
             
+            // Re-draw polygons on the main map
             sectionPolygons.forEach(polygon => map.removeLayer(polygon));
             sectionPolygons.clear();
 
             sections.forEach(section => {
                 const count = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status !== 'completed').length;
                 const hasBoundary = section.boundary && section.boundary.length >= 3;
+                const sectionColor = section.color || '#4f46e5'; // Fallback
                 
                 if (hasBoundary) {
                     const isDrawing = drawingSectionId === section.id;
                     const polygon = L.polygon(section.boundary, {
-                        color: isDrawing ? '#ef4444' : '#4f46e5', 
-                        fillColor: isDrawing ? '#fef2f2' : '#c7d2fe', 
-                        fillOpacity: 0.3,
-                        weight: 2
+                        color: isDrawing ? '#ef4444' : sectionColor, 
+                        fillColor: isDrawing ? '#fef2f2' : sectionColor, 
+                        fillOpacity: 0.2,
+                        weight: 2,
+                        interactive: false // Makes polygon non-clickable
                     }).addTo(map);
                     
-                    polygon.bindPopup(`<b>EA: ${section.name}</b><br>Verantwortlich: ${section.responsible}<br>${count} aktive Einsätze`);
+                    // NEW: Add permanent label to polygon
+                    polygon.bindTooltip(
+                        `<span style="color: ${sectionColor}; font-weight: bold; font-size: 14px; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 4px #FFF;">${section.name}</span>`, {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'ea-label',
+                            interactive: false
+                        }
+                    );
+                    // END NEW
+
                     sectionPolygons.set(section.id, polygon);
                 }
 
+                // Render card in the modal list
                 const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'flex flex-col p-2 bg-white rounded border ' + (hasBoundary ? 'border-indigo-300' : 'border-red-300');
+                sectionDiv.className = 'flex flex-col p-3 bg-white rounded border-2';
+                sectionDiv.style.borderColor = hasBoundary ? sectionColor : '#ef4444'; // Use sectionColor or red
                 
                 const boundaryStatusText = hasBoundary ? 
                     `<span class="text-xs font-medium text-green-700">✓ Grenze definiert</span>` : 
@@ -1030,38 +1664,139 @@
                     </button>`;
 
 
+                // --- UPDATED: Section Card HTML with Edit Panel ---
+                // FIX: Updated trash icon SVG path
                 sectionDiv.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
+                    <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="font-semibold text-indigo-700">${section.name} <span class="text-xs bg-indigo-100 text-indigo-600 px-1 rounded ml-1">${count} Einsätze</span></p>
-                            <p class="text-xs text-gray-600">V: <span class="font-medium">${section.responsible}</span></p>
+                            <p class="font-semibold text-lg" style="color: ${sectionColor};">${section.name} <span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 font-medium">${count} Einsätze aktiv</span></p>
+                            
+                            <!-- Static Display -->
+                            <p id="static-resp-${section.id}" class="text-sm text-gray-700 mt-2">
+                                <strong>V:</strong> ${section.responsible}
+                            </p>
+
+                            <!-- EDIT PANEL (Hidden by default) -->
+                            <div id="edit-panel-${section.id}" class="hidden mt-3 p-3 bg-gray-50 rounded shadow-inner space-y-2">
+                                <h4 class="text-sm font-bold text-gray-800">EA Bearbeiten</h4>
+                                <div>
+                                    <label for="edit-resp-${section.id}" class="block text-xs text-gray-600 font-medium">Verantwortlicher:</label>
+                                    <input type="text" id="edit-resp-${section.id}" class="shadow-sm appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight text-xs" value="${section.responsible}">
+                                </div>
+                                <div>
+                                    <label for="edit-color-${section.id}" class="block text-xs text-gray-600 font-medium">Farbe:</label>
+                                    <input type="color" id="edit-color-${section.id}" class="shadow-sm appearance-none border rounded w-full h-8 p-0.5" value="${sectionColor}">
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button data-id="${section.id}" class="save-edit-btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-xs transition duration-150">
+                                        Speichern
+                                    </button>
+                                    <button data-id="${section.id}" class="cancel-edit-btn bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-1 px-2 rounded w-full text-xs transition duration-150">
+                                        Abbrechen
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- END EDIT PANEL -->
+
                         </div>
-                        <button data-id="${section.id}" class="delete-section-btn text-red-500 hover:text-red-700 p-1 rounded transition duration-150" title="Abschnitt löschen">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
-                                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.5H2.75a.75.75 0 0 0 0 1.5h14.5a.75.75 0 0 0 0-1.5H14V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 6a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-1.5 0v-8.5A.75.75 0 0 1 10 6ZM6.75 9.25a.75.75 0 0 0-1.5 0v5.5a.75.75 0 0 0 1.5 0v-5.5ZM13.25 9.25a.75.75 0 0 0-1.5 0v5.5a.75.75 0 0 0 1.5 0v-5.5Z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex-shrink-0 flex space-x-1 ml-2">
+                            <button data-id="${section.id}" class="edit-ea-btn text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition duration-150" title="Abschnitt bearbeiten">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 pointer-events-none">
+                                    <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                                    <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+                                </svg>
+                            </button>
+                            <button data-id="${section.id}" class="delete-section-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 transition duration-150" title="Abschnitt löschen">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 pointer-events-none">
+                                    <path fill-rule="evenodd" d="M10 2a.75.75 0 0 1 .75.75v.75h4.5a.75.75 0 0 1 0 1.5h-1.5v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9H4.5a.75.75 0 0 1 0-1.5h4.5V2.75A.75.75 0 0 1 10 2ZM8.5 7.5a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Zm3 0a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center space-x-2 mt-1 pt-1 border-t border-gray-100">
+                    <div class="flex justify-between items-center space-x-2 mt-2 pt-2 border-t border-gray-100">
                         ${boundaryStatusText}
                         ${drawButtonHTML}
                     </div>
                 `;
+                // --- END UPDATED HTML ---
                 sectionListContainer.appendChild(sectionDiv);
             });
             
-            sectionListContainer.querySelectorAll('.delete-section-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    deleteSection(e.target.dataset.id);
-                });
-            });
+            // --- NEW: Delegated Event Listener for Section List ---
+            // Clear old listeners by replacing the node
+            const newSectionListContainer = sectionListContainer.cloneNode(true);
+            sectionListContainer.parentNode.replaceChild(newSectionListContainer, sectionListContainer);
+            sectionListContainer = newSectionListContainer; // Re-assign variable
 
-            sectionListContainer.querySelectorAll('.draw-section-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    setDrawMode(true, e.target.dataset.id);
-                    map.flyTo(map.getCenter(), 13); 
-                });
+            sectionListContainer.addEventListener('click', (e) => {
+                // Find the *closest* button to the click target
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const id = target.dataset.id;
+                
+                // --- Delete Button ---
+                if (target.classList.contains('delete-section-btn')) {
+                    deleteSection(id);
+                }
+                
+                // --- Draw Button ---
+                else if (target.classList.contains('draw-section-btn')) {
+                    setDrawMode(true, id);
+                    eaManagementModal.classList.add('hidden'); // Close modal
+                    // FIX: Use current zoom level instead of fixed '13'
+                    map.flyTo(map.getCenter(), map.getZoom());
+                }
+                
+                // --- Edit Button (NEW) ---
+                else if (target.classList.contains('edit-ea-btn')) {
+                    document.getElementById(`edit-panel-${id}`).classList.toggle('hidden');
+                    document.getElementById(`static-resp-${id}`).classList.toggle('hidden');
+                }
+                
+                // --- Cancel Edit Button (NEW) ---
+                else if (target.classList.contains('cancel-edit-btn')) {
+                    document.getElementById(`edit-panel-${id}`).classList.add('hidden');
+                    document.getElementById(`static-resp-${id}`).classList.remove('hidden');
+                    // Reset fields to original values from section object
+                    const section = sections.get(id);
+                    if (section) {
+                        document.getElementById(`edit-resp-${id}`).value = section.responsible;
+                        document.getElementById(`edit-color-${id}`).value = section.color;
+                    }
+                }
+                
+                // --- Save Edit Button (NEW) ---
+                else if (target.classList.contains('save-edit-btn')) {
+                    const section = sections.get(id);
+                    if (!section) return;
+
+                    const newResp = document.getElementById(`edit-resp-${id}`).value.trim();
+                    const newColor = document.getElementById(`edit-color-${id}`).value;
+                    
+                    if (!newResp) {
+                        showMessage("Name des Verantwortlichen darf nicht leer sein.", true);
+                        return;
+                    }
+                    
+                    section.responsible = newResp;
+                    section.color = newColor;
+                    sections.set(id, section);
+                    
+                    saveState();
+                    renderAll(); // Full re-render to update map and list
+                    renderSectionManager(); // Re-render modal list
+                    
+                    showMessage(`EA "${section.name}" erfolgreich aktualisiert.`, false);
+                    
+                    // Manually hide panel after save (renderAll might be too slow)
+                    document.getElementById(`edit-panel-${id}`).classList.add('hidden');
+                    document.getElementById(`static-resp-${id}`).classList.remove('hidden');
+                }
             });
+            // --- END NEW Delegated Listener ---
         }
         
         function getStatusColor(status) {
@@ -1076,10 +1811,15 @@
                 'red': '#ef4444', 
                 'blue': '#3b82f6', 
                 'amber': '#f59e0b',
-                'grey': '#6b7280'
+                'grey': '#6b7280',
+                'magenta': '#E600E6' // For selected incident
             }[color];
+            
+            // FIX: Removed glow effect by setting selectedEffect to an empty string
+            const selectedEffect = ''; // OLD: color === 'magenta' ? 'drop-shadow(0 0 5px #E600E6)' : '';
+            
             const svgIcon = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${hexColor}" width="36px" height="36px">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${hexColor}" width="36px" height="36px" style="filter: ${selectedEffect};">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                 </svg>`;
             return L.divIcon({
@@ -1124,8 +1864,10 @@
             let sectionInfoHTML = '';
 
             if (currentSection) {
-                sectionInfoHTML = `<div class="mt-1 text-xs text-indigo-700 font-medium bg-indigo-100 p-1 rounded flex justify-between items-center">
-                    <span>EA: ${currentSection.name} (V: ${currentSection.responsible})</span>
+                const sectionColor = currentSection.color || '#4f46e5';
+                sectionInfoHTML = `
+                <div class="mt-2 text-xs font-medium p-1.5 rounded flex justify-between items-center" style="background-color: ${hexToRgba(sectionColor, 0.1)};">
+                    <span style="color: ${sectionColor};"><strong>EA: ${currentSection.name}</strong> (V: ${currentSection.responsible})</span>
                     <button data-id="${incident.id}" class="unassign-section-btn text-red-500 hover:text-red-700 p-0.5 rounded transition duration-150" title="EA-Zuordnung manuell aufheben">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
                             <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
@@ -1133,39 +1875,50 @@
                     </button>
                 </div>`;
             } else if (!isCompleted) {
-                 sectionInfoHTML = `<div class="mt-1 text-xs text-gray-600 font-medium bg-gray-200 p-1 rounded">
+                 sectionInfoHTML = `<div class="mt-2 text-xs text-gray-600 font-medium bg-gray-200 p-1.5 rounded">
                     EA: Nicht zugeordnet (Keine Grenze gefunden)
                 </div>`;
             }
 
             if (incident.id === selectedIncidentId) {
                 selectionClass = 'incident-selected';
-                setTimeout(() => incidentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+                setTimeout(() => {
+                    const el = document.getElementById(incidentElement.id);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 50);
 
-                if (!isCompleted) { 
-                    notesSectionHTML = `
-                        <div class="mt-4 p-3 bg-white rounded-md border border-gray-300 shadow-inner">
-                            <label for="notes-${incident.id}" class="block text-gray-700 text-sm font-bold mb-1">Notizen/Details</label>
-                            <textarea id="notes-${incident.id}" class="notes-textarea shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="Geben Sie hier wichtige Informationen zum Einsatz ein...">${incident.notes || ''}</textarea>
-                            <button data-id="${incident.id}" class="save-notes-btn mt-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold py-1 px-3 rounded transition duration-150 w-full disabled:bg-indigo-300">
-                                Notizen speichern
-                            </button>
-                        </div>
-                    `;
-                } else if (incident.notes && incident.notes.trim() !== '') {
-                    notesSectionHTML = `
-                        <div class="mt-4 p-3 bg-gray-100 rounded-md border border-gray-300">
-                            <p class="text-xs font-bold text-gray-600 mb-1">Abgeschlossene Notizen:</p>
-                            <p class="text-sm text-gray-800 whitespace-pre-wrap">${incident.notes}</p>
-                        </div>
-                    `;
-                }
+                // Show notes section for *all* selected incidents, even completed
+                notesSectionHTML = `
+                    <div class="mt-4 p-3 bg-white rounded-md border border-gray-300 shadow-inner">
+                        <label for="notes-${incident.id}" class="block text-gray-700 text-sm font-bold mb-1">Notizen/Details</label>
+                        <textarea id="notes-${incident.id}" class="notes-textarea shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="Geben Sie hier wichtige Informationen zum Einsatz ein..." ${isCompleted ? 'disabled' : ''}>${incident.notes || ''}</textarea>
+                        ${!isCompleted ? `
+                        <button data-id="${incident.id}" class="save-notes-btn mt-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold py-1 px-3 rounded transition duration-150 w-full disabled:bg-indigo-300">
+                            Notizen speichern
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
             }
 
 
             incidentElement.innerHTML = `
-                <p class="font-semibold text-gray-800">${incident.keyword}</p>
-                <p class="text-sm text-gray-600">${incident.formattedAddress}</p>
+                <div class="flex justify-between items-start">
+                    <div class="flex-grow">
+                        <p class="font-semibold text-gray-800 pr-2">${incident.keyword}</p>
+                        <p class="text-sm text-gray-600">${incident.formattedAddress}</p>
+                    </div>
+                    <!-- NEW: Edit Button -->
+                    <button data-id="${incident.id}" class="edit-incident-btn flex-shrink-0 text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition duration-150" title="Einsatz bearbeiten">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 pointer-events-none">
+                           <path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                           <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+                        </svg>
+                    </button>
+                    <!-- END NEW: Edit Button -->
+                </div>
                 <div class="mt-2">
                     <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded ${statusColorClass.split(' ').filter(c => !c.startsWith('border-')).join(' ')}">${getGermanStatusText(incident.status)}</span>
                 </div>
@@ -1173,6 +1926,7 @@
                 ${notesSectionHTML} 
                 <div class="button-container mt-2 space-y-2">${buttonHTML}</div>
             `;
+            // UPDATED: Removed cursor-pointer from completed cards
             incidentElement.className = `p-3 bg-gray-50 border rounded-lg shadow-sm ${statusColorClass} ${selectionClass} ${isCompleted ? 'cursor-default' : 'cursor-pointer'}`;
             return incidentElement;
         }
@@ -1184,6 +1938,35 @@
             markers.forEach(marker => map.removeLayer(marker));
             markers.clear();
             
+            // Re-draw map polygons (necessary in case EA modal was closed)
+            sectionPolygons.forEach(polygon => map.removeLayer(polygon));
+            sectionPolygons.clear();
+            sections.forEach(section => {
+                if (section.boundary && section.boundary.length >= 3) {
+                    const sectionColor = section.color || '#4f46e5';
+                    const polygon = L.polygon(section.boundary, {
+                        color: sectionColor, 
+                        fillColor: sectionColor, 
+                        fillOpacity: 0.2,
+                        weight: 2,
+                        interactive: false
+                    }).addTo(map);
+
+                    // NEW: Add permanent label to polygon
+                    polygon.bindTooltip(
+                        `<span style="color: ${sectionColor}; font-weight: bold; font-size: 14px; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 4px #FFF;">${section.name}</span>`, {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'ea-label',
+                            interactive: false
+                        }
+                    );
+                    // END NEW
+                    
+                    sectionPolygons.set(section.id, polygon);
+                }
+            });
+
             const activeIncidents = [];
             const completedIncidents = [];
 
@@ -1195,12 +1978,14 @@
                 }
             });
 
+            // --- RENDER ACTIVE INCIDENTS ---
             activeIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 incidentList.appendChild(incidentElement);
 
                 incidentElement.addEventListener('click', (e) => {
-                    if (e.target.closest('.update-status-btn') || e.target.closest('.button-container') || e.target.closest('.notes-textarea') || e.target.closest('.save-notes-btn') || e.target.closest('.unassign-section-btn')) {
+                    // Stop propagation if clicking on an interactive element
+                    if (e.target.closest('button') || e.target.closest('textarea') || e.target.closest('.notes-textarea')) {
                         return;
                     }
 
@@ -1211,22 +1996,30 @@
                         map.flyTo([incident.lat, incident.lon], 15); 
                     }
                     
-                    renderAll(); 
+                    renderAllIncidents(); // Only re-render incidents
                 });
 
                 if (incident.lat && incident.lon) {
-                    const color = getStatusColor(incident.status);
+                    // NEW: Check if selected
+                    const isSelected = incident.id === selectedIncidentId;
+                    const color = isSelected ? 'magenta' : getStatusColor(incident.status);
+                    
                     const newIcon = createMarkerIcon(color);
                     const germanStatus = getGermanStatusText(incident.status);
-                    const sectionName = incident.sectionId ? sections.get(incident.sectionId).name : 'Kein EA';
+                    const sectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : 'Kein EA';
                     const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
                     
-                    const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
+                    const newMarker = L.marker([incident.lat, incident.lon], { 
+                        icon: newIcon,
+                        zIndexOffset: isSelected ? 1000 : 0 // Make selected marker on top
+                    }).addTo(map);
                     newMarker.bindPopup(popupContent);
                     
                     newMarker.on('click', function(e) {
-                        selectedIncidentId = incident.id;
-                        renderAll(); 
+                        if (selectedIncidentId !== incident.id) {
+                            selectedIncidentId = incident.id;
+                            renderAllIncidents(); // Re-render list and markers
+                        }
                         map.flyTo([incident.lat, incident.lon], map.getZoom()); 
                     });
 
@@ -1234,65 +2027,81 @@
                 }
             });
 
+            // --- RENDER COMPLETED INCIDENTS ---
             completedIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 completedIncidentList.appendChild(incidentElement);
                 
                  incidentElement.addEventListener('click', (e) => {
-                    if (e.target.closest('.update-status-btn') || e.target.closest('.button-container')) {
+                    // Stop propagation if clicking on an interactive element
+                    if (e.target.closest('button') || e.target.closest('textarea') || e.target.closest('.notes-textarea')) {
                         return;
                     }
-
+                    
                     if (selectedIncidentId === incident.id) {
                         selectedIncidentId = null;
                     } else {
                         selectedIncidentId = incident.id;
                         map.flyTo([incident.lat, incident.lon], 15); 
                     }
-                    renderAll(); 
+                    renderAllIncidents(); // Re-render list and markers
                 });
 
                 if (incident.lat && incident.lon) {
-                    const color = getStatusColor(incident.status);
+                    // NEW: Check if selected
+                    const isSelected = incident.id === selectedIncidentId;
+                    const color = isSelected ? 'magenta' : getStatusColor(incident.status);
+                    
                     const newIcon = createMarkerIcon(color);
                     const germanStatus = getGermanStatusText(incident.status);
-                    const sectionName = incident.sectionId ? sections.get(incident.sectionId).name : 'Kein EA';
+                    const sectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : 'Kein EA';
                     const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
                     
-                    const newMarker = L.marker([incident.lat, incident.lon], { icon: newIcon }).addTo(map);
+                    const newMarker = L.marker([incident.lat, incident.lon], { 
+                        icon: newIcon,
+                        zIndexOffset: isSelected ? 1000 : 0 // Make selected marker on top
+                    }).addTo(map);
                     newMarker.bindPopup(popupContent);
                     newMarker.on('click', function(e) {
-                        selectedIncidentId = incident.id;
-                        renderAll(); 
+                        if (selectedIncidentId !== incident.id) {
+                            selectedIncidentId = incident.id;
+                            renderAllIncidents(); // Re-render list and markers
+                        }
                         map.flyTo([incident.lat, incident.lon], map.getZoom()); 
                     });
 
                     markers.set(incident.id, newMarker);
                 }
             });
+            
+            // --- NEW: Update Active Toggle Button ---
+            const activeToggleIconText = isActiveSectionOpen ? '▲' : '▼';
+            activeToggleBtn.innerHTML = `Aktive Einsätze (${activeIncidents.length}) <span class="text-lg font-mono">${activeToggleIconText}</span>`;
+            // --- END NEW ---
 
-            const toggleIconText = isCompletedSectionOpen ? '▲' : '▼';
-            completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${toggleIconText}</span>`;
+            const completedToggleIconText = isCompletedSectionOpen ? '▲' : '▼';
+            completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${completedToggleIconText}</span>`;
             
             updateUndoButtonState();
         }
 
         function renderAll() {
-            if (drawingSectionId) {
-                renderSectionManager(); 
-            } else {
-                renderSectionManager();
-                renderAllIncidents();
-            }
+            // renderSectionManager is now only called when modal opens
+            // or when drawing finishes
+            renderAllIncidents();
         }
 
         // --- Notes Saving and EA Changing Logic ---
         sidebarContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('save-notes-btn')) {
-                const id = e.target.dataset.id;
-                const incident = incidents.get(id);
+            // Find the closest *button* to the click target
+            const target = e.target.closest('button');
+            if (!target) return;
+            
+            const id = target.dataset.id;
+            const incident = incidents.get(id);
+            
+            if (target.classList.contains('save-notes-btn')) {
                 const notesTextarea = document.getElementById(`notes-${id}`);
-
                 if (!incident || !notesTextarea) return;
 
                 incident.notes = notesTextarea.value.trim();
@@ -1300,79 +2109,95 @@
                 
                 saveState();
                 
-                const originalText = e.target.textContent;
-                e.target.textContent = 'Gespeichert!';
-                e.target.disabled = true;
+                const originalText = target.textContent;
+                target.textContent = 'Gespeichert!';
+                target.disabled = true;
 
                 setTimeout(() => {
-                    e.target.textContent = originalText;
-                    e.target.disabled = false;
+                    target.textContent = originalText;
+                    target.disabled = false;
                 }, 1500);
                 
                 selectedIncidentId = id; 
-                showFormMessage("Notizen erfolgreich gespeichert.", false);
-            } else if (e.target.classList.contains('unassign-section-btn')) {
-                const id = e.target.dataset.id;
-                const incident = incidents.get(id);
+                showMessage("Notizen erfolgreich gespeichert.", false);
+                
+            } else if (target.classList.contains('unassign-section-btn')) {
                 if (!incident) return;
                 
-                const oldSectionName = sections.get(incident.sectionId)?.name || 'Unbekannt';
+                const oldSectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : 'Unbekannt';
                 incident.sectionId = null; 
                 incidents.set(id, incident);
                 
                 saveState();
+                selectedIncidentId = null; // NEW: Collapse card
                 renderAll();
                 
-                showFormMessage(`EA-Zuordnung für Einsatz ${id.substring(0, 4)}... (vormals ${oldSectionName}) manuell aufgehoben.`, false);
+                showMessage(`EA-Zuordnung für Einsatz ${id.substring(0, 4)}... (vormals ${oldSectionName}) manuell aufgehoben.`, false);
+                
+            } else if (target.classList.contains('edit-incident-btn')) { // NEW: Open Edit Modal
+                if (!incident) return;
+                
+                editingIncidentId = id;
+                
+                // Populate modal
+                editKeywordInput.value = incident.keyword;
+                editAddressInput.value = incident.formattedAddress;
+                editLatInput.value = incident.lat;
+                editLonInput.value = incident.lon;
+                
+                // FIX: Use new button state function instead of select
+                setEditStatusButtonState(incident.status);
+                
+                // Set initial EA display
+                updateAutoAssignment(incident.lat, incident.lon, 'edit-auto-section-display');
+                
+                // Clear suggestions
+                editAddressSuggestions.classList.add('hidden');
+                editKeywordSuggestions.classList.add('hidden');
+                
+                incidentEditModal.classList.remove('hidden');
+                
+            } else if (target.classList.contains('update-status-btn')) { // Status Update
+                if (!incident) return;
+            
+                let oldStatus = incident.status;
+                let newStatus;
+                let message = '';
+
+                if (target.classList.contains('dispatch-btn')) {
+                    newStatus = 'dispatched';
+                    message = 'entsandt.';
+                } else if (target.classList.contains('complete-btn')) {
+                    newStatus = 'completed'; 
+                    message = 'als abgeschlossen markiert.';
+                } else {
+                    return; 
+                }
+
+                if (oldStatus !== newStatus) {
+                    statusHistory.push({
+                        id: id,
+                        oldStatus: oldStatus,
+                        newStatus: newStatus
+                    });
+                }
+                
+                incident.status = newStatus;
+                
+                if (newStatus === 'completed') {
+                    incident.sectionId = null; // Un-assign from EA on completion
+                }
+                
+                incidents.set(id, incident);
+                selectedIncidentId = null; // NEW: Collapse card
+                saveState();
+                renderAll(); 
+                showMessage(`Einsatz ${id.substring(0, 4)}... ${message}`, false);
             }
         });
 
-        // --- General Status Update Listener ---
-        sidebarContainer.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('update-status-btn')) return;
 
-            const id = e.target.dataset.id;
-            const incident = incidents.get(id);
-
-            if (!incident) return;
-            
-            let oldStatus = incident.status;
-            let newStatus;
-            let message = '';
-
-            if (e.target.classList.contains('dispatch-btn')) {
-                newStatus = 'dispatched';
-                message = 'entsandt.';
-            } else if (e.target.classList.contains('complete-btn')) {
-                newStatus = 'completed'; 
-                message = 'als abgeschlossen markiert.';
-            } else {
-                return; 
-            }
-
-            if (oldStatus !== newStatus) {
-                statusHistory.push({
-                    id: id,
-                    oldStatus: oldStatus,
-                    newStatus: newStatus
-                });
-            }
-            
-            incident.status = newStatus;
-            
-            if (newStatus === 'completed') {
-                incident.sectionId = null; 
-            }
-            
-            incidents.set(id, incident);
-            selectedIncidentId = null; 
-            saveState();
-            renderAll(); 
-            showFormMessage(`Einsatz ${id.substring(0, 4)}... ${message}`, false);
-        });
-
-
-        // --- NEW: Helper for Offline Report ---
+        // --- Helper for Offline Report ---
         /**
          * Builds an HTML block for a specific category of incidents for the offline report.
          * @param {string} title - The title of the category (e.g., "Offene Einsätze").
@@ -1450,12 +2275,15 @@
                 statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-bold transition duration-300 bg-red-700 text-white animate-pulse';
 
                 // Cancel any active modes BEFORE showing overlay
-                if (drawingSectionId) {
-                    setDrawMode(false);
-                }
-                if (isIncidentAddMode) {
-                    setIncidentAddMode(false);
-                }
+                if (drawingSectionId) setDrawMode(false);
+                if (isIncidentAddMode) setIncidentAddMode(false);
+                if (isIncidentEditMode) setIncidentEditMode(false); // NEW
+                
+                // Close modals
+                eaManagementModal.classList.add('hidden');
+                incidentCreationModal.classList.add('hidden');
+                incidentEditModal.classList.add('hidden'); // NEW
+                endShiftModal.classList.add('hidden');
                 
                 // Ensure no incident is selected (to close notes)
                 if (selectedIncidentId) {
@@ -1516,34 +2344,59 @@
         // setOnlineStatus(navigator.onLine); // Set in window.onload
 
 
-        function updateAutoAssignment(lat, lon) {
+        /**
+         * Updates the auto-assignment display text in a given modal.
+         * @param {number} lat - Latitude.
+         * @param {number} lon - Longitude.
+         * @param {string} displayElementId - The ID of the text element to update.
+         */
+        function updateAutoAssignment(lat, lon, displayElementId) {
+            const displayElement = document.getElementById(displayElementId);
+            if (!displayElement) return;
+
             const sectionId = findContainingSection(lat, lon);
             
             if (sectionId) {
                 const section = sections.get(sectionId);
-                autoSectionDisplay.textContent = `EA: ${section.name} (V: ${section.responsible})`;
-                autoSectionDisplay.classList.remove('text-red-700', 'text-gray-700');
-                autoSectionDisplay.classList.add('text-indigo-700');
-                finalSectionAssignmentInput.value = sectionId;
+                const sectionColor = section.color || '#4f46e5';
+                displayElement.textContent = `EA: ${section.name} (V: ${section.responsible})`;
+                displayElement.style.color = sectionColor;
+                displayElement.classList.remove('text-red-700', 'text-gray-700');
             } else {
-                autoSectionDisplay.textContent = 'Keinem EA zugeordnet';
-                autoSectionDisplay.classList.remove('text-indigo-700', 'text-gray-700');
-                autoSectionDisplay.classList.add('text-red-700');
-                finalSectionAssignmentInput.value = '';
+                displayElement.textContent = 'Keinem EA zugeordnet';
+                displayElement.style.color = ''; // Reset style
+                displayElement.classList.remove('text-indigo-700', 'text-gray-700');
+                displayElement.classList.add('text-red-700');
             }
         }
 
-
+        // --- NEW: Incident Form Validation ---
+        function validateIncidentForm() {
+            const address = addressInput.value.trim();
+            const keyword = keywordInput.value.trim();
+            
+            if (address !== '' && keyword !== '') {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // --- Address Autocomplete (Creation Modal) ---
         addressInput.addEventListener('input', () => {
+            validateIncidentForm(); // Validate on input
+            
             clearTimeout(debounceTimer);
             const query = addressInput.value;
             
             latInput.value = '';
             lonInput.value = '';
-            finalSectionAssignmentInput.value = '';
+            
+            updateAutoAssignment(0, 0, 'auto-section-display'); // Reset display
             autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
-            autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
             autoSectionDisplay.classList.add('text-gray-700');
+            autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+
 
             if (query.length < 3 || !navigator.onLine) {
                 suggestionsContainer.innerHTML = '';
@@ -1573,37 +2426,100 @@
                         
                         const lat = parseFloat(data.lat);
                         const lon = parseFloat(data.lon);
-                        updateAutoAssignment(lat, lon);
+                        updateAutoAssignment(lat, lon, 'auto-section-display');
+                        validateIncidentForm(); // Re-validate after selection
                     });
                     suggestionsContainer.appendChild(suggestionItem);
                 } else {
                     suggestionsContainer.innerHTML = '<div class="p-2 text-gray-500">Keine passende 76... Adresse gefunden.</div>';
-                    finalSectionAssignmentInput.value = '';
+                    updateAutoAssignment(0, 0, 'auto-section-display');
                     autoSectionDisplay.textContent = 'Keine Geo-Daten gefunden';
-                    autoSectionDisplay.classList.remove('text-indigo-700');
-                    autoSectionDisplay.classList.add('text-red-700');
                 }
             }, 300);
         });
         
-        document.addEventListener('click', (e) => {
-            if (!suggestionsContainer.contains(e.target) && e.target !== addressInput) {
-                suggestionsContainer.classList.add('hidden');
+        // --- NEW: Address Autocomplete (Edit Modal) ---
+        editAddressInput.addEventListener('input', () => {
+            clearTimeout(editDebounceTimer);
+            const query = editAddressInput.value;
+            
+            editLatInput.value = '';
+            editLonInput.value = '';
+
+            updateAutoAssignment(0, 0, 'edit-auto-section-display'); // Reset display
+            editAutoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
+            editAutoSectionDisplay.classList.add('text-gray-700');
+            editAutoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+            
+            if (query.length < 3 || !navigator.onLine) {
+                editAddressSuggestions.innerHTML = '';
+                editAddressSuggestions.classList.add('hidden');
+                return;
             }
             
-            if (!keywordSuggestionsContainer.contains(e.target) && e.target !== keywordInput) {
+            editDebounceTimer = setTimeout(async () => {
+                const data = await geocodeAddress(query);
+
+                editAddressSuggestions.innerHTML = '';
+                editAddressSuggestions.classList.remove('hidden');
+
+                if (data) {
+                    const formattedAddress = formatGermanAddress(data.address);
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.textContent = formattedAddress;
+                    suggestionItem.className = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
+                    
+                    suggestionItem.addEventListener('click', () => {
+                        editAddressInput.value = formattedAddress;
+                        editLatInput.value = data.lat; 
+                        editLonInput.value = data.lon;
+
+                        editAddressSuggestions.classList.add('hidden');
+                        editAddressSuggestions.innerHTML = '';
+                        
+                        const lat = parseFloat(data.lat);
+                        const lon = parseFloat(data.lon);
+                        updateAutoAssignment(lat, lon, 'edit-auto-section-display');
+                    });
+                    editAddressSuggestions.appendChild(suggestionItem);
+                } else {
+                    editAddressSuggestions.innerHTML = '<div class="p-2 text-gray-500">Keine passende 76... Adresse gefunden.</div>';
+                    updateAutoAssignment(0, 0, 'edit-auto-section-display');
+                    editAutoSectionDisplay.textContent = 'Keine Geo-Daten gefunden';
+                }
+            }, 300);
+        });
+        
+        // --- Global click listener to hide suggestion boxes ---
+        document.addEventListener('click', (e) => {
+            if (suggestionsContainer && !suggestionsContainer.contains(e.target) && e.target !== addressInput) {
+                suggestionsContainer.classList.add('hidden');
+            }
+            if (keywordSuggestionsContainer && !keywordSuggestionsContainer.contains(e.target) && e.target !== keywordInput) {
                 keywordSuggestionsContainer.classList.add('hidden');
+            }
+            
+            // NEW: For edit modal
+            if (editAddressSuggestions && !editAddressSuggestions.contains(e.target) && e.target !== editAddressInput) {
+                editAddressSuggestions.classList.add('hidden');
+            }
+            if (editKeywordSuggestions && !editKeywordSuggestions.contains(e.target) && e.target !== editKeywordInput) {
+                editKeywordSuggestions.classList.add('hidden');
             }
         });
 
 
-        // --- KEYWORD AUTOCOMPLETE LOGIC (UPDATED FOR CATEGORY SEARCH & COLORS) ---
-        keywordInput.addEventListener('input', () => {
-            const query = keywordInput.value.trim().toLowerCase();
-            keywordSuggestionsContainer.innerHTML = '';
-
+        /**
+         * NEW: Generic Keyword Autocomplete Renderer
+         * @param {string} query - The search term.
+         * @param {HTMLElement} container - The suggestions container element.
+         * @param {HTMLInputElement} inputElement - The input field to update on click.
+         * @param {function} [onClickCallback] - Optional callback after selection.
+         */
+        function renderKeywordAutocomplete(query, container, inputElement, onClickCallback) {
+            container.innerHTML = '';
             if (query.length < 2) {
-                keywordSuggestionsContainer.classList.add('hidden');
+                container.classList.add('hidden');
                 return;
             }
 
@@ -1627,26 +2543,23 @@
                 if (matchesInThisCategory.length > 0) {
                     hasMatches = true;
 
-                    // --- UPDATED: Get dynamic colors ---
                     const colors = getCategoryColors(category);
-
                     const categoryHeader = document.createElement('div');
                     categoryHeader.textContent = category;
-                    // --- UPDATED: Apply dynamic header classes ---
                     categoryHeader.className = `p-2 mt-1 font-bold text-xs uppercase border-t ${colors.header}`;
                     fragment.appendChild(categoryHeader);
 
                     matchesInThisCategory.forEach(keyword => {
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = keyword;
-                        // --- UPDATED: Apply dynamic hover class ---
                         suggestionItem.className = `p-2 cursor-pointer ${colors.hover} transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0 pl-4`;
                         
                         suggestionItem.addEventListener('click', () => {
-                            keywordInput.value = keyword;
-                            keywordSuggestionsContainer.classList.add('hidden');
-                            keywordSuggestionsContainer.innerHTML = '';
-                            keywordInput.focus(); 
+                            inputElement.value = keyword;
+                            container.classList.add('hidden');
+                            container.innerHTML = '';
+                            inputElement.focus(); 
+                            if (onClickCallback) onClickCallback();
                         });
                         fragment.appendChild(suggestionItem);
                     });
@@ -1654,24 +2567,274 @@
             }
 
             if (hasMatches) {
-                keywordSuggestionsContainer.appendChild(fragment);
-                keywordSuggestionsContainer.classList.remove('hidden');
+                container.appendChild(fragment);
+                container.classList.remove('hidden');
             } else {
-                keywordSuggestionsContainer.classList.add('hidden');
+                container.classList.add('hidden');
             }
+        }
+        
+        // --- Keyword Autocomplete (Creation Modal) ---
+        keywordInput.addEventListener('input', () => {
+            validateIncidentForm(); // Validate on input
+            const query = keywordInput.value.trim().toLowerCase();
+            renderKeywordAutocomplete(query, keywordSuggestionsContainer, keywordInput, validateIncidentForm);
+        });
+        
+        // --- NEW: Keyword Autocomplete (Edit Modal) ---
+        editKeywordInput.addEventListener('input', () => {
+            const query = editKeywordInput.value.trim().toLowerCase();
+            renderKeywordAutocomplete(query, editKeywordSuggestions, editKeywordInput);
         });
 
-        // --- NEW: Event Listeners for Incident Add Mode ---
+
+        // --- NEW: Event Listeners for Incident Add Mode (UPDATED for Modal) ---
         addIncidentMapBtn.addEventListener('click', () => {
             setIncidentAddMode(true);
+            incidentCreationModal.classList.add('hidden'); // CLOSE MODAL
         });
 
         cancelAddIncidentBtn.addEventListener('click', () => {
             setIncidentAddMode(false);
+            incidentCreationModal.classList.remove('hidden'); // RE-OPEN MODAL
+        });
+        
+        // --- NEW: Event Listeners for Incident Edit Mode ---
+        editIncidentMapBtn.addEventListener('click', () => {
+            setIncidentEditMode(true);
+            incidentEditModal.classList.add('hidden'); // CLOSE MODAL
+        });
+        
+        cancelEditIncidentBtn.addEventListener('click', () => {
+            setIncidentEditMode(false);
+            incidentEditModal.classList.remove('hidden'); // RE-OPEN MODAL
+        });
+        
+        // --- NEW: Listeners for Incident Creation Modal ---
+        openCreateIncidentModalBtn.addEventListener('click', () => {
+            selectedIncidentId = null; // NEW: Collapse incident
+            renderAllIncidents(); // NEW: Update UI
+            
+            // Reset form
+            dispatchForm.reset();
+            latInput.value = '';
+            lonInput.value = '';
+            suggestionsContainer.classList.add('hidden');
+            keywordSuggestionsContainer.classList.add('hidden');
+            updateAutoAssignment(0, 0, 'auto-section-display');
+            autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
+            autoSectionDisplay.classList.add('text-gray-700');
+            autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+            
+            // Show modal and set initial validation state
+            incidentCreationModal.classList.remove('hidden');
+            validateIncidentForm(); 
+        });
+        
+        closeIncidentModalBtn.addEventListener('click', () => {
+            if (isIncidentAddMode) {
+                setIncidentAddMode(false); // Cancel add mode if modal is closed
+            }
+            incidentCreationModal.classList.add('hidden');
+        });
+        
+        // FIX: Add click-off-to-close listener
+        incidentCreationModal.addEventListener('click', (e) => {
+            if (e.target === incidentCreationModal) {
+                if (isIncidentAddMode) {
+                    setIncidentAddMode(false); 
+                }
+                incidentCreationModal.classList.add('hidden');
+            }
+        });
+        
+        // --- NEW: Listeners for Incident Edit Modal ---
+        closeIncidentEditModalBtn.addEventListener('click', () => {
+            if (isIncidentEditMode) {
+                setIncidentEditMode(false); // Cancel edit mode if modal is closed
+            }
+            incidentEditModal.classList.add('hidden');
+            editingIncidentId = null;
+        });
+        
+        // FIX: Add click-off-to-close listener
+        incidentEditModal.addEventListener('click', (e) => {
+            if (e.target === incidentEditModal) {
+                if (isIncidentEditMode) {
+                    setIncidentEditMode(false); 
+                }
+                incidentEditModal.classList.add('hidden');
+                editingIncidentId = null;
+            }
+        });
+
+        // FIX: Helper function for edit modal status buttons
+        function setEditStatusButtonState(selectedStatus) {
+            const buttons = document.querySelectorAll('.edit-status-btn');
+            const hiddenInput = document.getElementById('edit-status-hidden');
+            if (hiddenInput) hiddenInput.value = selectedStatus;
+
+            buttons.forEach(btn => {
+                const status = btn.dataset.status;
+                btn.disabled = false;
+                // Reset styles
+                btn.classList.remove('bg-red-600', 'bg-blue-600', 'bg-amber-500', 'text-white', 'opacity-75', 'cursor-not-allowed');
+                btn.classList.add('bg-white', 'text-gray-700', 'hover:bg-gray-50');
+
+                if (status === selectedStatus) {
+                    btn.disabled = true;
+                    btn.classList.remove('bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                    btn.classList.add('text-white', 'opacity-75', 'cursor-not-allowed');
+                    // Apply specific color
+                    if (status === 'open') btn.classList.add('bg-red-600');
+                    else if (status === 'dispatched') btn.classList.add('bg-blue-600');
+                    else if (status === 'completed') btn.classList.add('bg-amber-500');
+                }
+            });
+        }
+
+        // FIX: Add click listener for the status button group
+        incidentEditForm.addEventListener('click', (e) => {
+            const target = e.target.closest('.edit-status-btn');
+            if (target) {
+                const status = target.dataset.status;
+                setEditStatusButtonState(status);
+            }
+        });
+        
+        // Save Changes
+        incidentEditForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!editingIncidentId) return;
+
+            const incident = incidents.get(editingIncidentId);
+            if (!incident) return;
+            
+            saveIncidentBtn.disabled = true;
+            saveIncidentBtn.textContent = 'Speichere...';
+
+            const newKeyword = editKeywordInput.value.trim();
+            const newAddress = editAddressInput.value.trim();
+            // FIX: Read from hidden input instead of select
+            const newStatus = document.getElementById('edit-status-hidden').value;
+            let newLat = parseFloat(editLatInput.value);
+            let newLon = parseFloat(editLonInput.value);
+            
+            if (!newKeyword || !newAddress) {
+                showMessage("Stichwort und Adresse dürfen nicht leer sein.", true);
+                saveIncidentBtn.disabled = false;
+                saveIncidentBtn.textContent = 'Änderungen speichern';
+                return;
+            }
+
+            // Check if address was changed but not geocoded
+            if (isNaN(newLat) || isNaN(newLon)) {
+                if (!navigator.onLine) {
+                    showMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
+                    saveIncidentBtn.disabled = false;
+                    saveIncidentBtn.textContent = 'Änderungen speichern';
+                    return;
+                }
+                
+                showMessage("Suche Koordinaten für neue Adresse...", false);
+                const fallbackLocation = await geocodeAddress(newAddress);
+                
+                if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
+                    showMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
+                    saveIncidentBtn.disabled = false;
+                    saveIncidentBtn.textContent = 'Änderungen speichern';
+                    return;
+                }
+                
+                newLat = parseFloat(fallbackLocation.lat);
+                newLon = parseFloat(fallbackLocation.lon);
+            }
+            
+            // Update incident
+            incident.keyword = newKeyword;
+            incident.formattedAddress = newAddress;
+            incident.lat = newLat;
+            incident.lon = newLon;
+            
+            // Handle status change
+            if (incident.status !== newStatus) {
+                // Do not add to undo history, as this is an explicit edit
+                incident.status = newStatus;
+            }
+
+            // Re-evaluate EA based on new location/status
+            if (incident.status === 'completed') {
+                incident.sectionId = null; // Completed incidents have no EA
+            } else {
+                incident.sectionId = findContainingSection(newLat, newLon);
+            }
+            
+            incidents.set(editingIncidentId, incident);
+            saveState();
+            
+            // Reset UI
+            saveIncidentBtn.disabled = false;
+            saveIncidentBtn.textContent = 'Änderungen speichern';
+            incidentEditModal.classList.add('hidden');
+            editingIncidentId = null;
+            selectedIncidentId = null; // Deselect
+            
+            renderAll();
+            showMessage("Einsatz erfolgreich aktualisiert.", false);
+        });
+        
+        // Delete Incident
+        deleteIncidentBtn.addEventListener('click', () => {
+            if (!editingIncidentId) return;
+            
+            const incident = incidents.get(editingIncidentId);
+            if (!incident) return;
+            
+            const toastMessage = `SIND SIE SICHER, dass Sie "${incident.keyword}" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                <button id="confirm-delete-incident-${incident.id}" class="mt-2 bg-red-700 text-white px-3 py-1 rounded text-xs font-bold w-full hover:bg-red-800">JA, DAUERHAFT LÖSCHEN</button>`;
+            
+            showMessage(toastMessage, true, 0); // Permanent toast
+
+            setTimeout(() => {
+                const confirmBtn = document.getElementById(`confirm-delete-incident-${incident.id}`);
+                if (confirmBtn) {
+                    confirmBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        
+                        incidents.delete(incident.id);
+                        
+                        // Clear from history as well
+                        statusHistory = statusHistory.filter(h => h.id !== incident.id);
+                        
+                        saveState();
+                        
+                        // Close modal and reset state
+                        incidentEditModal.classList.add('hidden');
+                        editingIncidentId = null;
+                        selectedIncidentId = null;
+                        
+                        renderAll();
+                        
+                        // Manually close the toast
+                        const parentToast = confirmBtn.closest('.toast-notification');
+                        if (parentToast) {
+                            parentToast.classList.remove('show');
+                            parentToast.classList.add('fade-out');
+                            parentToast.addEventListener('transitionend', () => {
+                                if (parentToast.parentNode) {
+                                    parentToast.parentNode.removeChild(parentToast);
+                                }
+                            }, { once: true });
+                        }
+                        
+                        showMessage("Einsatz gelöscht.", false);
+                    };
+                }
+            }, 100);
         });
 
 
-        // --- Final Submission Logic ---
+        // --- Final Submission Logic (UPDATED for Modal) ---
         dispatchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -1684,27 +2847,31 @@
             submitBtn.textContent = 'Verarbeite...';
             
             if (!keyword || !addressText) {
-                showFormMessage("Bitte geben Sie sowohl eine Adresse als auch ein Alarmstichwort ein.");
-                submitBtn.disabled = false;
+                // This check is redundant due to validateIncidentForm, but good for safety
+                showMessage("Bitte geben Sie sowohl eine Adresse als auch ein Alarmstichwort ein.", true);
+                submitBtn.disabled = false; // Re-enable
                 submitBtn.textContent = 'Einsatz erstellen';
+                validateIncidentForm(); // Re-run validation
                 return;
             }
             
             if (isNaN(incidentLat) || isNaN(incidentLon)) {
                 if (!navigator.onLine) {
-                    showFormMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
+                    showMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Einsatz erstellen';
+                    validateIncidentForm();
                     return;
                 }
                 
-                showFormMessage("Suche Koordinaten für Adresse...", false);
+                showMessage("Suche Koordinaten für Adresse...", false);
                 const fallbackLocation = await geocodeAddress(addressText);
                 
                 if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
-                    showFormMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
+                    showMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Einsatz erstellen';
+                    validateIncidentForm();
                     return;
                 }
                 
@@ -1733,23 +2900,35 @@
                 
                 incidents.set(newIncident.id, newIncident);
                 saveState();
+                
+                selectedIncidentId = null; // NEW: Collapse any open card
                 renderAll(); 
                 
+                // Reset form, disable button, and close modal
                 dispatchForm.reset();
                 latInput.value = '';
                 lonInput.value = '';
                 suggestionsContainer.classList.add('hidden');
+                keywordSuggestionsContainer.classList.add('hidden');
+                updateAutoAssignment(0, 0, 'auto-section-display');
                 autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
-                autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
                 autoSectionDisplay.classList.add('text-gray-700');
+                autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
                 
-                showFormMessage("Einsatz erfolgreich erstellt und automatisch zugeordnet.", false);
+                submitBtn.disabled = true; // Disable after successful submit
+                incidentCreationModal.classList.add('hidden'); // Close modal
+                
+                showMessage("Einsatz erfolgreich erstellt und automatisch zugeordnet.", false);
 
             } catch (error) {
                 console.error("KRITISCHER LAUFZEITFEHLER beim Erstellen des Einsatzes:", error);
-                showFormMessage(`Kritischer Fehler: Details in der Browser-Konsole prüfen: ${error.message}`, true);
+                showMessage(`Kritischer Fehler: Details in der Browser-Konsole prüfen: ${error.message}`, true);
             } finally {
-                submitBtn.disabled = false;
+                // Ensure button is re-enabled if error occurred, but stays disabled on success
+                if (!incidentCreationModal.classList.contains('hidden')) {
+                     submitBtn.disabled = false;
+                     validateIncidentForm(); // Re-validate
+                }
                 submitBtn.textContent = 'Einsatz erstellen';
             }
         });
@@ -1762,18 +2941,375 @@
             } else {
                 completedIncidentList.classList.add('hidden');
             }
-            renderAllIncidents(); 
+            // Update icon
+            const icon = completedToggleBtn.querySelector('.font-mono');
+            if (icon) icon.textContent = isCompletedSectionOpen ? '▲' : '▼';
         });
+        
+        // --- NEW: Active Section Toggle Logic ---
+        activeToggleBtn.addEventListener('click', () => {
+            isActiveSectionOpen = !isActiveSectionOpen;
+            if (isActiveSectionOpen) {
+                incidentList.classList.remove('hidden');
+            } else {
+                incidentList.classList.add('hidden');
+            }
+            // Update icon
+            const icon = activeToggleBtn.querySelector('.font-mono');
+            if (icon) icon.textContent = isActiveSectionOpen ? '▲' : '▼';
+        });
+
+
+        // --- NEW: End Shift Modal Logic ---
+
+        function showEndShiftModal() {
+            selectedIncidentId = null; // NEW: Collapse incident
+            renderAllIncidents(); // NEW: Update UI
+            
+            // Calculate stats
+            let openCount = 0;
+            let dispatchedCount = 0;
+            let completedCount = 0;
+            incidents.forEach(inc => {
+                if (inc.status === 'open') openCount++;
+                else if (inc.status === 'dispatched') dispatchedCount++;
+                else if (inc.status === 'completed') completedCount++;
+            });
+            const totalCount = incidents.size;
+            const eaCount = sections.size;
+            const date = new Date().toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'short' });
+
+            // Populate modal
+            reportStatsIncidents.textContent = `${totalCount} (Offen: ${openCount}, Entsandt: ${dispatchedCount}, Abgeschl.: ${completedCount})`;
+            reportStatsEas.textContent = `${eaCount}`;
+            reportStatsDate.textContent = date;
+            
+            lagezeichnerInput.value = '';
+            
+            // Show modal
+            endShiftModal.classList.remove('hidden');
+        }
+
+        function hideEndShiftModal() {
+            endShiftModal.classList.add('hidden');
+            lagezeichnerInput.value = '';
+        }
+
+        function generateReport(lagezeichner) {
+            const reportDate = new Date().toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'short' });
+            const allIncidentsArray = Array.from(incidents.values());
+            const allSectionsArray = Array.from(sections.values());
+            
+            let openCount = 0;
+            let dispatchedCount = 0;
+            let completedCount = 0;
+            
+            let incidentsHtml = '';
+            allIncidentsArray.forEach(incident => {
+                let statusColorClass = '';
+                if (incident.status === 'open') {
+                    openCount++;
+                    statusColorClass = 'bg-red-100 text-red-800 border-red-500';
+                } else if (incident.status === 'dispatched') {
+                    dispatchedCount++;
+                    statusColorClass = 'bg-blue-100 text-blue-800 border-blue-500';
+                } else if (incident.status === 'completed') {
+                    completedCount++;
+                    statusColorClass = 'bg-amber-100 text-amber-800 border-amber-500';
+                }
+                
+                const section = incident.sectionId ? allSectionsArray.find(s => s.id === incident.sectionId) : null;
+                const sectionName = section ? `${section.name} (V: ${section.responsible})` : 'Kein EA';
+                const sectionColor = section ? (section.color || '#4f46e5') : '#6b7280';
+                
+                incidentsHtml += `
+                    <div class="p-4 bg-white border border-gray-300 rounded-lg shadow-sm ${statusColorClass} border-l-4">
+                        <p class="font-bold text-lg text-gray-900">${incident.keyword}</p>
+                        <p class="text-sm font-medium text-gray-700">${incident.formattedAddress}</p>
+                        <p class="text-sm font-semibold mt-1">Status: ${getGermanStatusText(incident.status)}</p>
+                        <p class="text-sm font-semibold mt-1" style="color: ${sectionColor};">EA: ${sectionName}</p>
+                        ${incident.notes ? `
+                            <div class="mt-2 pt-2 border-t border-gray-200">
+                                <p class="text-xs font-bold text-gray-600 mb-1">Notizen:</p>
+                                <p class="text-sm text-gray-800 whitespace-pre-wrap">${incident.notes.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            let sectionsHtml = '';
+            if (allSectionsArray.length > 0) {
+                allSectionsArray.forEach(section => {
+                    const sectionColor = section.color || '#4f46e5';
+                    sectionsHtml += `
+                        <li class="p-2 rounded border-l-4" style="background-color: ${hexToRgba(sectionColor, 0.1)}; border-color: ${sectionColor};">
+                            <span class="font-semibold" style="color: ${sectionColor};">${section.name}</span>
+                            <span class="text-sm text-gray-700">(V: ${section.responsible})</span>
+                        </li>
+                    `;
+                });
+            } else {
+                sectionsHtml = '<li class="text-sm text-gray-500">Keine Einsatzabschnitte definiert.</li>';
+            }
+
+
+            // This is the self-contained HTML file content
+            // FIX: Reverted to dynamic template literal instead of static content
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einsatzprotokoll - ${reportDate}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script> 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none; }
+            #report-map { height: 70vh !important; }
+        }
+        /* Custom label for EA polygons */
+        .ea-label {
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        
+        <!-- Header -->
+        <div class="mb-6 pb-4 border-b border-gray-300">
+            <h1 class="text-4xl font-bold text-red-700">Einsatzprotokoll</h1>
+            <div class="mt-2 text-lg text-gray-700">
+                <p><strong>Lagezeichner:</strong> ${lagezeichner.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                <p><strong>Berichtsdatum:</strong> ${reportDate}</p>
+            </div>
+            <button onclick="window.print()" class="no-print mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                Bericht drucken
+            </button>
+        </div>
+
+        <!-- Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="p-4 bg-gray-50 rounded-lg border">
+                <h2 class="text-sm font-bold text-gray-600 uppercase">Einsätze Gesamt</h2>
+                <p class="text-3xl font-bold text-gray-900">${incidents.size}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg border">
+                <h2 class="text-sm font-bold text-gray-600 uppercase">Details</h2>
+                <p class="text-base font-medium text-red-600">Offen: ${openCount}</p>
+                <p class="text-base font-medium text-blue-600">Entsandt: ${dispatchedCount}</p>
+                <p class="text-base font-medium text-amber-600">Abgeschlossen: ${completedCount}</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg border">
+                <h2 class="text-sm font-bold text-gray-600 uppercase">Einsatzabschnitte</h2>
+                <p class="text-3xl font-bold text-indigo-700">${sections.size}</p>
+            </div>
+        </div>
+
+        <!-- Map & EA List -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2">
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">Lagekarte</h2>
+                <div id="report-map" class="w-full h-[500px] rounded-lg border border-gray-300"></div>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">Einsatzabschnitte</h2>
+                <ul class="space-y-2">
+                    ${sectionsHtml}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Incident List -->
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Einsatzliste</h2>
+            <div class="space-y-4">
+                ${incidentsHtml}
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Embedded Data ---
+        const allIncidents = ${JSON.stringify(allIncidentsArray)};
+        const allSections = ${JSON.stringify(allSectionsArray)};
+
+        // --- Helper Functions (Copied from main app) ---
+        function getStatusColor(status) {
+            if (status === 'open') return 'red';
+            if (status === 'dispatched') return 'blue';
+            if (status === 'completed') return 'amber'; 
+            return 'grey';
+        }
+
+        function createMarkerIcon(color) {
+            const hexColor = {
+                'red': '#ef4444', 
+                'blue': '#3b82f6', 
+                'amber': '#f59e0b',
+                'grey': '#6b7280'
+            };
+            // FIX: Escaped backticks inside this template literal
+            const svgIcon = \`
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="\${hexColor[color]}" width="36px" height="36px">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>\`;
+            return L.divIcon({
+                html: svgIcon,
+                className: '',
+                iconSize: [36, 36],
+                iconAnchor: [18, 36],
+                popupAnchor: [0, -36]
+            });
+        }
+        
+        function getGermanStatusText(status) {
+            if (status === 'open') return 'OFFEN';
+            if (status === 'dispatched') return 'ENTSANDT';
+            if (status === 'completed') return 'ABGESCHLOSSEN';
+            return 'UNBEKANNT';
+        }
+
+        // --- Map Initialization ---
+        window.onload = () => {
+            const map = L.map('report-map').setView([49.0069, 8.4037], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            const featureGroup = L.featureGroup().addTo(map);
+
+            // Add Section Polygons
+            allSections.forEach(section => {
+                if (section.boundary && section.boundary.length >= 3) {
+                    const sectionColor = section.color || '#4f46e5'; // Add fallback
+                    const polygon = L.polygon(section.boundary, {
+                        color: sectionColor, // Use section color
+                        fillColor: sectionColor, // Use section color
+                        fillOpacity: 0.2, // CHANGED for consistency
+                        weight: 2
+                    }).addTo(featureGroup);
+                     // FIX: Escaped backticks inside this template literal and variables
+                    polygon.bindPopup(\`<b>EA: \${section.name}</b><br>Verantwortlich: \${section.responsible}\`);
+                    
+                    // NEW: Add permanent label to polygon
+                    polygon.bindTooltip(
+                        \`<span style="color: \${sectionColor}; font-weight: bold; font-size: 14px; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 4px #FFF;">\${section.name}</span>\`, {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'ea-label',
+                            interactive: false
+                        }
+                    );
+                    // END NEW
+                }
+            });
+
+            // Add Incident Markers
+            allIncidents.forEach(incident => {
+                if (incident.lat && incident.lon) {
+                    const color = getStatusColor(incident.status);
+                    const icon = createMarkerIcon(color);
+                    const statusText = getGermanStatusText(incident.status);
+                     // FIX: Escaped backticks inside this template literal and variables
+                    const popupContent = \`<b>\${incident.keyword}</b><br>\${incident.formattedAddress}<br>Status: \${statusText}\`;
+                    
+                    const marker = L.marker([incident.lat, incident.lon], { icon: icon })
+                        .addTo(featureGroup)
+                        .bindPopup(popupContent);
+                }
+            });
+
+            // Fit map to show all items
+            if (featureGroup.getLayers().length > 0) {
+                map.fitBounds(featureGroup.getBounds().pad(0.1));
+            }
+            
+            // --- MAP FIX ---
+            // Force map to re-check its size after a brief delay.
+            // This is crucial because Tailwind CSS (loaded from CDN)
+            // might apply the height (h-[500px]) *after*
+            // Leaflet first initializes, causing tiles to not load.
+            // The setTimeout ensures this runs after the render tick.
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 100);
+            // --- END MAP FIX ---
+        };
+    <\/script> 
+</body>
+</html>
+            `;
+            
+            // --- Create and Trigger Download ---
+            try {
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                
+                const dateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                a.download = `Einsatzprotokoll_${dateString}.html`;
+                
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+                
+                hideEndShiftModal();
+
+            } catch (error) {
+                console.error("Fehler beim Erstellen des Berichts-Downloads:", error);
+                showMessage("Fehler beim Erstellen der Download-Datei.", true);
+            }
+        }
+
+        endShiftBtn.addEventListener('click', showEndShiftModal);
+        cancelReportBtn.addEventListener('click', hideEndShiftModal);
+        // FIX: Add click-off-to-close listener
+        endShiftModal.addEventListener('click', (e) => {
+            if (e.target === endShiftModal) {
+                hideEndShiftModal();
+            }
+        });
+        
+        createReportBtn.addEventListener('click', () => {
+            const lagezeichner = lagezeichnerInput.value.trim();
+            if (!lagezeichner) {
+                showMessage("Bitte geben Sie einen Namen für den Lagezeichner ein.", true);
+                return;
+            }
+            generateReport(lagezeichner);
+        });
+
+        // --- END NEW: End Shift Modal Logic ---
+
 
         // --- Initialize on Load ---
         window.onload = () => {
             loadState();
-            if (!isEAMenuOpen) {
-                eaContentWrapper.classList.add('hidden');
-                toggleIcon.style.transform = 'rotate(-90deg)';
+            
+            // Set initial toggle states
+            if (isActiveSectionOpen) {
+                incidentList.classList.remove('hidden');
             } else {
-                 toggleIcon.style.transform = 'rotate(0deg)';
+                incidentList.classList.add('hidden');
             }
+            
+            if (isCompletedSectionOpen) {
+                completedIncidentList.classList.remove('hidden');
+            } else {
+                completedIncidentList.classList.add('hidden');
+            }
+            
             // Check network status on load
             setOnlineStatus(navigator.onLine);
         };
