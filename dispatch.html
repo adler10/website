@@ -114,6 +114,26 @@
 
             <!-- Incident List (Active) -->
             <div>
+                <!-- NEW: Incident Sort Bar -->
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sortieren nach:</label>
+                    <div id="sort-bar" class="flex w-full rounded-md shadow-sm" role="group">
+                        <button type-button" data-sort="createdAt" class="sort-btn flex-1 py-1 px-2 text-xs font-medium rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-indigo-600 text-white">
+                            Zeit
+                        </button>
+                        <button type-button" data-sort="keyword" class="sort-btn flex-1 py-1 px-2 text-xs font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
+                            Stichwort
+                        </button>
+                        <button type-button" data-sort="status" class="sort-btn flex-1 py-1 px-2 text-xs font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
+                            Status
+                        </button>
+                        <button type-button" data-sort="ea" class="sort-btn flex-1 py-1 px-2 text-xs font-medium rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
+                            EA
+                        </button>
+                    </div>
+                </div>
+                <!-- END NEW: Incident Sort Bar -->
+
                 <!-- NEW: Active Incidents Toggle Button -->
                 <button id="active-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center mb-3">
                     Aktive Einsätze (0) ▼
@@ -136,7 +156,7 @@
             <!-- NEW: End Shift Button -->
             <hr class="my-4">
             <button id="end-shift-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded w-full transition duration-150">
-                Schicht beenden & Bericht erstellen
+                (Zwischen-) Bericht erstellen
             </button>
             <!-- END NEW: End Shift Button -->
 
@@ -217,16 +237,16 @@
 
                     <div class="mb-3 relative">
                         <label for="address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                        <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
+                        <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben (z.B. Am Wall 1)" autocomplete="off">
                         
                         <input type="hidden" id="lat-input" value="">
                         <input type="hidden" id="lon-input" value="">
 
-                        <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
+                        <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
                     </div>
                     <div class="mb-3 relative">
                         <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                        <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
+                        <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. TH - Ast / Baum droht zu fallen" required autocomplete="off">
                         
                         <!-- Autocomplete Suggestions Container -->
                         <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-80 overflow-y-auto"></div>
@@ -235,7 +255,7 @@
                     <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
                     <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
                         <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
-                        <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
+                        <p id="auto-section-display" class="text-sm font-semibold text-gray-700">Wird nach Adresse bestimmt...</p>
                         <input type="hidden" id="final-section-assignment" value="">
                     </div>
                     <!-- END AUTOMATIC ASSIGNMENT DISPLAY -->
@@ -278,12 +298,12 @@
 
                     <div class="relative">
                         <label for="edit-address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                        <input type="text" id="edit-address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
+                        <input type="text" id="edit-address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (z.B. 76351...)" autocomplete="off">
                         
                         <input type="hidden" id="edit-lat-input" value="">
                         <input type="hidden" id="edit-lon-input" value="">
 
-                        <div id="edit-address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden"></div>
+                        <div id="edit-address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
                     </div>
                     <div class="relative">
                         <label for="edit-keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
@@ -314,7 +334,7 @@
                     <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
                     <div class="p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
                         <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
-                        <p id="edit-auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
+                        <p id="edit-auto-section-display" class="text-sm font-semibold text-gray-700">Wird nach Adresse bestimmt...</p>
                     </div>
 
                     <hr class="my-2">
@@ -344,8 +364,8 @@
             
             <div class="space-y-4">
                 <div>
-                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner (Name/Namen)</label>
-                    <input type="text" id="lagezeichner-input" class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="z.B. OBM Meier, HBM Schmidt">
+                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner (Nachname, Name)</label>
+                    <input type="text" id="lagezeichner-input" class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="z.B. Mustermann, Max">
                 </div>
 
                 <!-- DELETED: Modal Error Message (now a toast) -->
@@ -395,11 +415,11 @@
                     <h3 class="text-lg font-bold text-gray-800">Neuen EA erstellen</h3>
                     <div>
                         <label for="section-name" class="block text-sm font-medium text-gray-700">Name des EA</label>
-                        <input type="text" id="section-name" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="z.B. Wasserversorgung" required>
+                        <input type="text" id="section-name" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="z.B. Hochstetten (Ost)" required>
                     </div>
                     <div>
                         <label for="section-responsible" class="block text-sm font-medium text-gray-700">Verantwortlicher</label>
-                        <input type="text" id="section-responsible" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="z.B. OBM Meier" required>
+                        <input type="text" id="section-responsible" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="EAL Nachname, Name" required>
                     </div>
                     <div>
                         <label for="section-color" class="block text-sm font-medium text-gray-700">Farbe</label>
@@ -510,7 +530,7 @@
 			"S - First Responder": ["S - First Responder"],
             "S - Sonstiges": ["S - Ausfall Notruf / Alarmierung", "S - Bedrohungslage", "S - Bereitstellungsraum besetzen", "S - Bombendrohung", "S - Drohendes Attentat", "S - Einsatzalarm überörtlich (ca. 12h)", "S - Einsatzalarm überregional (ca. 24h)", "S - Einsatzbereitschaft herstellen", "S - Führungshaus besetzen", "S - Große Polizeilage (Amok / Terror)", "S - Grundschutz sicherstellen", "S - Maßnahmenstufe 1", "S - Maßnahmenstufe 2", "S - Maßnahmenstufe 3", "S - Stabseinsatz", "S - Vorabinformation / Einsatzanfrage", "S - Voralarm überörtlich (ca. 12h)", "S - Voralarm überregional (ca. 24h)", "S - Wachbesetzung", "S - Überlandhilfe Feuerwehr (außerhalb SK & LK KA)"],
 			"TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
-			"TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall (RD - VU Stufe 1)", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
+			"TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
 			"TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
 			"TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
 			"TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
@@ -642,6 +662,7 @@
         let statusHistory = []; 
         let isCompletedSectionOpen = false;
         let isActiveSectionOpen = true; // NEW: State for active list
+        let currentSortCriteria = 'createdAt'; // NEW: Sorting state
         
         // --- Drawing State ---
         let drawingSectionId = null;
@@ -753,7 +774,8 @@
         let editDebounceTimer; // NEW
         
         // --- Map Initialization (Leaflet.js) ---
-        const map = L.map('map').setView([49.0069, 8.4037], 13); // Centered on Karlsruhe
+        // MODIFIED: Centered on Linkenheim-Hochstetten
+        const map = L.map('map').setView([49.123, 8.404], 14); // Centered on Linkenheim-Hochstetten
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
@@ -879,27 +901,53 @@
             return finalAddress;
         }
 
+        // --- START ADRESSSUCHE FIX & VERBESSERUNG ---
+        /**
+         * Fetches address suggestions from Nominatim, prioritizing Linkenheim-Hochstetten.
+         * Returns a sorted array of suggestion objects.
+         * @param {string} query - The address search query.
+         * @returns {Promise<Array>} A promise that resolves to an array of place objects.
+         */
         async function geocodeAddress(query) {
-            if (!query || !navigator.onLine) return null;
+            if (!query || !navigator.onLine) return []; // Return empty array
             
             try {
-                // Added viewbox for Karlsruhe area to prioritize local results
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=1&viewbox=8.3,48.9,8.5,49.1&bounded=1`);
-                const data = await await response.json();
-
-                // Simple check for Karlsruher postcode area (76)
-                const bestMatch = data.find(place => 
-                    place.address && 
-                    place.address.postcode && 
-                    place.address.postcode.startsWith('76')
-                );
+                // Get 10 suggestions, biased to Linkenheim-Hochstetten area, but not bounded
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=10&viewbox=8.3,49.0,8.5,49.25`);
                 
-                return bestMatch || data[0] || null; // Fallback to first result if no 76 match
+                const data = await response.json(); 
+
+                const validData = data.filter(place => place.address);
+                
+                // NEW: Prioritize based on user request (Li-Ho > 76xxx > Other)
+                validData.sort((a, b) => {
+                    const postA = a.address.postcode || '';
+                    const postB = b.address.postcode || '';
+
+                    const aIsLiHo = postA === '76351';
+                    const bIsLiHo = postB === '76351';
+
+                    // Prioritize Li-Ho (76351)
+                    if (aIsLiHo && !bIsLiHo) return -1;
+                    if (!aIsLiHo && bIsLiHo) return 1;
+
+                    // Second priority: Other 76... postcodes
+                    const aIs76 = postA.startsWith('76');
+                    const bIs76 = postB.startsWith('76');
+                    
+                    if (aIs76 && !bIs76) return -1;
+                    if (!aIs76 && bIs76) return 1;
+
+                    return 0; // Keep original Nominatim order otherwise
+                });
+
+                return validData; // Return the full, sorted array
             } catch (error) {
                 console.error("Geocoding API error (Nominatim):", error);
-                return null;
+                return []; // Return empty array on error
             }
         }
+        // --- END ADRESSSUCHE FIX & VERBESSERUNG ---
 
         // --- NEW: Reverse Geocoding Function ---
         async function reverseGeocode(lat, lon) {
@@ -1039,6 +1087,8 @@
         function reEvaluateIncidents() {
             let assignmentsChanged = 0;
             incidents.forEach(incident => {
+                // MODIFICATION: Do not re-evaluate completed incidents,
+                // but also don't remove their sectionId if they had one.
                 if (incident.status !== 'completed') {
                     const newSectionId = findContainingSection(incident.lat, incident.lon);
                     if (incident.sectionId !== newSectionId) {
@@ -1094,6 +1144,8 @@
                         if (!incident.id) incident.id = generateUUID(); 
                         if (typeof incident.notes === 'undefined') incident.notes = '';
                         if (typeof incident.sectionId === 'undefined') incident.sectionId = null; 
+                        // NEW: Ensure createdAt exists for sorting
+                        if (!incident.createdAt) incident.createdAt = new Date().toISOString(); 
                         incidents.set(incident.id, incident);
                     });
                     console.log(`Geladen: ${incidents.size} Einsätze aus dem lokalen Speicher.`);
@@ -1142,9 +1194,10 @@
                 // Re-assign to EA if being un-completed
                 if (incident.status !== 'completed') {
                     incident.sectionId = findContainingSection(incident.lat, incident.lon); 
-                } else {
-                    incident.sectionId = null;
                 }
+                // NOTE: We keep the sectionId if the oldStatus was 'completed'
+                // This relies on the logic change to preserve sectionId on completion.
+                
                 incidents.set(incident.id, incident);
                 
                 selectedIncidentId = null; 
@@ -1618,7 +1671,10 @@
             sectionPolygons.clear();
 
             sections.forEach(section => {
-                const count = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status !== 'completed').length;
+                // MODIFIED: Calculate both current and previous counts
+                const currentCount = Array.from(incidents.values()).filter(i => i.sectionId === section.id && (i.status === 'open' || i.status === 'dispatched')).length;
+                const previousCount = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status === 'completed').length;
+                
                 const hasBoundary = section.boundary && section.boundary.length >= 3;
                 const sectionColor = section.color || '#4f46e5'; // Fallback
                 
@@ -1663,13 +1719,22 @@
                         Grenze zeichnen
                     </button>`;
 
+                // NEW: Count badge HTML
+                const countBadgeHTML = `
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        <span class="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium">Aktiv: ${currentCount}</span>
+                        <span class="text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full font-medium">Abgeschl.: ${previousCount}</span>
+                    </div>
+                `;
 
-                // --- UPDATED: Section Card HTML with Edit Panel ---
+
+                // --- UPDATED: Section Card HTML with Edit Panel & New Counts ---
                 // FIX: Updated trash icon SVG path
                 sectionDiv.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="font-semibold text-lg" style="color: ${sectionColor};">${section.name} <span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 font-medium">${count} Einsätze aktiv</span></p>
+                            <p class="font-semibold text-lg" style="color: ${sectionColor};">${section.name}</p>
+                            ${countBadgeHTML} <!-- MODIFIED: Inserted new count badges -->
                             
                             <!-- Static Display -->
                             <p id="static-resp-${section.id}" class="text-sm text-gray-700 mt-2">
@@ -1863,22 +1928,28 @@
             let notesSectionHTML = '';
             let sectionInfoHTML = '';
 
+            // MODIFICATION: Show EA for completed incidents
             if (currentSection) {
                 const sectionColor = currentSection.color || '#4f46e5';
-                sectionInfoHTML = `
-                <div class="mt-2 text-xs font-medium p-1.5 rounded flex justify-between items-center" style="background-color: ${hexToRgba(sectionColor, 0.1)};">
-                    <span style="color: ${sectionColor};"><strong>EA: ${currentSection.name}</strong> (V: ${currentSection.responsible})</span>
+                const unassignButtonHTML = !isCompleted ? `
                     <button data-id="${incident.id}" class="unassign-section-btn text-red-500 hover:text-red-700 p-0.5 rounded transition duration-150" title="EA-Zuordnung manuell aufheben">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 pointer-events-none">
                             <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
                         </svg>
                     </button>
+                ` : '';
+
+                sectionInfoHTML = `
+                <div class="mt-2 text-xs font-medium p-1.5 rounded flex justify-between items-center" style="background-color: ${hexToRgba(sectionColor, 0.1)};">
+                    <span style="color: ${sectionColor};"><strong>EA: ${currentSection.name}</strong> (V: ${currentSection.responsible})</span>
+                    ${unassignButtonHTML}
                 </div>`;
             } else if (!isCompleted) {
                  sectionInfoHTML = `<div class="mt-2 text-xs text-gray-600 font-medium bg-gray-200 p-1.5 rounded">
                     EA: Nicht zugeordnet (Keine Grenze gefunden)
                 </div>`;
             }
+            // END MODIFICATION
 
             if (incident.id === selectedIncidentId) {
                 selectionClass = 'incident-selected';
@@ -1931,6 +2002,44 @@
             return incidentElement;
         }
 
+        // --- NEW: Sorting Function ---
+        /**
+         * Sorts an array of incidents in place based on the criteria.
+         * @param {Array} incidentArray - The array of incidents to sort.
+         * @param {string} criteria - 'createdAt', 'keyword', 'status', or 'ea'.
+         */
+        function sortIncidents(incidentArray, criteria) {
+            const eaNameCache = new Map();
+            const getEaName = (id) => {
+                if (!id) return 'ZZZ'; // No EA sorts to the bottom
+                if (eaNameCache.has(id)) return eaNameCache.get(id);
+                const section = sections.get(id);
+                const name = section ? section.name : 'ZZZ';
+                eaNameCache.set(id, name);
+                return name;
+            };
+
+            incidentArray.sort((a, b) => {
+                switch (criteria) {
+                    case 'keyword':
+                        return a.keyword.localeCompare(b.keyword);
+                    case 'status':
+                        // 'open' > 'dispatched' > 'completed'
+                        const statusOrder = { 'open': 1, 'dispatched': 2, 'completed': 3 };
+                        return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+                    case 'ea':
+                        const eaA = getEaName(a.sectionId);
+                        const eaB = getEaName(b.sectionId);
+                        return eaA.localeCompare(eaB);
+                    case 'createdAt':
+                    default:
+                        // Sort descending (newest first)
+                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                }
+            });
+        }
+        // --- END NEW ---
+
 
         function renderAllIncidents() {
             incidentList.innerHTML = '';
@@ -1977,6 +2086,11 @@
                     activeIncidents.push(incident);
                 }
             });
+
+            // --- NEW: Sort incident arrays ---
+            sortIncidents(activeIncidents, currentSortCriteria);
+            sortIncidents(completedIncidents, currentSortCriteria);
+            // --- END NEW ---
 
             // --- RENDER ACTIVE INCIDENTS ---
             activeIncidents.forEach(incident => {
@@ -2054,7 +2168,8 @@
                     
                     const newIcon = createMarkerIcon(color);
                     const germanStatus = getGermanStatusText(incident.status);
-                    const sectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : 'Kein EA';
+                    // MODIFICATION: Show EA for completed incidents in popup
+                    const sectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : (incident.status === 'completed' ? 'N/A (Abgeschl.)' : 'Kein EA');
                     const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
                     
                     const newMarker = L.marker([incident.lat, incident.lon], { 
@@ -2184,9 +2299,10 @@
                 
                 incident.status = newStatus;
                 
-                if (newStatus === 'completed') {
-                    incident.sectionId = null; // Un-assign from EA on completion
-                }
+                // MODIFICATION: Commented out to preserve EA on completion
+                // if (newStatus === 'completed') {
+                //     incident.sectionId = null; // Un-assign from EA on completion
+                // }
                 
                 incidents.set(id, incident);
                 selectedIncidentId = null; // NEW: Collapse card
@@ -2211,10 +2327,13 @@
             
             if (incidentArray.length > 0) {
                 html += '<div class="space-y-3">';
+                // MODIFICATION: Sort offline report by time as well
+                incidentArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
                 incidentArray.forEach(incident => {
                     const section = incident.sectionId ? sections.get(incident.sectionId) : null;
-                    // Handle display for completed incidents
-                    const sectionName = section ? `${section.name} (${section.responsible})` : (incident.status === 'completed' ? 'N/A (Abgeschlossen)' : 'Kein EA');
+                    // MODIFICATION: Handle display for completed incidents
+                    const sectionName = section ? `${section.name} (${section.responsible})` : (incident.status === 'completed' ? 'N/A (Zugehörigkeit beibehalten)' : 'Kein EA');
                     
                     let notesHTML = '';
                     if (incident.notes && incident.notes.trim() !== '') {
@@ -2300,11 +2419,23 @@
                 // 2. Populate EAs
                 if (sections.size > 0) {
                     sections.forEach(section => {
+                        // MODIFICATION: Add counts to offline report
+                        const currentCount = Array.from(incidents.values()).filter(i => i.sectionId === section.id && (i.status === 'open' || i.status === 'dispatched')).length;
+                        const previousCount = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status === 'completed').length;
+
                         const eaDiv = document.createElement('div');
                         eaDiv.className = 'p-2 bg-white border border-indigo-200 rounded';
                         eaDiv.innerHTML = `
-                            <p class="font-bold text-indigo-700">${section.name}</p>
-                            <p class="text-sm text-gray-600">Verantwortlich: ${section.responsible}</p>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-indigo-700">${section.name}</p>
+                                    <p class="text-sm text-gray-600">Verantwortlich: ${section.responsible}</p>
+                                </div>
+                                <div class="text-xs text-right flex-shrink-0 ml-2">
+                                    <span class="font-medium text-blue-600">Aktuell: ${currentCount}</span><br>
+                                    <span class="font-medium text-amber-600">Abgeschl.: ${previousCount}</span>
+                                </div>
+                            </div>
                         `;
                         offlineEaList.appendChild(eaDiv);
                     });
@@ -2383,6 +2514,7 @@
         }
         
         // --- Address Autocomplete (Creation Modal) ---
+        // --- START ADRESSSUCHE-LISTENER FIX ---
         addressInput.addEventListener('input', () => {
             validateIncidentForm(); // Validate on input
             
@@ -2395,7 +2527,8 @@
             updateAutoAssignment(0, 0, 'auto-section-display'); // Reset display
             autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
             autoSectionDisplay.classList.add('text-gray-700');
-            autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+            autoSectionDisplay.classList.remove('text-red-700');
+            if (autoSectionDisplay.style.color) autoSectionDisplay.style.color = '';
 
 
             if (query.length < 3 || !navigator.onLine) {
@@ -2405,35 +2538,52 @@
             }
             
             debounceTimer = setTimeout(async () => {
-                const data = await geocodeAddress(query);
+                const dataArray = await geocodeAddress(query); // This is now an array
 
                 suggestionsContainer.innerHTML = '';
                 suggestionsContainer.classList.remove('hidden');
 
-                if (data) {
-                    const formattedAddress = formatGermanAddress(data.address);
-                    const suggestionItem = document.createElement('div');
-                    suggestionItem.textContent = formattedAddress;
-                    suggestionItem.className = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
-                    
-                    suggestionItem.addEventListener('click', () => {
-                        addressInput.value = formattedAddress;
-                        latInput.value = data.lat; 
-                        lonInput.value = data.lon;
-
-                        suggestionsContainer.classList.add('hidden');
-                        suggestionsContainer.innerHTML = '';
+                if (dataArray && dataArray.length > 0) { // Check array length
+                    dataArray.forEach(data => { // Loop over the array
+                        if (!data.address) return; // Safety check
+                        const formattedAddress = formatGermanAddress(data.address);
                         
-                        const lat = parseFloat(data.lat);
-                        const lon = parseFloat(data.lon);
-                        updateAutoAssignment(lat, lon, 'auto-section-display');
-                        validateIncidentForm(); // Re-validate after selection
+                        // NEW: Highlight 76351 and 76... postcodes
+                        const post = data.address.postcode || '';
+                        const isLiHo = post === '76351';
+                        const is76 = post.startsWith('76');
+
+                        const suggestionItem = document.createElement('div');
+                        suggestionItem.textContent = formattedAddress;
+                        
+                        let classes = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
+                        if (isLiHo) {
+                            classes += ' font-bold text-indigo-700';
+                        } else if (is76) {
+                            classes += ' font-semibold text-indigo-600';
+                        }
+                        suggestionItem.className = classes;
+                        
+                        suggestionItem.addEventListener('click', () => {
+                            addressInput.value = formattedAddress;
+                            latInput.value = data.lat; 
+                            lonInput.value = data.lon;
+
+                            suggestionsContainer.classList.add('hidden');
+                            suggestionsContainer.innerHTML = '';
+                            
+                            const lat = parseFloat(data.lat);
+                            const lon = parseFloat(data.lon);
+                            updateAutoAssignment(lat, lon, 'auto-section-display');
+                            validateIncidentForm(); // Re-validate after selection
+                        });
+                        suggestionsContainer.appendChild(suggestionItem);
                     });
-                    suggestionsContainer.appendChild(suggestionItem);
                 } else {
-                    suggestionsContainer.innerHTML = '<div class="p-2 text-gray-500">Keine passende 76... Adresse gefunden.</div>';
+                    suggestionsContainer.innerHTML = '<div class="p-2 text-gray-500">Keine passende Adresse gefunden.</div>'; // Changed text
                     updateAutoAssignment(0, 0, 'auto-section-display');
                     autoSectionDisplay.textContent = 'Keine Geo-Daten gefunden';
+                    autoSectionDisplay.classList.add('text-red-700');
                 }
             }, 300);
         });
@@ -2449,7 +2599,9 @@
             updateAutoAssignment(0, 0, 'edit-auto-section-display'); // Reset display
             editAutoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
             editAutoSectionDisplay.classList.add('text-gray-700');
-            editAutoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+            editAutoSectionDisplay.classList.remove('text-red-700');
+            if (editAutoSectionDisplay.style.color) editAutoSectionDisplay.style.color = '';
+
             
             if (query.length < 3 || !navigator.onLine) {
                 editAddressSuggestions.innerHTML = '';
@@ -2458,37 +2610,55 @@
             }
             
             editDebounceTimer = setTimeout(async () => {
-                const data = await geocodeAddress(query);
+                const dataArray = await geocodeAddress(query); // This is now an array
 
                 editAddressSuggestions.innerHTML = '';
                 editAddressSuggestions.classList.remove('hidden');
 
-                if (data) {
-                    const formattedAddress = formatGermanAddress(data.address);
-                    const suggestionItem = document.createElement('div');
-                    suggestionItem.textContent = formattedAddress;
-                    suggestionItem.className = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
-                    
-                    suggestionItem.addEventListener('click', () => {
-                        editAddressInput.value = formattedAddress;
-                        editLatInput.value = data.lat; 
-                        editLonInput.value = data.lon;
-
-                        editAddressSuggestions.classList.add('hidden');
-                        editAddressSuggestions.innerHTML = '';
+                if (dataArray && dataArray.length > 0) { // Check array length
+                     dataArray.forEach(data => { // Loop over the array
+                        if (!data.address) return; // Safety check
+                        const formattedAddress = formatGermanAddress(data.address);
                         
-                        const lat = parseFloat(data.lat);
-                        const lon = parseFloat(data.lon);
-                        updateAutoAssignment(lat, lon, 'edit-auto-section-display');
+                        // NEW: Highlight 76351 and 76... postcodes
+                        const post = data.address.postcode || '';
+                        const isLiHo = post === '76351';
+                        const is76 = post.startsWith('76');
+                        
+                        const suggestionItem = document.createElement('div');
+                        suggestionItem.textContent = formattedAddress;
+                        
+                        let classes = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
+                        if (isLiHo) {
+                            classes += ' font-bold text-indigo-700';
+                        } else if (is76) {
+                            classes += ' font-semibold text-indigo-600';
+                        }
+                        suggestionItem.className = classes;
+                        
+                        suggestionItem.addEventListener('click', () => {
+                            editAddressInput.value = formattedAddress;
+                            editLatInput.value = data.lat; 
+                            editLonInput.value = data.lon;
+
+                            editAddressSuggestions.classList.add('hidden');
+                            editAddressSuggestions.innerHTML = '';
+                            
+                            const lat = parseFloat(data.lat);
+                            const lon = parseFloat(data.lon);
+                            updateAutoAssignment(lat, lon, 'edit-auto-section-display');
+                        });
+                        editAddressSuggestions.appendChild(suggestionItem);
                     });
-                    editAddressSuggestions.appendChild(suggestionItem);
                 } else {
-                    editAddressSuggestions.innerHTML = '<div class="p-2 text-gray-500">Keine passende 76... Adresse gefunden.</div>';
+                    editAddressSuggestions.innerHTML = '<div class="p-2 text-gray-500">Keine passende Adresse gefunden.</div>'; // Changed text
                     updateAutoAssignment(0, 0, 'edit-auto-section-display');
                     editAutoSectionDisplay.textContent = 'Keine Geo-Daten gefunden';
+                    editAutoSectionDisplay.classList.add('text-red-700');
                 }
             }, 300);
         });
+        // --- END ADRESSSUCHE-LISTENER FIX ---
         
         // --- Global click listener to hide suggestion boxes ---
         document.addEventListener('click', (e) => {
@@ -2624,7 +2794,8 @@
             updateAutoAssignment(0, 0, 'auto-section-display');
             autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
             autoSectionDisplay.classList.add('text-gray-700');
-            autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+            autoSectionDisplay.classList.remove('text-red-700');
+            if (autoSectionDisplay.style.color) autoSectionDisplay.style.color = '';
             
             // Show modal and set initial validation state
             incidentCreationModal.classList.remove('hidden');
@@ -2703,6 +2874,7 @@
         });
         
         // Save Changes
+        // --- START ADRESSSUCHE-FALLBACK-FIX ---
         incidentEditForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!editingIncidentId) return;
@@ -2737,7 +2909,10 @@
                 }
                 
                 showMessage("Suche Koordinaten für neue Adresse...", false);
-                const fallbackLocation = await geocodeAddress(newAddress);
+                const fallbackLocations = await geocodeAddress(newAddress); // Gets sorted array
+                
+                // NEW: Pick the first one
+                const fallbackLocation = (fallbackLocations && fallbackLocations.length > 0) ? fallbackLocations[0] : null; 
                 
                 if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
                     showMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
@@ -2764,7 +2939,14 @@
 
             // Re-evaluate EA based on new location/status
             if (incident.status === 'completed') {
-                incident.sectionId = null; // Completed incidents have no EA
+                // MODIFICATION: Commented out to preserve EA
+                // incident.sectionId = null; // Completed incidents have no EA
+                
+                // But we still need to check if the *location* changed
+                const newSectionId = findContainingSection(newLat, newLon);
+                if (incident.sectionId !== newSectionId) {
+                     incident.sectionId = newSectionId;
+                }
             } else {
                 incident.sectionId = findContainingSection(newLat, newLon);
             }
@@ -2782,6 +2964,7 @@
             renderAll();
             showMessage("Einsatz erfolgreich aktualisiert.", false);
         });
+        // --- END ADRESSSUCHE-FALLBACK-FIX ---
         
         // Delete Incident
         deleteIncidentBtn.addEventListener('click', () => {
@@ -2835,6 +3018,7 @@
 
 
         // --- Final Submission Logic (UPDATED for Modal) ---
+        // --- START ADRESSSUCHE-FALLBACK-FIX ---
         dispatchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -2865,7 +3049,10 @@
                 }
                 
                 showMessage("Suche Koordinaten für Adresse...", false);
-                const fallbackLocation = await geocodeAddress(addressText);
+                const fallbackLocations = await geocodeAddress(addressText); // Gets sorted array
+                
+                // NEW: Pick the first one
+                const fallbackLocation = (fallbackLocations && fallbackLocations.length > 0) ? fallbackLocations[0] : null;
                 
                 if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
                     showMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
@@ -2895,7 +3082,7 @@
                     status: 'open',
                     notes: '', 
                     sectionId: finalSectionId, 
-                    createdAt: new Date().toISOString() 
+                    createdAt: new Date().toISOString() // NEW: Add creation timestamp
                 };
                 
                 incidents.set(newIncident.id, newIncident);
@@ -2913,7 +3100,8 @@
                 updateAutoAssignment(0, 0, 'auto-section-display');
                 autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
                 autoSectionDisplay.classList.add('text-gray-700');
-                autoSectionDisplay.classList.remove('text-red-700', 'text-indigo-700');
+                autoSectionDisplay.classList.remove('text-red-700');
+                if (autoSectionDisplay.style.color) autoSectionDisplay.style.color = '';
                 
                 submitBtn.disabled = true; // Disable after successful submit
                 incidentCreationModal.classList.add('hidden'); // Close modal
@@ -2932,6 +3120,7 @@
                 submitBtn.textContent = 'Einsatz erstellen';
             }
         });
+        // --- END ADRESSSUCHE-FALLBACK-FIX ---
         
         // --- Completed Section Toggle Logic ---
         completedToggleBtn.addEventListener('click', () => {
@@ -2958,6 +3147,28 @@
             const icon = activeToggleBtn.querySelector('.font-mono');
             if (icon) icon.textContent = isActiveSectionOpen ? '▲' : '▼';
         });
+        
+        // --- NEW: Sort Bar Logic ---
+        const sortBar = document.getElementById('sort-bar');
+        if (sortBar) {
+            sortBar.addEventListener('click', (e) => {
+                const target = e.target.closest('.sort-btn');
+                if (!target) return;
+
+                currentSortCriteria = target.dataset.sort;
+                
+                // Update button styles
+                sortBar.querySelectorAll('.sort-btn').forEach(btn => {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('bg-white', 'text-gray-700');
+                });
+                target.classList.add('bg-indigo-600', 'text-white');
+                target.classList.remove('bg-white', 'text-gray-700');
+                
+                // Re-render
+                renderAllIncidents();
+            });
+        }
 
 
         // --- NEW: End Shift Modal Logic ---
@@ -3005,6 +3216,10 @@
             let completedCount = 0;
             
             let incidentsHtml = '';
+            
+            // MODIFICATION: Sort incidents in report by time
+            allIncidentsArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            
             allIncidentsArray.forEach(incident => {
                 let statusColorClass = '';
                 if (incident.status === 'open') {
@@ -3019,7 +3234,8 @@
                 }
                 
                 const section = incident.sectionId ? allSectionsArray.find(s => s.id === incident.sectionId) : null;
-                const sectionName = section ? `${section.name} (V: ${section.responsible})` : 'Kein EA';
+                // MODIFICATION: Handle completed EA display
+                const sectionName = section ? `${section.name} (V: ${section.responsible})` : (incident.status === 'completed' ? 'N/A (Zugehörigkeit beibehalten)' : 'Kein EA');
                 const sectionColor = section ? (section.color || '#4f46e5') : '#6b7280';
                 
                 incidentsHtml += `
@@ -3042,16 +3258,49 @@
             if (allSectionsArray.length > 0) {
                 allSectionsArray.forEach(section => {
                     const sectionColor = section.color || '#4f46e5';
+                    
+                    // NEW: Calculate counts for the report
+                    const currentCount = allIncidentsArray.filter(i => i.sectionId === section.id && (i.status === 'open' || i.status === 'dispatched')).length;
+                    const previousCount = allIncidentsArray.filter(i => i.sectionId === section.id && i.status === 'completed').length;
+
+                    // NEW: Updated HTML for section list
                     sectionsHtml += `
                         <li class="p-2 rounded border-l-4" style="background-color: ${hexToRgba(sectionColor, 0.1)}; border-color: ${sectionColor};">
-                            <span class="font-semibold" style="color: ${sectionColor};">${section.name}</span>
-                            <span class="text-sm text-gray-700">(V: ${section.responsible})</span>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-semibold" style="color: ${sectionColor};">${section.name}</span>
+                                    <span class="text-sm text-gray-700">(V: ${section.responsible})</span>
+                                </div>
+                                <div class="text-xs text-right flex-shrink-0 ml-2">
+                                    <span class="font-medium text-blue-600">Aktuell: ${currentCount}</span><br>
+                                    <span class="font-medium text-amber-600">Abgeschl.: ${previousCount}</span>
+                                </div>
+                            </div>
                         </li>
                     `;
                 });
             } else {
                 sectionsHtml = '<li class="text-sm text-gray-500">Keine Einsatzabschnitte definiert.</li>';
             }
+
+            // NEW: Generate Keyword Frequency List
+            const keywordCounts = new Map();
+            allIncidentsArray.forEach(incident => {
+                const keyword = incident.keyword || 'Unbekannt';
+                keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
+            });
+            
+            const sortedKeywords = Array.from(keywordCounts.entries()).sort((a, b) => b[1] - a[1]);
+            
+            let keywordHtml = '<ul class="space-y-1 text-sm">';
+            sortedKeywords.forEach(([keyword, count]) => {
+                keywordHtml += `<li class="flex justify-between items-center p-1 bg-gray-50 rounded">
+                                    <span class="text-gray-800">${keyword.replace(/</g, "&lt;")}</span>
+                                    <span class="font-bold text-gray-600 bg-gray-200 px-2 py-0.5 rounded-full">${count}x</span>
+                                </li>`;
+            });
+            keywordHtml += '</ul>';
+            // END NEW
 
 
             // This is the self-contained HTML file content
@@ -3124,12 +3373,19 @@
                 <ul class="space-y-2">
                     ${sectionsHtml}
                 </ul>
+
+                <!-- NEW: Keyword List -->
+                <h2 class="text-2xl font-bold text-gray-800 mb-3 mt-6">Stichwort-Häufigkeit</h2>
+                <div class="max-h-60 overflow-y-auto pr-2 border rounded p-2 bg-gray-50">
+                    ${keywordHtml}
+                </div>
+                <!-- END NEW: Keyword List -->
             </div>
         </div>
 
         <!-- Incident List -->
         <div>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Einsatzliste</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Einsatzliste (Neueste zuerst)</h2>
             <div class="space-y-4">
                 ${incidentsHtml}
             </div>
@@ -3180,7 +3436,8 @@
 
         // --- Map Initialization ---
         window.onload = () => {
-            const map = L.map('report-map').setView([49.0069, 8.4037], 13);
+            // MODIFIED: Center report map on Li-Ho
+            const map = L.map('report-map').setView([49.123, 8.404], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
@@ -3220,8 +3477,12 @@
                     const color = getStatusColor(incident.status);
                     const icon = createMarkerIcon(color);
                     const statusText = getGermanStatusText(incident.status);
+                    // MODIFICATION: Show EA for completed incidents
+                    const section = incident.sectionId ? allSections.find(s => s.id === incident.sectionId) : null;
+                    const sectionName = section ? section.name : (incident.status === 'completed' ? 'N/A (Abgeschl.)' : 'Kein EA');
+                     
                      // FIX: Escaped backticks inside this template literal and variables
-                    const popupContent = \`<b>\${incident.keyword}</b><br>\${incident.formattedAddress}<br>Status: \${statusText}\`;
+                    const popupContent = \`<b>\${incident.keyword}</b><br>\${incident.formattedAddress}<br>Status: \${statusText}<br>EA: \${sectionName}\`;
                     
                     const marker = L.marker([incident.lat, incident.lon], { icon: icon })
                         .addTo(featureGroup)
@@ -3232,6 +3493,9 @@
             // Fit map to show all items
             if (featureGroup.getLayers().length > 0) {
                 map.fitBounds(featureGroup.getBounds().pad(0.1));
+            } else {
+                // Fallback if no items, just center on Li-Ho
+                map.setView([49.123, 8.404], 13);
             }
             
             // --- MAP FIX ---
