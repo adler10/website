@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fahrzeug-Display</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        html, body {
+            height: 100vh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .detail-box {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .detail-box h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 0.75rem;
+        }
+
+        /* ===== GROSSE STATUS-BUTTONS ===== */
+        .status-btn {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            touch-action: manipulation;
+        }
+        .status-btn:active {
+            transform: scale(0.95);
+        }
+        .status-1 { background-color: #16a34a; } /* green-600 */
+        .status-1:hover { background-color: #22c55e; }
+        .status-2 { background-color: #15803d; } /* green-700 */
+        .status-2:hover { background-color: #16a34a; }
+        .status-3 { background-color: #f97316; } /* orange-500 */
+        .status-3:hover { background-color: #fb923c; }
+        .status-4 { background-color: #dc2626; } /* red-600 */
+        .status-4:hover { background-color: #ef4444; }
+        .status-5 { background-color: #2563eb; } /* blue-600 */
+        .status-5:hover { background-color: #3b82f6; }
+        .status-6 { background-color: #6b7280; } /* gray-500 */
+        .status-6:hover { background-color: #9ca3af; }
+    </style>
+</head>
+<body class="h-full text-gray-200 antialiased">
+
+    <!-- Status Klar (wird durch JS gesteuert) -->
+    <div id="status-klar" class="fixed inset-0 z-10 flex flex-col items-center justify-center bg-gray-900 transition-opacity duration-1000 p-4">
+        <div class="text-center">
+            <div id="status-klar-text" class="text-6xl font-black text-gray-500 select-none mb-4 break-words px-4">
+                Status wird geladen...
+            </div>
+            <div id="status-klar-fahrzeug" class="text-2xl font-semibold text-gray-400">
+                Status für: [Fahrzeug]
+            </div>
+        </div>
+    </div>
+
+    <!-- Alarm-Ansicht -->
+    <div id="alarm-view" class="fixed inset-0 z-20 transition-opacity duration-500 hidden" style="background: radial-gradient(circle, #2b0000 0%, #000000 100%);">
+        <div class="h-full overflow-y-auto p-4 md:p-6 space-y-4 pb-24">
+            <div class="detail-box text-center bg-red-800/50 border-red-700">
+                <h1 id="alarm-view-header" class="text-xl font-bold text-red-300">EINSATZ FÜR: [FAHRZEUG]</h1>
+            </div>
+            <div class="detail-box">
+                <div id="alarm-stichwort-schlagwort" class="text-3xl sm:text-4xl font-bold text-red-500 break-words">
+                    LADE EINSATZ...
+                </div>
+            </div>
+            <div class="detail-box">
+                <h2 class="text-red-400">Adresse</h2>
+                <div id="alarm-adresse" class="text-2xl sm:text-3xl font-medium text-white break-words">-</div>
+            </div>
+            <div class="detail-box">
+                <h2 class="text-red-400">Einsatzort</h2>
+                <iframe id="map-iframe" width="100%" height="250" style="border:0; border-radius:0.5rem;" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+                <button id="open-route-button" class="mt-4 w-full py-3 px-5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition duration-200 text-lg">Route in Maps öffnen</button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="detail-box">
+                    <h2 class="text-yellow-400">Alarmzeit</h2>
+                    <div id="alarm-timestamp" class="text-2xl font-bold text-white">-</div>
+                </div>
+                <div class="detail-box">
+                    <h2 class="text-yellow-400">Sonderechte</h2>
+                    <div id="alarm-sonderechte" class="text-2xl font-bold text-white">-</div>
+                </div>
+            </div>
+            <div class="detail-box">
+                <h2 class="text-blue-400">Alle alarmierten Fahrzeuge</h2>
+                <div id="alarm-fahrzeuge" class="flex flex-wrap gap-2"><span class="text-gray-400 italic">...</span></div>
+            </div>
+            <div id="freitext-box" class="detail-box mb-16">
+                <h2 class="text-gray-400">Zusatz-Infos</h2>
+                <div id="alarm-freitext" class="text-lg text-gray-200 italic break-words">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status-Knopf -->
+    <button id="status-fab" class="fixed bottom-4 right-4 z-30 w-16 h-16 bg-gray-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 transform hover:scale-110">
+        <span id="status-fab-text" class="font-bold text-3xl">?</span>
+    </button>
+
+    <!-- Status-Modal -->
+    <div id="status-modal" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="w-full max-w-lg bg-gray-800 rounded-2xl shadow-2xl p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-white">Status Senden</h2>
+                <button id="status-modal-close" class="text-gray-400 hover:text-white text-4xl font-bold">&times;</button>
+            </div>
+            <div id="status-buttons-container" class="grid grid-cols-2 gap-6 justify-items-center">
+                <button class="status-btn status-1" data-status="1">1</button>
+                <button class="status-btn status-2" data-status="2">2</button>
+                <button class="status-btn status-3" data-status="3">3</button>
+                <button class="status-btn status-4" data-status="4">4</button>
+                <button class="status-btn status-5" data-status="5">5</button>
+                <button class="status-btn status-6" data-status="6">6</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, onSnapshot, query, where, setDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ----- KONFIGURATION -----
+        const MEIN_FAHRZEUG = "LH 19-1";
+        const LOCATION_UPDATE_INTERVAL = 10000; // 10 Sekunden
+        // -------------------------
+
+        const statusMap = {
+            "0": "Status Unbekannt", "1": "Einsatzbereit über Funk", "2": "Einsatzbereit auf Wache",
+            "3": "Einsatzübernahme", "4": "Am Einsatzort eingetroffen", "5": "Sprechwunsch", "6": "Nicht Einsatzbereit",
+        };
+        const firebaseConfig = {
+          apiKey: "AIzaSyAUmkqte2nAP9XOPfKZvK54aYXIZXtwoQc",
+          authDomain: "alert-display.firebaseapp.com",
+          projectId: "alert-display",
+          storageBucket: "alert-display.firebasestorage.app",
+          messagingSenderId: "731953568741",
+          appId: "1:731953568741:web:49be862b329dd4f71bad0c",
+          measurementId: "G-3BX1HB9RXZ"
+        };
+        
+        let app, auth, db, userId;
+        let settingsDocRef, operationsCollectionRef, vehicleStatusRef;
+        let homeAddress = "Feuerwehrhaus", currentDestinationAddress = "";
+        let displayedAlarmIds = new Set();
+        let locationIntervalId = null; // NEU: ID für den Standort-Timer
+        
+        const statusKlar = document.getElementById('status-klar');
+        const statusKlarFahrzeug = document.getElementById('status-klar-fahrzeug');
+        const statusKlarText = document.getElementById('status-klar-text');
+        const alarmView = document.getElementById('alarm-view');
+        const alarmViewHeader = document.getElementById('alarm-view-header');
+        const statusFab = document.getElementById('status-fab');
+        const statusFabText = document.getElementById('status-fab-text');
+        const statusModal = document.getElementById('status-modal');
+        const statusModalClose = document.getElementById('status-modal-close');
+        const statusButtonsContainer = document.getElementById('status-buttons-container');
+        const alarmStichwortSchlagwort = document.getElementById('alarm-stichwort-schlagwort');
+        const alarmAdresse = document.getElementById('alarm-adresse');
+        const alarmTimestamp = document.getElementById('alarm-timestamp');
+        const alarmSonderechte = document.getElementById('alarm-sonderechte');
+        const alarmFahrzeuge = document.getElementById('alarm-fahrzeuge');
+        const freitextBox = document.getElementById('freitext-box');
+        const alarmFreitext = document.getElementById('alarm-freitext');
+        const mapIframe = document.getElementById('map-iframe');
+        const openRouteButton = document.getElementById('open-route-button');
+
+        // UI Initialisierung
+        statusKlarFahrzeug.textContent = `Status für: ${MEIN_FAHRZEUG}`;
+        alarmViewHeader.textContent = `EINSATZ FÜR: ${MEIN_FAHRZEUG}`;
+
+        // Event Listeners
+        openRouteButton.addEventListener('click', () => {
+            if (!homeAddress || !currentDestinationAddress) return;
+            const routeUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(homeAddress)}&daddr=${encodeURIComponent(currentDestinationAddress)}`;
+            window.open(routeUrl, '_blank');
+        });
+        statusFab.addEventListener('click', () => statusModal.classList.remove('opacity-0','pointer-events-none'));
+        statusModalClose.addEventListener('click', () => statusModal.classList.add('opacity-0','pointer-events-none'));
+        statusButtonsContainer.addEventListener('click', e => {
+            const button = e.target.closest('button');
+            if (!button || !button.dataset.status) return;
+            sendStatus(button.dataset.status); // Ruft die NEUE Status-Logik auf
+            statusModal.classList.add('opacity-0','pointer-events-none');
+        });
+
+        // ----- APP-INITIALISIERUNG & AUTH -----
+
+        async function authInit() {
+            onAuthStateChanged(auth, async user => {
+                if (user) {
+                    userId = user.uid;
+                    settingsDocRef = doc(db, "settings", "mainSettings");
+                    operationsCollectionRef = collection(db, "operations");
+                    vehicleStatusRef = doc(db, "vehicleStatus", MEIN_FAHRZEUG);
+                    
+                    await loadSettings(); 
+                    listenForMyAlarm();   
+                    listenToVehicleStatus();
+                    requestLocationPermission(); // NEU: Standort-Erlaubnis anfordern
+                } else await signInAnonymously(auth);
+            });
+        }
+        
+        // NEU: Bittet beim Start um Standort-Erlaubnis
+        function requestLocationPermission() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("Standort-Erlaubnis erteilt.", position.coords);
+                    }, 
+                    (error) => {
+                        console.warn("Standort-Erlaubnis verweigert oder nicht verfügbar:", error.message);
+                        // Hier könnte man dem Nutzer eine (nicht-blockierende) Warnung anzeigen
+                    },
+                    { enableHighAccuracy: true } // Fordert hohe Genauigkeit an
+                );
+            } else {
+                console.warn("Geolocation wird von diesem Browser nicht unterstützt.");
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const snap = await getDoc(settingsDocRef);
+                if (snap.exists()) homeAddress = snap.data().address || homeAddress;
+            } catch (error) {
+                 console.error("Fehler beim Laden der Einstellungen:", error);
+            }
+        }
+        
+        // ----- EINSATZ-LISTENER (Unverändert) -----
+        
+        function listenForMyAlarm() {
+            const q = query(operationsCollectionRef, where("isActive","==",true), where("fahrzeuge","array-contains",MEIN_FAHRZEUG));
+            onSnapshot(q, snap => {
+                const docs = snap.docs;
+                if (docs.length>0) {
+                    const data = docs[0].data();
+                    updateAlarmDisplay(data);
+                    statusKlar.classList.add('hidden');
+                    alarmView.classList.remove('hidden');
+                } else {
+                    statusKlar.classList.remove('hidden');
+                    alarmView.classList.add('hidden');
+                }
+            }, (error) => {
+                console.error("Fehler beim Abhören der Einsätze:", error);
+            });
+        }
+        
+        function updateAlarmDisplay(data) {
+            alarmStichwortSchlagwort.textContent = `${data.stichwort} - ${data.schlagwort}`;
+            alarmAdresse.textContent = data.adresse;
+            currentDestinationAddress = data.adresse;
+            alarmTimestamp.textContent = data.timestamp ? new Date(data.timestamp.seconds*1000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '-';
+            
+            alarmSonderechte.textContent = data.sonderechte ? "JA" : "NEIN";
+            alarmSonderechte.classList.toggle('text-yellow-400', data.sonderechte);
+            alarmSonderechte.classList.toggle('text-gray-500', !data.sonderechte);
+
+            alarmFahrzeuge.innerHTML = '';
+            if (data.fahrzeuge) data.fahrzeuge.forEach(v=>{
+                const el=document.createElement('div');
+                el.className='py-1 px-3 bg-gray-700 rounded-full text-white text-sm font-medium shadow';
+                if(v===MEIN_FAHRZEUG) el.classList.add('bg-blue-500','font-bold');
+                el.textContent=v;
+                alarmFahrzeuge.appendChild(el);
+            });
+            
+            if (data.freitext) {
+                alarmFreitext.textContent = `"${data.freitext}"`;
+                freitextBox.classList.remove('hidden');
+            } else freitextBox.classList.add('hidden');
+            
+            mapIframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(data.adresse)}&t=k&z=16&ie=UTF8&iwloc=&output=embed`;
+        }
+        
+        // ----- NEUE STATUS- & STANDORTLOGIK -----
+
+        /**
+         * NEU: Controller-Funktion, die entscheidet, WIE der Status gesendet wird.
+         */
+        async function sendStatus(id) {
+            // 1. Immer einen laufenden Timer stoppen, wenn ein NEUER Status gesetzt wird.
+            if (locationIntervalId) {
+                clearInterval(locationIntervalId);
+                locationIntervalId = null;
+                console.log("Standort-Tracking gestoppt.");
+            }
+
+            const statusNum = +id; // In Zahl umwandeln
+
+            switch (statusNum) {
+                case 1: // Einsatzbereit über Funk
+                case 3: // Einsatzübernahme
+                    console.log(`Status ${id}: Starte 10-Sekunden-Tracking.`);
+                    await updateLocation(id); // Sofort erste Position senden
+                    // Timer starten, der alle 10 Sek. die Position aktualisiert
+                    locationIntervalId = setInterval(() => updateLocation(id), LOCATION_UPDATE_INTERVAL); 
+                    break;
+                case 2: // Einsatzbereit auf Wache
+                case 4: // Am Einsatzort eingetroffen
+                    console.log(`Status ${id}: Sende Standort einmalig.`);
+                    await updateLocation(id); // Einmalig Position senden
+                    break;
+                case 5: // Sprechwunsch
+                case 6: // Nicht Einsatzbereit
+                    console.log(`Status ${id}: Sende Status OHNE Standort.`);
+                    await sendBasicStatus(id); // Sende Status, setze Standort auf null
+                    break;
+                default:
+                    console.warn("Unbekannter Status:", id);
+            }
+        }
+
+        /**
+         * NEU: Holt den Standort und sendet den Status MIT Koordinaten an Firebase.
+         */
+        function updateLocation(id) {
+            if (!statusMap[id]) return;
+            
+            if (!("geolocation" in navigator)) {
+                console.warn("Standort nicht unterstützt. Sende Basis-Status.");
+                return sendBasicStatus(id); // Fallback, wenn Geolocation fehlt
+            }
+            
+            // Holt die AKTUELLE Position
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const statusData = {
+                        vehicleId: MEIN_FAHRZEUG,
+                        currentStatus: +id,
+                        statusText: statusMap[id],
+                        lastUpdated: serverTimestamp(),
+                        // NEUES FELD: Standort-Daten
+                        location: { 
+                            lat: latitude,
+                            lon: longitude,
+                            timestamp: serverTimestamp() // Zeitstempel für die Position
+                        }
+                    };
+                    
+                    try {
+                        await setDoc(vehicleStatusRef, statusData, { merge: true });
+                        console.log(`Status ${id} mit Standort (${latitude}, ${longitude}) gesendet.`);
+                    } catch (error) {
+                        console.error("Fehler beim Senden mit Standort:", error);
+                    }
+                },
+                async (error) => {
+                    // Fallback, wenn Nutzer Erlaubnis verweigert oder GPS-Fehler
+                    console.warn("Standort konnte nicht ermittelt werden. Sende Basis-Status.", error.message);
+                    await sendBasicStatus(id); 
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // Hohe Genauigkeit, 5s Timeout
+            );
+        }
+
+        /**
+         * NEU: Sendet den Status OHNE Standort (oder setzt ihn auf null).
+         * Wichtig für Status 5, 6 und als Fallback.
+         */
+        async function sendBasicStatus(id) {
+            if (!statusMap[id]) return;
+            
+            const statusData = {
+                vehicleId: MEIN_FAHRZEUG,
+                currentStatus: +id,
+                statusText: statusMap[id],
+                lastUpdated: serverTimestamp(),
+                location: null // WICHTIG: Setzt den Standort aktiv auf null
+            };
+
+            try {
+                await setDoc(vehicleStatusRef, statusData, { merge: true });
+                console.log(`Status ${id} (Basis-Status) gesendet.`);
+            } catch (error) {
+                console.error("Fehler beim Senden des Basis-Status:", error);
+            }
+        }
+
+        // ----- STATUS-LISTENER (Unverändert) -----
+
+        function listenToVehicleStatus() {
+            onSnapshot(vehicleStatusRef, docSnap => {
+                let id=0, text=statusMap["0"];
+                if (docSnap.exists()) {
+                    id=docSnap.data().currentStatus||0;
+                    text=docSnap.data().statusText||statusMap[id]||statusMap["0"];
+                }
+                updateStatusFab(id);
+                updateStatusKlarScreen(id,text);
+            });
+        }
+        
+        function updateStatusKlarScreen(id,text) {
+            statusKlarText.textContent=text;
+            statusKlarText.className="text-6xl font-black select-none mb-4 break-words px-4";
+            const map={
+                1:'text-green-600',2:'text-green-700',3:'text-orange-500',
+                4:'text-red-600',5:'text-blue-600',6:'text-gray-500'
+            };
+            statusKlarText.classList.add(map[id]||'text-gray-500');
+        }
+        
+        const ALL_FAB_BG_CLASSES=['bg-green-600','bg-green-700','bg-orange-500','bg-red-600','bg-blue-600','bg-gray-500','bg-gray-700'];
+        
+        function updateStatusFab(id){
+            ALL_FAB_BG_CLASSES.forEach(c=>statusFab.classList.remove(c));
+            const map={1:'bg-green-600',2:'bg-green-700',3:'bg-orange-500',4:'bg-red-600',5:'bg-blue-600',6:'bg-gray-500'};
+            statusFabText.textContent=id?String(id):'?';
+            statusFab.classList.add(map[id]||'bg-gray-700');
+        }
+
+        // ----- APP-START -----
+        
+        function initializeAppLogic() {
+            setLogLevel('Debug');
+            app=initializeApp(firebaseConfig);
+            auth=getAuth(app);
+            db=getFirestore(app);
+            authInit();
+        }
+        window.addEventListener('DOMContentLoaded', initializeAppLogic);
+    </script>
+</body>
+</html>
