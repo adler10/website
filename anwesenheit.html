@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anwesenheits-Tool</title>
+
+    <!-- Meta-Tags für "Add to Home Screen" (PWA-Feeling auf iOS) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Anwesend">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/007AFF/FFFFFF?text=A&font=inter">
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior-x: none;
+        }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .swipe-card {
+            touch-action: pan-y;
+            user-select: none;
+            transition: transform 0.3s ease-out, background-color 0.3s ease-out;
+        }
+        .swipe-card.transition-transform {
+            transition: transform 0.3s ease-out;
+        }
+        .swipe-card[data-status="present"] { background-color: #dcfce7; }
+        .swipe-card[data-status="absent"] { background-color: #fee2e2; }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+    <!-- Ladebildschirm -->
+    <div id="loading-view" class="view active min-h-screen flex flex-col items-center justify-center text-center p-4">
+        <div class="loader mb-4"></div>
+        <h1 class="text-xl font-semibold text-gray-700">Lade App...</h1>
+        <p class="text-gray-500">Stelle Verbindung zu Firebase her...</p>
+    </div>
+
+    <!-- Haupt-App-Container -->
+    <div id="app-container" class="hidden min-h-screen">
+        
+        <header class="bg-white shadow-md sticky top-0 z-20">
+            <div class="max-w-3xl mx-auto p-4 flex items-center space-x-4">
+                <button id="back-button" class="hidden text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 id="header-title" class="text-xl font-bold text-gray-900">Meine Gruppen</h1>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto p-4 pb-20">
+
+            <!-- Ansicht: Gruppenübersicht -->
+            <div id="groups-view" class="view">
+                <div id="groups-list" class="space-y-3">
+                    <p class="text-gray-500 text-center py-4">Noch keine Gruppen erstellt.</p>
+                </div>
+                <button id="show-add-group-modal" class="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Ansicht: Gruppendetail -->
+            <div id="group-detail-view" class="view">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold">Personen</h2>
+                    <button id="show-add-person-modal" class="text-sm bg-blue-100 text-blue-700 font-medium py-1 px-3 rounded-full hover:bg-blue-200">
+                        Hinzufügen
+                    </button>
+                </div>
+                <div id="people-list" class="bg-white rounded-lg shadow-sm mb-6">
+                    <p class="text-gray-500 text-center p-4">Noch keine Personen in dieser Gruppe.</p>
+                </div>
+
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold">Termine</h2>
+                    <button id="start-new-event" class="text-sm bg-green-600 text-white font-medium py-1 px-3 rounded-full hover:bg-green-700">
+                        Neuer Termin
+                    </button>
+                </div>
+                <div id="events-list" class="space-y-3">
+                    <p class="text-gray-500 text-center py-4">Noch keine Termine für diese Gruppe.</p>
+                </div>
+            </div>
+
+            <!-- Ansicht: Anwesenheitstermin -->
+            <div id="event-view" class="view">
+                <div class="bg-white rounded-lg shadow-sm p-3 mb-4 sticky top-[73px] z-10">
+                    <div class="flex justify-around text-center">
+                        <div>
+                            <div id="status-present" class="text-2xl font-bold text-green-600">0</div>
+                            <div class="text-xs font-medium text-gray-500 uppercase">Anwesend</div>
+                        </div>
+                        <div>
+                            <div id="status-absent" class="text-2xl font-bold text-red-600">0</div>
+                            <div class="text-xs font-medium text-gray-500 uppercase">Abwesend</div>
+                        </div>
+                        <div>
+                            <div id="status-unmarked" class="text-2xl font-bold text-gray-500">0</div>
+                            <div class="text-xs font-medium text-gray-500 uppercase">Offen</div>
+                        </div>
+                    </div>
+                    <div id="event-date-display" class="text-center text-sm text-gray-600 mt-2"></div>
+                </div>
+
+                <div class="text-center text-sm text-gray-500 mb-4 p-2 bg-blue-50 rounded-lg">
+                    <p>Rechts wischen: <span class="font-semibold text-green-600">Anwesend</span></p>
+                    <p>Links wischen: <span class="font-semibold text-red-600">Abwesend</span></p>
+                    <p>Tippen: Status wechseln</p>
+                </div>
+
+                <div id="attendance-list" class="space-y-3">
+                    <!-- Personen-Karten werden hier per JS eingefügt -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal (für Hinzufügen von Gruppen/Personen) -->
+    <div id="modal" class="fixed inset-0 bg-black/50 z-30 hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-lg shadow-2xl p-6" id="modal-content">
+            <h3 id="modal-title" class="text-lg font-semibold mb-4">Neue Gruppe</h3>
+            <input type="text" id="modal-input" placeholder="Name" class="w-full border border-gray-300 rounded-lg p-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p id="modal-error" class="text-red-500 text-sm mt-2 hidden"></p>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="modal-cancel" class="text-gray-600 font-medium py-2 px-4 rounded-lg hover:bg-gray-100">Abbrechen</button>
+                <button id="modal-confirm" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700">Speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bestätigungs-Modal (NEU) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/50 z-40 hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-lg shadow-2xl p-6">
+            <h3 id="confirm-title" class="text-lg font-semibold mb-3">Löschen bestätigen</h3>
+            <p id="confirm-message" class="text-gray-600 mb-6">Möchtest du dieses Element wirklich löschen?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="confirm-cancel" class="text-gray-600 font-medium py-2 px-4 rounded-lg hover:bg-gray-100">Abbrechen</button>
+                <button id="confirm-danger" class="bg-red-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-red-700">Löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast-Nachricht -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white py-2 px-5 rounded-full shadow-lg opacity-0 transition-opacity duration-300 z-50">
+        <span id="toast-message"></span>
+    </div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            addDoc, 
+            setDoc, 
+            updateDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            collection, 
+            query, 
+            where, 
+            writeBatch,
+            serverTimestamp,
+            getDocs, // Wichtig für Batch
+            deleteField // KORREKTUR: Importiert
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Globale Variablen ---
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-anwesenheit-app';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, auth, db;
+        let userId;
+
+        let currentView = 'groups';
+        let viewStack = ['groups'];
+        
+        let selectedGroupId = null;
+        let selectedGroupName = "";
+        let selectedEventId = null;
+
+        let localGroups = {};
+        let localPeople = {};
+        let localEvents = {};
+
+        let unsubGroups = () => {};
+        let unsubPeople = () => {};
+        let unsubEvents = () => {};
+        let unsubEvent = () => {};
+        
+        let touchStartX = 0;
+        let touchCurrentX = 0;
+        let isDragging = false;
+        let swipeTarget = null;
+        let swipePersonId = null;
+
+        // --- DOM-Elemente ---
+        const loadingView = document.getElementById('loading-view');
+        const appContainer = document.getElementById('app-container');
+        const headerTitle = document.getElementById('header-title');
+        const backButton = document.getElementById('back-button');
+
+        const views = {
+            groups: document.getElementById('groups-view'),
+            groupDetail: document.getElementById('group-detail-view'),
+            event: document.getElementById('event-view')
+        };
+        
+        const groupsList = document.getElementById('groups-list');
+        const peopleList = document.getElementById('people-list');
+        const eventsList = document.getElementById('events-list');
+        const attendanceList = document.getElementById('attendance-list');
+        
+        // Input-Modal
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalInput = document.getElementById('modal-input');
+        const modalError = document.getElementById('modal-error');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
+        
+        // Confirm-Modal (NEU)
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmTitle = document.getElementById('confirm-title');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmCancel = document.getElementById('confirm-cancel');
+        const confirmDanger = document.getElementById('confirm-danger');
+        
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        
+        // --- Initialisierung ---
+        
+        document.addEventListener('DOMContentLoaded', initFirebase);
+
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        initializeAppUI();
+                    } else {
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Error signing in:", error);
+                            loadingView.innerHTML = '<p class="text-red-500">Authentifizierung fehlgeschlagen.</p>';
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                loadingView.innerHTML = '<p class="text-red-500">Firebase-Initialisierung fehlgeschlagen.</p>';
+            }
+        }
+
+        function initializeAppUI() {
+            loadingView.classList.remove('active');
+            appContainer.style.display = 'block';
+            
+            attachGlobalListeners();
+            navigateTo('groups', 'Meine Gruppen', true);
+        }
+        
+        // --- Navigations-System ---
+
+        function showView(viewId) {
+            currentView = viewId;
+            Object.values(views).forEach(v => v.classList.remove('active'));
+            if (views[viewId]) {
+                views[viewId].classList.add('active');
+            }
+        }
+
+        function navigateTo(viewId, title, isHome = false) {
+            if (!isHome) {
+                viewStack.push(viewId);
+            } else {
+                viewStack = [viewId];
+            }
+            updateHeader(title);
+            showView(viewId);
+            loadDataForView(viewId);
+        }
+        
+        function navigateBack() {
+            if (viewStack.length <= 1) return;
+            
+            viewStack.pop();
+            const prevViewId = viewStack[viewStack.length - 1];
+            
+            let prevTitle = 'Meine Gruppen';
+            if (prevViewId === 'groupDetail') {
+                prevTitle = selectedGroupName;
+            }
+
+            updateHeader(prevTitle);
+            showView(prevViewId);
+            loadDataForView(prevViewId);
+        }
+
+        function updateHeader(title) {
+            headerTitle.textContent = title;
+            backButton.classList.toggle('hidden', viewStack.length <= 1);
+        }
+
+        backButton.addEventListener('click', navigateBack);
+
+        // --- Daten-Lade-System ---
+
+        function loadDataForView(viewId) {
+            unsubGroups();
+            unsubPeople();
+            unsubEvents();
+            unsubEvent();
+
+            if (viewId === 'groups') {
+                loadGroups();
+            } else if (viewId === 'groupDetail') {
+                if (selectedGroupId) {
+                    loadPeople(selectedGroupId);
+                    loadEvents(selectedGroupId);
+                }
+            } else if (viewId === 'event') {
+                if (selectedEventId) {
+                    loadEvent(selectedEventId);
+                }
+            }
+        }
+        
+        function loadGroups() {
+            const groupsCol = collection(db, 'artifacts', appId, 'users', userId, 'groups');
+            unsubGroups = onSnapshot(groupsCol, (snapshot) => {
+                localGroups = {};
+                if (snapshot.empty) {
+                    groupsList.innerHTML = '<p class="text-gray-500 text-center py-4">Tippe auf das (+) um deine erste Gruppe zu erstellen.</p>';
+                    return;
+                }
+                
+                groupsList.innerHTML = '';
+                const groups = [];
+                snapshot.forEach(doc => {
+                    const group = { id: doc.id, ...doc.data() };
+                    localGroups[doc.id] = group;
+                    groups.push(group);
+                });
+                
+                groups.sort((a, b) => a.name.localeCompare(b.name));
+                
+                groups.forEach(group => {
+                    const div = document.createElement('div');
+                    div.className = 'group-item bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer flex justify-between items-center';
+                    div.dataset.groupId = group.id;
+                    div.dataset.groupName = group.name;
+                    div.innerHTML = `
+                        <span class="font-semibold text-lg">${group.name}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                    `;
+                    groupsList.appendChild(div);
+                });
+
+            }, (error) => console.error("Error loading groups:", error));
+        }
+        
+        function loadPeople(groupId) {
+            const peopleCol = collection(db, 'artifacts', appId, 'users', userId, 'people');
+            const q = query(peopleCol, where("groupId", "==", groupId));
+            
+            unsubPeople = onSnapshot(q, (snapshot) => {
+                localPeople = {};
+                if (snapshot.empty) {
+                    peopleList.innerHTML = '<p class="text-gray-500 text-center p-4">Noch keine Personen in dieser Gruppe.</p>';
+                    return;
+                }
+                
+                peopleList.innerHTML = '';
+                const people = [];
+                snapshot.forEach(doc => {
+                    const person = { id: doc.id, ...doc.data() };
+                    localPeople[doc.id] = person;
+                    people.push(person);
+                });
+                
+                people.sort((a, b) => a.name.localeCompare(b.name));
+                
+                people.forEach(person => {
+                    const div = document.createElement('div');
+                    div.className = 'person-item p-4 border-b border-gray-100 last:border-b-0 flex justify-between items-center';
+                    div.dataset.personId = person.id;
+                    div.innerHTML = `
+                        <span class="text-gray-800">${person.name}</span>
+                        <button class="delete-person-btn text-red-400 hover:text-red-600 p-1" data-person-id="${person.id}" data-person-name="${person.name}">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    `;
+                    peopleList.appendChild(div);
+                });
+
+            }, (error) => console.error("Error loading people:", error));
+        }
+
+        function loadEvents(groupId) {
+            const eventsCol = collection(db, 'artifacts', appId, 'users', userId, 'events');
+            const q = query(eventsCol, where("groupId", "==", groupId));
+            
+            unsubEvents = onSnapshot(q, (snapshot) => {
+                localEvents = {};
+                if (snapshot.empty) {
+                    eventsList.innerHTML = '<p class="text-gray-500 text-center py-4">Noch keine Termine für diese Gruppe.</p>';
+                    return;
+                }
+                
+                eventsList.innerHTML = '';
+                const events = [];
+                snapshot.forEach(doc => {
+                    const eventData = doc.data();
+                    const eventDate = eventData.date?.toDate ? eventData.date.toDate() : new Date();
+                    
+                    const event = { 
+                        id: doc.id, 
+                        ...eventData,
+                        dateObj: eventDate,
+                        dateString: eventDate.toLocaleString('de-DE', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+                        }) + ' Uhr'
+                    };
+                    localEvents[doc.id] = event;
+                    events.push(event);
+                });
+                
+                events.sort((a, b) => b.dateObj - a.dateObj);
+                
+                events.forEach(event => {
+                    const div = document.createElement('div');
+                    div.className = 'event-item bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer';
+                    div.dataset.eventId = event.id;
+                    
+                    const stats = Object.values(event.attendance || {}).reduce((acc, status) => {
+                        acc[status] = (acc[status] || 0) + 1;
+                        return acc;
+                    }, { present: 0, absent: 0, unmarked: 0 });
+
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">${event.name}</span>
+                            <span class="text-sm text-gray-500">${event.dateString}</span>
+                        </div>
+                        <div class="flex space-x-4 mt-2 text-sm">
+                            <span class="text-green-600">Anw: ${stats.present}</span>
+                            <span class="text-red-600">Abw: ${stats.absent}</span>
+                            <span class="text-gray-500">Offen: ${Object.keys(event.attendance || {}).length - stats.present - stats.absent}</span>
+                        </div>
+                    `;
+                    eventsList.appendChild(div);
+                });
+
+            }, (error) => console.error("Error loading events:", error));
+        }
+
+        function loadEvent(eventId) {
+            const eventRef = doc(db, 'artifacts', appId, 'users', userId, 'events', eventId);
+            
+            unsubEvent = onSnapshot(eventRef, (doc) => {
+                if (!doc.exists()) {
+                    console.error("Event not found!");
+                    navigateBack();
+                    return;
+                }
+                
+                const event = { id: doc.id, ...doc.data() };
+                localEvents[doc.id] = event;
+                
+                if (Object.keys(localPeople).length === 0 || localPeople[Object.keys(event.attendance)[0]]?.groupId !== event.groupId) {
+                    loadPeopleForEvent(event);
+                } else {
+                    renderAttendanceList(event.attendance);
+                }
+
+                const eventDate = event.date?.toDate ? event.date.toDate() : new Date();
+                document.getElementById('event-date-display').textContent = eventDate.toLocaleString('de-DE', { 
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+                });
+
+            }, (error) => console.error("Error loading event:", error));
+        }
+        
+        function loadPeopleForEvent(event) {
+            const peopleCol = collection(db, 'artifacts', appId, 'users', userId, 'people');
+            const q = query(peopleCol, where("groupId", "==", event.groupId));
+            
+            getDocs(q).then(snapshot => {
+                localPeople = {};
+                snapshot.forEach(doc => {
+                    localPeople[doc.id] = { id: doc.id, ...doc.data() };
+                });
+                renderAttendanceList(event.attendance);
+            }).catch(error => console.error("Error loading people for event:", error));
+        }
+        
+        // --- Render-Funktionen ---
+        
+        function renderAttendanceList(attendance) {
+            if (!attendance || Object.keys(localPeople).length === 0) {
+                attendanceList.innerHTML = '<p class="text-gray-500 text-center py-4">Lade Personen...</p>';
+                return;
+            }
+            
+            attendanceList.innerHTML = '';
+            let stats = { present: 0, absent: 0, unmarked: 0 };
+            
+            const sortedPeopleIds = Object.keys(attendance)
+                .filter(id => localPeople[id]) // KORREKTUR: Filtert gelöschte Personen raus
+                .sort((a, b) => localPeople[a].name.localeCompare(localPeople[b].name));
+
+            sortedPeopleIds.forEach(personId => {
+                const person = localPeople[personId];
+                if (!person) return; // Sollte durch Filter oben verhindert werden
+                
+                const status = attendance[personId] || 'unmarked';
+                stats[status]++;
+                
+                const div = document.createElement('div');
+                div.className = 'swipe-card bg-white p-5 rounded-lg shadow-md relative';
+                div.dataset.personId = personId;
+                div.dataset.status = status;
+                
+                div.innerHTML = `
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-5" style="opacity: 0.5;">
+                        <span class="text-green-500 font-bold text-lg hidden">Anwesend</span>
+                    </div>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-5" style="opacity: 0.5;">
+                        <span class="text-red-500 font-bold text-lg hidden">Abwesend</span>
+                    </div>
+                    <span class="text-lg font-medium relative z-10 pointer-events-none">${person.name}</span>
+                `;
+                
+                attendanceList.appendChild(div);
+            });
+            
+            // Status-Header
+            stats.unmarked = sortedPeopleIds.length - stats.present - stats.absent;
+            document.getElementById('status-present').textContent = stats.present;
+            document.getElementById('status-absent').textContent = stats.absent;
+            document.getElementById('status-unmarked').textContent = stats.unmarked;
+        }
+
+        // --- Event-Handler ---
+
+        function attachGlobalListeners() {
+            document.body.addEventListener('click', (e) => {
+                const groupItem = e.target.closest('.group-item');
+                const eventItem = e.target.closest('.event-item');
+                const deletePersonBtn = e.target.closest('.delete-person-btn');
+                const swipeCard = e.target.closest('.swipe-card');
+
+                if (groupItem) {
+                    selectedGroupId = groupItem.dataset.groupId;
+                    selectedGroupName = groupItem.dataset.groupName;
+                    navigateTo('groupDetail', selectedGroupName);
+                } 
+                else if (eventItem) {
+                    selectedEventId = eventItem.dataset.eventId;
+                    const eventTitle = localEvents[selectedEventId]?.name || "Termin";
+                    navigateTo('event', eventTitle);
+                }
+                else if (deletePersonBtn) {
+                    e.stopPropagation();
+                    handleDeletePerson(deletePersonBtn.dataset.personId, deletePersonBtn.dataset.personName);
+                }
+                else if (swipeCard && !isDragging) {
+                    handleTap(swipeCard);
+                }
+            });
+
+            // Modal-Handler
+            document.getElementById('show-add-group-modal').addEventListener('click', showAddGroupModal);
+            document.getElementById('show-add-person-modal').addEventListener('click', showAddPersonModal);
+            document.getElementById('start-new-event').addEventListener('click', handleStartNewEvent);
+            
+            modalCancel.addEventListener('click', hideModal);
+            
+            // Confirm-Modal-Handler (NEU)
+            confirmCancel.addEventListener('click', hideConfirmModal);
+            confirmDanger.addEventListener('click', () => {
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                hideConfirmModal();
+            });
+
+            // Touch-Handler
+            attendanceList.addEventListener('touchstart', handleTouchStart, { passive: true });
+            attendanceList.addEventListener('touchmove', handleTouchMove, { passive: false });
+            attendanceList.addEventListener('touchend', handleTouchEnd);
+            attendanceList.addEventListener('touchcancel', handleTouchEnd);
+        }
+
+        // --- CRUD-Operationen ---
+
+        function showAddGroupModal() {
+            modalTitle.textContent = 'Neue Gruppe erstellen';
+            modalInput.placeholder = 'Name der Gruppe (z.B. Klasse 10B)';
+            showModal(async (name) => {
+                if (!name) return;
+                try {
+                    const groupsCol = collection(db, 'artifacts', appId, 'users', userId, 'groups');
+                    await addDoc(groupsCol, { name: name, createdAt: serverTimestamp() });
+                    showToast('Gruppe erstellt!');
+                    hideModal();
+                } catch (error) {
+                    console.error("Error adding group:", error);
+                    modalError.textContent = 'Fehler beim Speichern.';
+                    modalError.classList.remove('hidden');
+                }
+            });
+        }
+        
+        function showAddPersonModal() {
+            modalTitle.textContent = 'Neue Person hinzufügen';
+            modalInput.placeholder = 'Name der Person (z.B. Max Mustermann)';
+            showModal(async (name) => {
+                if (!name) return;
+                try {
+                    const peopleCol = collection(db, 'artifacts', appId, 'users', userId, 'people');
+                    await addDoc(peopleCol, { 
+                        name: name, 
+                        groupId: selectedGroupId,
+                        createdAt: serverTimestamp() 
+                    });
+                    showToast('Person hinzugefügt!');
+                    hideModal();
+                } catch (error) {
+                    console.error("Error adding person:", error);
+                    modalError.textContent = 'Fehler beim Speichern.';
+                    modalError.classList.remove('hidden');
+                }
+            });
+        }
+        
+        async function handleStartNewEvent() {
+            if (Object.keys(localPeople).length === 0) {
+                showToast('Füge zuerst Personen zu dieser Gruppe hinzu.', 'error');
+                return;
+            }
+
+            const eventName = `Termin ${new Date().toLocaleDateString('de-DE')}`;
+            
+            const attendance = {};
+            Object.keys(localPeople).forEach(personId => {
+                attendance[personId] = 'unmarked';
+            });
+            
+            try {
+                const eventsCol = collection(db, 'artifacts', appId, 'users', userId, 'events');
+                const newEventRef = await addDoc(eventsCol, {
+                    name: eventName,
+                    groupId: selectedGroupId,
+                    date: serverTimestamp(),
+                    attendance: attendance
+                });
+                
+                showToast('Neuer Termin gestartet!');
+                selectedEventId = newEventRef.id;
+                navigateTo('event', eventName);
+                
+            } catch (error) {
+                console.error("Error starting new event:", error);
+                showToast('Fehler beim Starten des Termins.', 'error');
+            }
+        }
+
+        // KORRIGIERTE Löschfunktion
+        function handleDeletePerson(personId, personName) {
+            showConfirmModal(
+                'Person löschen',
+                `Möchtest du "${personName}" wirklich löschen? Diese Person wird aus allen vergangenen und zukünftigen Terminen dieser Gruppe entfernt.`,
+                async () => {
+                    // Diese Callback-Funktion wird ausgeführt, wenn der Benutzer auf "Löschen" klickt
+                    try {
+                        const batch = writeBatch(db);
+
+                        // 1. Person selbst löschen
+                        const personRef = doc(db, 'artifacts', appId, 'users', userId, 'people', personId);
+                        batch.delete(personRef);
+                        
+                        // 2. Person aus allen Terminen dieser Gruppe entfernen
+                        const eventsCol = collection(db, 'artifacts', appId, 'users', userId, 'events');
+                        const q = query(eventsCol, where("groupId", "==", selectedGroupId));
+                        
+                        const eventSnapshot = await getDocs(q);
+                        eventSnapshot.forEach(eventDoc => {
+                            // updateDoc mit dot-notation, um nur das Feld zu entfernen
+                            batch.update(eventDoc.ref, {
+                                [`attendance.${personId}`]: deleteField()
+                            });
+                        });
+                        
+                        // Batch ausführen
+                        await batch.commit();
+                        
+                        showToast(`"${personName}" wurde gelöscht.`);
+                        // onSnapshot wird die UI automatisch aktualisieren
+                        
+                    } catch (error) {
+                        console.error("Error deleting person and references:", error);
+                        showToast('Fehler beim Löschen.', 'error');
+                    }
+                }
+            );
+        }
+        
+        async function updateAttendance(personId, newStatus) {
+            if (!selectedEventId || !personId) return;
+            
+            const eventRef = doc(db, 'artifacts', appId, 'users', userId, 'events', selectedEventId);
+            try {
+                await updateDoc(eventRef, {
+                    [`attendance.${personId}`]: newStatus
+                });
+            } catch (error) {
+                console.error("Error updating attendance:", error);
+                showToast('Status-Update fehlgeschlagen.', 'error');
+            }
+        }
+
+        // --- Wisch-Gesten-Logik ---
+
+        function handleTouchStart(e) {
+            const target = e.target.closest('.swipe-card');
+            if (!target) return;
+            
+            swipeTarget = target;
+            swipePersonId = target.dataset.personId;
+            touchStartX = e.touches[0].clientX;
+            touchCurrentX = touchStartX;
+            isDragging = true;
+            
+            swipeTarget.classList.remove('transition-transform');
+            swipeTarget.querySelector('.text-green-500').classList.remove('hidden');
+            swipeTarget.querySelector('.text-red-500').classList.remove('hidden');
+        }
+
+        function handleTouchMove(e) {
+            if (!isDragging || !swipeTarget) return;
+            
+            touchCurrentX = e.touches[0].clientX;
+            let deltaX = touchCurrentX - touchStartX;
+            
+            swipeTarget.style.transform = `translateX(${deltaX}px)`;
+            
+            const swipeAmount = Math.abs(deltaX) / (swipeTarget.offsetWidth / 2);
+            if (deltaX > 0) {
+                swipeTarget.querySelector('.text-green-500').style.opacity = Math.min(swipeAmount, 1);
+                swipeTarget.querySelector('.text-red-500').style.opacity = 0;
+            } else {
+                swipeTarget.querySelector('.text-red-500').style.opacity = Math.min(swipeAmount, 1);
+                swipeTarget.querySelector('.text-green-500').style.opacity = 0;
+            }
+            
+            if (Math.abs(deltaX) > 10) {
+                e.preventDefault();
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!isDragging || !swipeTarget) return;
+
+            isDragging = false;
+            let deltaX = touchCurrentX - touchStartX;
+            const swipeThreshold = swipeTarget.offsetWidth * 0.3;
+            
+            let newStatus = swipeTarget.dataset.status;
+
+            swipeTarget.classList.add('transition-transform');
+            swipeTarget.querySelector('.text-green-500').classList.add('hidden');
+            swipeTarget.querySelector('.text-red-500').classList.add('hidden');
+
+            if (deltaX > swipeThreshold) {
+                newStatus = 'present';
+                swipeTarget.style.transform = 'translateX(100%)';
+            } else if (deltaX < -swipeThreshold) {
+                newStatus = 'absent';
+                swipeTarget.style.transform = 'translateX(-100%)';
+            } else {
+                swipeTarget.style.transform = 'translateX(0)';
+            }
+            
+            if (newStatus !== swipeTarget.dataset.status) {
+                updateAttendance(swipePersonId, newStatus);
+            }
+            
+            swipeTarget = null;
+            swipePersonId = null;
+            touchStartX = 0;
+            touchCurrentX = 0;
+        }
+        
+        function handleTap(card) {
+            const personId = card.dataset.personId;
+            const currentStatus = card.dataset.status;
+            
+            let newStatus;
+            if (currentStatus === 'unmarked') newStatus = 'present';
+            else if (currentStatus === 'present') newStatus = 'absent';
+            else newStatus = 'unmarked';
+            
+            card.dataset.status = newStatus; 
+            updateAttendance(personId, newStatus);
+        }
+
+        // --- Modal-Helfer ---
+
+        let modalConfirmCallback = null;
+
+        function showModal(onConfirm) {
+            modalInput.value = '';
+            modalError.classList.add('hidden');
+            modalError.textContent = '';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modalInput.focus();
+            
+            modalConfirm.removeEventListener('click', handleModalConfirm);
+            modalConfirmCallback = onConfirm;
+            modalConfirm.addEventListener('click', handleModalConfirm);
+        }
+
+        function handleModalConfirm() {
+            const value = modalInput.value.trim();
+            if (!value) {
+                modalError.textContent = 'Name darf nicht leer sein.';
+                modalError.classList.remove('hidden');
+                return;
+            }
+            if (modalConfirmCallback) {
+                modalConfirmCallback(value);
+            }
+        }
+        
+        function hideModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modalConfirmCallback = null;
+        }
+
+        // --- Confirm-Modal-Helfer (NEU) ---
+        let confirmCallback = null;
+        
+        function showConfirmModal(title, message, onConfirm) {
+            confirmTitle.textContent = title;
+            confirmMessage.textContent = message;
+            confirmCallback = onConfirm; // Speichert die Löschfunktion
+            
+            confirmModal.classList.remove('hidden');
+            confirmModal.classList.add('flex');
+        }
+        
+        function hideConfirmModal() {
+            confirmModal.classList.add('hidden');
+            confirmModal.classList.remove('flex');
+            confirmCallback = null;
+        }
+
+        // --- Toast-Helfer ---
+        
+        let toastTimer;
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            
+            toast.classList.remove('bg-gray-900', 'bg-red-600');
+            toast.classList.add(type === 'error' ? 'bg-red-600' : 'bg-gray-900');
+            
+            clearTimeout(toastTimer);
+            toast.classList.remove('opacity-0');
+            toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 2500);
+        }
+
+    </script>
+</body>
+</html>
