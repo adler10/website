@@ -6,166 +6,143 @@
     <title>Alarm-Display</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <!-- Tone.js für Alarmton-Generierung -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Verhindert Scrollen auf der Seite */
-        }
-        /* Stellt sicher, dass das Layout die volle Höhe nutzt */
         html, body {
-            height: 100%;
+            height: 100vh;
             width: 100%;
             margin: 0;
             padding: 0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Scrollen auf Body-Ebene verhindern */
         }
-        /* Styling für die Details-Boxen im Alarmfall */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            height: 100vh; /* Volle Viewport-Höhe */
+            width: 100%;
+            gap: 1.5rem; /* Abstand zwischen Spalten */
+            padding: 1.5rem; /* Außenabstand */
+        }
+        .content-column {
+            /* Jede Spalte scrollt NICHT MEHR */
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Abstand zwischen Boxen */
+            min-height: 0; 
+            height: 100%; /* Spalten füllen die Höhe */
+        }
         .detail-box {
             background-color: #1f2937; /* gray-800 */
             border: 1px solid #374151; /* gray-700 */
-            border-radius: 0.75rem; /* rounded-xl */
-            padding: 1.5rem; /* p-6 */
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* shadow-2xl */
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0; /* Verhindert das Schrumpfen der Boxen, außer bei flex-1 */
         }
         .detail-box h2 {
-            font-size: 1.25rem; /* text-xl */
-            font-weight: 600; /* font-semibold */
-            padding-bottom: 0.75rem; /* pb-3 */
-            border-bottom: 1px solid #374151; /* border-b border-gray-700 */
-            margin-bottom: 1rem; /* mb-4 */
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* semibold */
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #374151; /* gray-700 */
+            margin-bottom: 0.75rem;
         }
+
+        /* Status-Farben (werden für die Status-Kreise verwendet) */
+        .status-0 { background-color: #4b5563; color: #e5e7eb; } /* gray-600 */
+        .status-1 { background-color: #16a34a; color: #ffffff; } /* green-600 */
+        .status-2 { background-color: #15803d; color: #ffffff; } /* green-700 */
+        .status-3 { background-color: #f97316; color: #ffffff; } /* orange-500 */
+        .status-4 { background-color: #dc2626; color: #ffffff; } /* red-600 */
+        .status-5 { background-color: #2563eb; color: #ffffff; } /* blue-600 */
+        .status-6 { background-color: #6b7280; color: #ffffff; } /* gray-500 */
     </style>
 </head>
-<body class="h-full text-gray-200">
-
-    <!-- ========== START-OVERLAY (Für Audio-Aktivierung) ========== -->
-    <div id="start-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 cursor-pointer">
-        <div class="text-center">
-            <h1 class="text-4xl font-bold text-white mb-4">Alarm-Display</h1>
-            <p class="text-2xl text-gray-400">Klicken, um Audio zu aktivieren und zu starten</p>
-        </div>
-    </div>
-
-    <!-- ========== BILDSCHIRMSCHONER (Kein Einsatz) ========== -->
+<body class="h-full text-gray-200 antialiased">
+    
+    <!-- Bildschirmschoner / Uhrzeit -->
     <div id="screensaver" class="fixed inset-0 z-10 flex items-center justify-center bg-gray-900 transition-opacity duration-1000">
-        <!-- Aktuelle Uhrzeit (groß) -->
-        <div id="clock-screensaver" class="text-[20vw] md:text-[18vw] lg:text-[15vw] font-black text-gray-800 select-none">
+        <div id="clock" class="text-9xl font-black text-gray-700 select-none">
             00:00:00
         </div>
     </div>
 
-    <!-- ========== ALARM-ANZEIGE (Aktiver Einsatz) ========== -->
-    <div id="alarm-display" class="fixed inset-0 z-20 p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 hidden transition-opacity duration-500" style="background: radial-gradient(circle, #2b0000 0%, #000000 100%);">
+    <!-- Haupt-Alarm-Ansicht -->
+    <div id="alarm-view" class="fixed inset-0 z-20 transition-opacity duration-500 opacity-0 pointer-events-none" style="background: radial-gradient(circle, #2b0000 0%, #000000 100%);">
         
-        <!-- ========== LINKE SPALTE (Karte & Hauptinfos) ========== -->
-        <div class="flex flex-col gap-6 md:gap-8 h-full min-h-0">
-            <!-- Stichwort & Schlagwort -->
-            <div class="detail-box flex-shrink-0">
-                <div id="alarm-stichwort-schlagwort" class="text-5xl md:text-6xl lg:text-7xl font-bold text-red-500 break-words">
-                    LADE EINSATZ...
+        <div class="grid-container">
+            
+            <!-- LINKE SPALTE: Infos -->
+            <div class="content-column">
+                
+                <!-- Stichwort & Schlagwort -->
+                <div class="detail-box">
+                    <!-- Schriftgröße angepasst -->
+                    <div id="alarm-stichwort-schlagwort" class="text-4xl font-bold text-red-500 break-words">
+                        LADE EINSATZ...
+                    </div>
                 </div>
+
+                <!-- Adresse -->
+                <div class="detail-box">
+                    <h2 class="text-red-400">Adresse</h2>
+                    <!-- Schriftgröße angepasst -->
+                    <div id="alarm-adresse" class="text-3xl font-medium text-white break-words">-</div>
+                </div>
+
+                <!-- Zeit-Infos -->
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="detail-box">
+                        <h2 class="text-yellow-400">Alarmzeit</h2>
+                        <!-- Schriftgröße angepasst -->
+                        <div id="alarm-timestamp" class="text-2xl font-bold text-white">-</div>
+                    </div>
+                    <div class="detail-box">
+                        <h2 class="text-yellow-400">Aktuelle Zeit</h2>
+                        <!-- Schriftgröße angepasst -->
+                        <div id="current-time" class="text-2xl font-bold text-white">-</div>
+                    </div>
+                </div>
+
+                <!-- Sonderechte -->
+                <div class="detail-box">
+                    <h2 class="text-yellow-400">Sonderechte</h2>
+                    <!-- Schriftgröße angepasst -->
+                    <div id="alarm-sonderechte" class="text-2xl font-bold text-white">-</div>
+                </div>
+
+                <!-- Zusatz-Infos (Freitext) -->
+                <!-- NEU: flex-1, flex, flex-col. Diese Box füllt den restlichen Platz -->
+                <div id="freitext-box" class="detail-box hidden flex-1 flex flex-col">
+                    <h2 class="text-gray-400">Zusatz-Infos</h2>
+                    <!-- NEU: flex-1 und overflow-hidden. Text wird abgeschnitten, wenn er nicht passt -->
+                    <div id="alarm-freitext" class="text-lg text-gray-200 italic break-words flex-1 overflow-hidden">-</div>
+                </div>
+
             </div>
             
-            <!-- Adresse -->
-            <div class="detail-box flex-shrink-0">
-                <h2 class="text-red-400">Adresse</h2>
-                <div id="alarm-adresse" class="text-3xl md:text-4xl lg:text-5xl font-medium text-white break-words">
-                    -
-                </div>
-            </div>
-
-            <!-- Karte -->
-            <div class="detail-box flex-grow flex flex-col h-0 min-h-[300px]"> <!-- flex-grow und h-0 füllen den Restplatz -->
-                <h2 class="text-red-400 flex-shrink-0">Einsatzort</h2>
-                <iframe
-                    id="map-iframe"
-                    width="100%"
-                    class="flex-grow" <!-- flex-grow statt height 100% -->
-                    style="border:0; border-radius: 0.5rem; min-height: 250px;"
-                    loading="lazy"
-                    allowfullscreen
-                    referrerpolicy="no-referrer-when-downgrade"
-                    src="about:blank">
-                </iframe>
-                <!-- "Route öffnen" Button wurde entfernt -->
-            </div>
-        </div>
-
-        <!-- ========== RECHTE SPALTE (Details & Fahrzeuge) ========== -->
-        <div class="flex flex-col gap-6 md:gap-8 h-full overflow-hidden min-h-0">
-            <!-- Container für Details, der scrollbar wird, FALLS NÖTIG -->
-            <div class="flex flex-col gap-6 md:gap-8 overflow-y-auto pr-2 h-full">
-                <!-- Alarmzeit, Aktuelle Zeit & Sonderechte (Kombiniert) -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="detail-box lg:col-span-1">
-                        <h2 class="text-yellow-400">Alarmzeit</h2>
-                        <div id="alarm-timestamp" class="text-3xl md:text-4xl font-bold text-white">
-                            -
-                        </div>
-                    </div>
-                    <div class="detail-box lg:col-span-1">
-                        <h2 class="text-gray-400">Aktuelle Zeit</h2>
-                        <div id="clock-current" class="text-3xl md:text-4xl font-bold text-white">
-                            -
-                        </div>
-                    </div>
-                    <div class="detail-box lg:col-span-1">
-                        <h2 class="text-yellow-400">Sonderechte</h2>
-                        <div id="alarm-sonderechte" class="text-3xl md:text-4xl font-bold text-white">
-                            -
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Fahrzeuge -->
-                <div class="detail-box">
-                    <h2 class="text-blue-400">Alarmierte Fahrzeuge</h2>
-                    <div id="alarm-fahrzeuge" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- RECHTE SPALTE: Fahrzeug-Status -->
+            <div class="content-column">
+                <!-- Alarmierte Fahrzeuge (HIER KOMMT DER STATUS REIN) -->
+                <!-- NEU: flex-1 (füllt die Spalte), flex, flex-col -->
+                <div class="detail-box flex-1 flex flex-col"> 
+                    <h2 class="text-blue-400">Alarmierte Fahrzeuge & Status</h2>
+                    <!-- NEU: overflow-hidden. Liste wird abgeschnitten, wenn sie nicht passt -->
+                    <div id="alarm-fahrzeuge" class="flex flex-col space-y-3 overflow-hidden"> 
                         <span class="text-gray-400 italic">...</span>
                     </div>
                 </div>
-
-                <!-- Freitext (wird bei Bedarf ausgeblendet) -->
-                <div id="freitext-box" class="detail-box">
-                    <h2 class="text-gray-400">Zusatz-Infos</h2>
-                    <div id="alarm-freitext" class="text-2xl text-gray-200 italic break-words">
-                        -
-                    </div>
-                </div>
             </div>
+
         </div>
     </div>
-    
-    <!-- Mute Button -->
-    <button id="mute-button" class="fixed bottom-4 right-4 z-30 p-3 bg-gray-700 text-white rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity">
-        <svg id="icon-unmuted" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .89-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-        <svg id="icon-muted" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .89-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2 2m2-2l2 2"></path></svg>
-    </button>
-    
 
-    <!-- Firebase App (Modular v9) -->
     <script type="module">
-        // Import der Firebase-Module
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            onAuthStateChanged,
-            signInAnonymously
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            collection, 
-            onSnapshot,
-            query,
-            where,
-            setLogLevel
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, onSnapshot, query, where, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Konfiguration ---
-        // Exakt dieselbe Konfiguration wie in alarm-input.html
+        // ----- KONFIGURATION -----
         const firebaseConfig = {
           apiKey: "AIzaSyAUmkqte2nAP9XOPfKZvK54aYXIZXtwoQc",
           authDomain: "alert-display.firebaseapp.com",
@@ -176,307 +153,180 @@
           measurementId: "G-3BX1HB9RXZ"
         };
         
-        // --- Initialisierung ---
-        let app, auth, db;
-        let userId;
-        
-        // Firestore Referenzen
-        let settingsDocRef;
-        let operationsCollectionRef;
-        
-        // Lokaler Cache für die Start-Adresse
+        let app, auth, db, userId;
+        let settingsDocRef, operationsCollectionRef, vehicleStatusCollectionRef;
         let homeAddress = "Feuerwehrhaus";
         
-        // Statusvariablen
-        let displayedAlarmIds = new Set(); // Verfolgt, welche Alarme schon angezeigt wurden (für Ton)
-        let isAudioReady = false; // Ob der User geklickt hat
-        let isMuted = false;
-        let alarmSoundTimeout; // Timer, um den Alarmton zu stoppen
+        let allVehicleStatuses = new Map(); 
+        let currentAlarmData = null; 
 
-        // Tone.js Sound-Objekte
-        let synth, lfo, volume;
-
-        // DOM-Elemente
-        const startOverlay = document.getElementById('start-overlay');
         const screensaver = document.getElementById('screensaver');
-        const clockScreensaver = document.getElementById('clock-screensaver');
-        const clockCurrent = document.getElementById('clock-current'); // NEU: Uhr im Alarm-Modus
-        const alarmDisplay = document.getElementById('alarm-display');
-        const muteButton = document.getElementById('mute-button');
-        const iconMuted = document.getElementById('icon-muted');
-        const iconUnmuted = document.getElementById('icon-unmuted');
-
-        // Alarm-Detail-Felder
+        const clock = document.getElementById('clock');
+        const alarmView = document.getElementById('alarm-view');
+        
         const alarmStichwortSchlagwort = document.getElementById('alarm-stichwort-schlagwort');
         const alarmAdresse = document.getElementById('alarm-adresse');
         const alarmTimestamp = document.getElementById('alarm-timestamp');
+        const currentTime = document.getElementById('current-time');
         const alarmSonderechte = document.getElementById('alarm-sonderechte');
         const alarmFahrzeuge = document.getElementById('alarm-fahrzeuge');
-        const freitextBox = document.getElementById('freitext-box'); // NEU: Die ganze Box
+        const freitextBox = document.getElementById('freitext-box');
         const alarmFreitext = document.getElementById('alarm-freitext');
-        const mapIframe = document.getElementById('map-iframe');
 
-        // --- 1. Audio-Initialisierung (Start-Overlay) ---
-        
-        startOverlay.addEventListener('click', async () => {
-            if (isAudioReady) return;
-            
-            try {
-                await Tone.start();
-                
-                // Erstellt einen "europäischen" Sirenen-Sound (schneller Wechsel)
-                volume = new Tone.Volume(-12).toDestination(); // Lautstärke (in dB)
-                synth = new Tone.PulseOscillator(440, 0.4).connect(volume);
-                lfo = new Tone.LFO("2hz", 440, 660).connect(synth.frequency); // Oszilliert 2x pro Sekunde zwischen 440Hz und 660Hz
-                
-                isAudioReady = true;
-                console.log("Audio context ist bereit.");
-                startOverlay.classList.add('hidden');
-                
-                // Starte die App-Logik (Firebase etc.) erst nach der Interaktion
-                initializeAppLogic();
-                
-            } catch (error) {
-                console.error("Fehler beim Starten von Tone.js:", error);
-                startOverlay.innerHTML = "<p class='text-red-500'>Audio konnte nicht gestartet werden. Bitte Seite neu laden.</p>";
-            }
-        });
-
-        // Mute-Button Logik
-        muteButton.addEventListener('click', () => {
-            isMuted = !isMuted;
-            iconMuted.classList.toggle('hidden', !isMuted);
-            iconUnmuted.classList.toggle('hidden', isMuted);
-            
-            if (isMuted) {
-                stopAlarmSound(); // Sofort stoppen bei Mute
-                console.log("Stumm geschaltet");
-            } else {
-                console.log("Stummschaltung aufgehoben");
-            }
-        });
-        
-        // Startet den generierten Alarmton
-        function playAlarmSound() {
-            if (!isAudioReady || isMuted) return;
-            
-            console.log("ALARMTON WIRD GESTARTET");
-            clearTimeout(alarmSoundTimeout);
-            lfo.start();
-            synth.start();
-            
-            // Alarmton nach 15 Sekunden automatisch stoppen
-            alarmSoundTimeout = setTimeout(() => {
-                stopAlarmSound();
-            }, 15000); // 15 Sekunden
-        }
-        
-        // Stoppt den Alarmton
-        function stopAlarmSound() {
-            if (synth && lfo) {
-                synth.stop();
-                lfo.stop();
-                console.log("Alarmton gestoppt.");
-            }
-            clearTimeout(alarmSoundTimeout);
-        }
-        
-        // Event Listener für "Route öffnen"-Button entfernt
-
-        // --- 2. Uhr-Logik (für beide Uhren) ---
-        
-        function updateAllClocks() {
+        // ----- Uhrzeit-Logik -----
+        function updateTime() {
             const now = new Date();
-            const timeString = now.toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            clockScreensaver.textContent = timeString; // Bildschirmschoner-Uhr
-            clockCurrent.textContent = timeString;   // Alarm-Modus-Uhr
+            const timeString = now.toLocaleTimeString('de-DE');
+            clock.textContent = timeString;
+            currentTime.textContent = timeString;
         }
-        setInterval(updateAllClocks, 1000);
-        updateAllClocks(); // Sofortiger Aufruf
+        setInterval(updateTime, 1000);
+        updateTime();
 
-        // --- 3. Firebase & App-Logik ---
-        
-        // Authentifizierung (Anonym)
+        // ----- App-Initialisierung & Auth -----
         async function authInit() {
-            onAuthStateChanged(auth, async (user) => {
+            onAuthStateChanged(auth, async user => {
                 if (user) {
                     userId = user.uid;
-                    console.log("Display angemeldet:", userId);
-                    
-                    // Pfade definieren
                     settingsDocRef = doc(db, "settings", "mainSettings");
                     operationsCollectionRef = collection(db, "operations");
-                    
-                    // Listener starten
-                    await loadSettings(); // Warten, bis die Adresse geladen ist
-                    listenToOperations(); // Auf Einsätze lauschen
-                    
+                    vehicleStatusCollectionRef = collection(db, "vehicleStatus"); 
+
+                    await loadSettings();
+                    listenForActiveAlarms();
+                    listenToAllVehicleStatuses(); 
                 } else {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Anonyme Anmeldung fehlgeschlagen: ", error);
-                    }
+                    await signInAnonymously(auth);
                 }
             });
         }
-        
-        // Lädt die Einstellungen (nur die Adresse wird hier gebraucht)
+
         async function loadSettings() {
-            if (!settingsDocRef) return;
             try {
-                const docSnap = await getDoc(settingsDocRef);
-                if (docSnap.exists() && docSnap.data().address) {
-                    homeAddress = docSnap.data().address;
-                    console.log("Standort geladen:", homeAddress);
-                } else {
-                    console.log("Keine Start-Adresse in Einstellungen gefunden, nutze Standard.");
-                    homeAddress = "Feuerwehrhaus"; // Fallback
+                const snap = await getDoc(settingsDocRef);
+                if (snap.exists() && snap.data().address) {
+                    homeAddress = snap.data().address;
                 }
             } catch (error) {
                 console.error("Fehler beim Laden der Einstellungen:", error);
-                homeAddress = "Feuerwehrhaus"; // Fallback
             }
         }
 
-        // Echtzeit-Listener für AKTIVE Einsätze
-        function listenToOperations() {
-            if (!operationsCollectionRef) return;
-            
-            // Query: Nur Einsätze, die `isActive: true` sind
+        // ----- DATENBANK-LISTENER -----
+
+        function listenForActiveAlarms() {
             const q = query(operationsCollectionRef, where("isActive", "==", true));
             
             onSnapshot(q, (snapshot) => {
-                const activeAlarms = snapshot.docs;
-                const newAlarmIds = new Set(activeAlarms.map(doc => doc.id));
-                
-                let isNewAlarmDetected = false;
-                
-                // Prüfen, ob ein neuer Alarm (den wir noch nicht kennen) dabei ist
-                for (const id of newAlarmIds) {
-                    if (!displayedAlarmIds.has(id)) {
-                        isNewAlarmDetected = true;
-                        break;
-                    }
-                }
-
-                // Alarmton abspielen, wenn ein neuer Alarm erkannt wurde
-                if (isNewAlarmDetected) {
-                    playAlarmSound();
-                }
-                
-                // ID-Liste für die nächste Prüfung aktualisieren
-                displayedAlarmIds = newAlarmIds;
-
-                if (activeAlarms.length > 0) {
-                    // Es gibt (mindestens) einen aktiven Einsatz
-                    const alarmData = activeAlarms[0].data(); // Zeige den ersten (meist neuesten)
+                if (!snapshot.empty) {
+                    const alarm = snapshot.docs[0];
+                    currentAlarmData = alarm.data(); 
                     
-                    // UI mit den Daten füllen
-                    updateAlarmDisplay(alarmData);
+                    updateAlarmDisplay(currentAlarmData); 
+                    renderFahrzeuge(); 
+                    showScreensaver(false);
                     
-                    // Anzeige wechseln
-                    screensaver.classList.add('hidden');
-                    alarmDisplay.classList.remove('hidden');
-
                 } else {
-                    // Kein aktiver Einsatz
-                    
-                    // Anzeige zurück zum Bildschirmschoner
-                    screensaver.classList.remove('hidden');
-                    alarmDisplay.classList.add('hidden');
-                    stopAlarmSound(); // Sicherstellen, dass der Ton aus ist
-                    displayedAlarmIds.clear(); // Liste zurücksetzen
+                    currentAlarmData = null; 
+                    showScreensaver(true);
                 }
-                
             }, (error) => {
                 console.error("Fehler beim Abhören der Einsätze:", error);
+                showScreensaver(true);
+            });
+        }
+
+        function listenToAllVehicleStatuses() {
+            onSnapshot(vehicleStatusCollectionRef, (snapshot) => {
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    allVehicleStatuses.set(doc.id, data.currentStatus || 0);
+                });
+                
+                if (currentAlarmData) {
+                    renderFahrzeuge();
+                }
+            }, (error) => {
+                console.error("Fehler beim Abhören des Fahrzeugstatus:", error);
+            });
+        }
+
+
+        // ----- UI-UPDATE FUNKTIONEN -----
+
+        function renderFahrzeuge() {
+            alarmFahrzeuge.innerHTML = ''; 
+            
+            if (!currentAlarmData || !currentAlarmData.fahrzeuge) {
+                alarmFahrzeuge.innerHTML = '<span class="text-gray-400 italic">Keine Fahrzeuge alarmiert.</span>';
+                return;
+            }
+
+            currentAlarmData.fahrzeuge.forEach(vehicleName => {
+                const statusNum = allVehicleStatuses.get(vehicleName) || 0;
+                
+                const itemEl = document.createElement('div');
+                // Schriftgröße angepasst
+                itemEl.className = 'flex justify-between items-center text-xl font-semibold p-3 bg-gray-700 rounded-lg shadow-md';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = vehicleName;
+                nameSpan.className = 'text-white';
+
+                const statusSpan = document.createElement('span');
+                // Größe angepasst
+                statusSpan.className = `flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg status-${statusNum}`;
+                statusSpan.textContent = statusNum; 
+                
+                itemEl.appendChild(nameSpan);
+                itemEl.appendChild(statusSpan);
+                alarmFahrzeuge.appendChild(itemEl);
             });
         }
         
-        // Füllt die Alarm-UI mit Daten
         function updateAlarmDisplay(data) {
-            
-            // 1. Stichwort & Schlagwort
             alarmStichwortSchlagwort.textContent = `${data.stichwort} - ${data.schlagwort}`;
-            
-            // 2. Adresse
             alarmAdresse.textContent = data.adresse;
             
-            // 3. Zeitstempel
-            let timeStr = 'N/A';
-            if (data.timestamp) {
-                try {
-                    timeStr = new Date(data.timestamp.seconds * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                } catch (e) {
-                    timeStr = 'Gerade eben';
-                }
-            }
-            alarmTimestamp.textContent = timeStr;
-            
-            // 4. Sonderechte
-            if (data.sonderechte) {
-                alarmSonderechte.textContent = "JA";
-                alarmSonderechte.classList.add('text-yellow-400');
-                alarmSonderechte.classList.remove('text-gray-500');
+            if (data.timestamp && data.timestamp.seconds) {
+                alarmTimestamp.textContent = new Date(data.timestamp.seconds * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + " Uhr";
             } else {
-                alarmSonderechte.textContent = "NEIN";
-                alarmSonderechte.classList.remove('text-yellow-400');
-                alarmSonderechte.classList.add('text-gray-500');
+                alarmTimestamp.textContent = '-';
             }
-            
-            // 5. Fahrzeuge
-            alarmFahrzeuge.innerHTML = '';
-            if (data.fahrzeuge && data.fahrzeuge.length > 0) {
-                data.fahrzeuge.forEach(vehicle => {
-                    const vehicleEl = document.createElement('div');
-                    vehicleEl.className = 'p-3 bg-gray-700 rounded-lg text-white text-lg font-medium text-center shadow-md';
-                    vehicleEl.textContent = vehicle;
-                    alarmFahrzeuge.appendChild(vehicleEl);
-                });
-            } else {
-                alarmFahrzeuge.innerHTML = '<span class="text-gray-400 italic">Keine Fahrzeuge alarmiert.</span>';
-            }
-            
-            // 6. Freitext (Box ein/ausblenden)
+
+            alarmSonderechte.textContent = data.sonderechte ? "JA" : "NEIN";
+            alarmSonderechte.classList.toggle('text-yellow-400', data.sonderechte);
+            alarmSonderechte.classList.toggle('text-gray-500', !data.sonderechte);
+
             if (data.freitext) {
                 alarmFreitext.textContent = `"${data.freitext}"`;
-                alarmFreitext.classList.remove('text-gray-500');
-                freitextBox.classList.remove('hidden'); // Box anzeigen
+                freitextBox.classList.remove('hidden');
             } else {
-                alarmFreitext.textContent = '- Keine -';
-                alarmFreitext.classList.add('text-gray-500');
-                freitextBox.classList.add('hidden'); // Box verstecken
+                freitextBox.classList.add('hidden');
             }
-            
-            // 7. Karte (Kostenlose Pin-Anzeige)
-            // Wir verwenden die kostenlose "q=" (Query) API, um einen Pin auf der Satellitenkarte zu zeigen.
-            const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(data.adresse)}&t=k&z=16&ie=UTF8&iwloc=&output=embed`;
-            mapIframe.src = mapUrl;
         }
 
-        // --- Start der Anwendung (nach Klick) ---
-        function initializeAppLogic() {
-            try {
-                setLogLevel('Debug');
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                console.log("Firebase initialisiert.");
-                
-                // Authentifizierung starten
-                authInit();
-                
-            } catch (error) {
-                console.error("Firebase Initialisierungsfehler:", error);
+        function showScreensaver(show) {
+            if (show) {
+                screensaver.classList.remove('opacity-0');
+                alarmView.classList.add('opacity-0', 'pointer-events-none');
+            } else {
+                screensaver.classList.add('opacity-0');
+                alarmView.classList.remove('opacity-0', 'pointer-events-none');
             }
         }
         
-        // HINWEIS: initializeAppLogic() wird erst nach dem Klick auf das Start-Overlay aufgerufen.
+        // ----- APP-START -----
+        function initializeAppLogic() {
+            setLogLevel('Debug');
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            authInit();
+        }
+
+        window.addEventListener('DOMContentLoaded', initializeAppLogic);
+
     </script>
 </body>
 </html>
