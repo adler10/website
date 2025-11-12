@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fahrzeug-Display</title>
+    <!-- NEU: Apple Home-Screen App Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+    <!-- Ende NEU -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     
@@ -148,7 +153,6 @@
 
         // ----- KONFIGURATION -----
         const MEIN_FAHRZEUG = "LH 19-1";
-        const LOCATION_UPDATE_INTERVAL = 10000; // 10 Sekunden
         // -------------------------
 
         const statusMap = {
@@ -169,7 +173,7 @@
         let settingsDocRef, operationsCollectionRef, vehicleStatusRef;
         let homeAddress = "Feuerwehrhaus", currentDestinationAddress = "";
         let displayedAlarmIds = new Set();
-        let locationIntervalId = null; // NEU: ID für den Standort-Timer
+        // REMOVED: let locationIntervalId = null; 
         
         const statusKlar = document.getElementById('status-klar');
         const statusKlarFahrzeug = document.getElementById('status-klar-fahrzeug');
@@ -206,7 +210,7 @@
         statusButtonsContainer.addEventListener('click', e => {
             const button = e.target.closest('button');
             if (!button || !button.dataset.status) return;
-            sendStatus(button.dataset.status); // Ruft die NEUE Status-Logik auf
+            sendStatus(button.dataset.status); // Ruft die Original-Status-Funktion auf
             statusModal.classList.add('opacity-0','pointer-events-none');
         });
 
@@ -223,28 +227,12 @@
                     await loadSettings(); 
                     listenForMyAlarm();   
                     listenToVehicleStatus();
-                    requestLocationPermission(); // NEU: Standort-Erlaubnis anfordern
+                    // REMOVED: requestLocationPermission();
                 } else await signInAnonymously(auth);
             });
         }
         
-        // NEU: Bittet beim Start um Standort-Erlaubnis
-        function requestLocationPermission() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        console.log("Standort-Erlaubnis erteilt.", position.coords);
-                    }, 
-                    (error) => {
-                        console.warn("Standort-Erlaubnis verweigert oder nicht verfügbar:", error.message);
-                        // Hier könnte man dem Nutzer eine (nicht-blockierende) Warnung anzeigen
-                    },
-                    { enableHighAccuracy: true } // Fordert hohe Genauigkeit an
-                );
-            } else {
-                console.warn("Geolocation wird von diesem Browser nicht unterstützt.");
-            }
-        }
+        // REMOVED: requestLocationPermission() Funktion
 
         async function loadSettings() {
             try {
@@ -302,101 +290,20 @@
             mapIframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(data.adresse)}&t=k&z=16&ie=UTF8&iwloc=&output=embed`;
         }
         
-        // ----- NEUE STATUS- & STANDORTLOGIK -----
+        // ----- STATUS-LOGIK (Original) -----
 
         /**
-         * NEU: Controller-Funktion, die entscheidet, WIE der Status gesendet wird.
+         * Sendet den Status (ohne Standort) an Firebase.
          */
         async function sendStatus(id) {
-            // 1. Immer einen laufenden Timer stoppen, wenn ein NEUER Status gesetzt wird.
-            if (locationIntervalId) {
-                clearInterval(locationIntervalId);
-                locationIntervalId = null;
-                console.log("Standort-Tracking gestoppt.");
-            }
-
-            const statusNum = +id; // In Zahl umwandeln
-
-            switch (statusNum) {
-                case 1: // Einsatzbereit über Funk
-                case 3: // Einsatzübernahme
-                    console.log(`Status ${id}: Starte 10-Sekunden-Tracking.`);
-                    await updateLocation(id); // Sofort erste Position senden
-                    // Timer starten, der alle 10 Sek. die Position aktualisiert
-                    locationIntervalId = setInterval(() => updateLocation(id), LOCATION_UPDATE_INTERVAL); 
-                    break;
-                case 2: // Einsatzbereit auf Wache
-                case 4: // Am Einsatzort eingetroffen
-                    console.log(`Status ${id}: Sende Standort einmalig.`);
-                    await updateLocation(id); // Einmalig Position senden
-                    break;
-                case 5: // Sprechwunsch
-                case 6: // Nicht Einsatzbereit
-                    console.log(`Status ${id}: Sende Status OHNE Standort.`);
-                    await sendBasicStatus(id); // Sende Status, setze Standort auf null
-                    break;
-                default:
-                    console.warn("Unbekannter Status:", id);
-            }
-        }
-
-        /**
-         * NEU: Holt den Standort und sendet den Status MIT Koordinaten an Firebase.
-         */
-        function updateLocation(id) {
-            if (!statusMap[id]) return;
-            
-            if (!("geolocation" in navigator)) {
-                console.warn("Standort nicht unterstützt. Sende Basis-Status.");
-                return sendBasicStatus(id); // Fallback, wenn Geolocation fehlt
-            }
-            
-            // Holt die AKTUELLE Position
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const statusData = {
-                        vehicleId: MEIN_FAHRZEUG,
-                        currentStatus: +id,
-                        statusText: statusMap[id],
-                        lastUpdated: serverTimestamp(),
-                        // NEUES FELD: Standort-Daten
-                        location: { 
-                            lat: latitude,
-                            lon: longitude,
-                            timestamp: serverTimestamp() // Zeitstempel für die Position
-                        }
-                    };
-                    
-                    try {
-                        await setDoc(vehicleStatusRef, statusData, { merge: true });
-                        console.log(`Status ${id} mit Standort (${latitude}, ${longitude}) gesendet.`);
-                    } catch (error) {
-                        console.error("Fehler beim Senden mit Standort:", error);
-                    }
-                },
-                async (error) => {
-                    // Fallback, wenn Nutzer Erlaubnis verweigert oder GPS-Fehler
-                    console.warn("Standort konnte nicht ermittelt werden. Sende Basis-Status.", error.message);
-                    await sendBasicStatus(id); 
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // Hohe Genauigkeit, 5s Timeout
-            );
-        }
-
-        /**
-         * NEU: Sendet den Status OHNE Standort (oder setzt ihn auf null).
-         * Wichtig für Status 5, 6 und als Fallback.
-         */
-        async function sendBasicStatus(id) {
             if (!statusMap[id]) return;
             
             const statusData = {
                 vehicleId: MEIN_FAHRZEUG,
                 currentStatus: +id,
                 statusText: statusMap[id],
-                lastUpdated: serverTimestamp(),
-                location: null // WICHTIG: Setzt den Standort aktiv auf null
+                lastUpdated: serverTimestamp()
+                // REMOVED: location: ...
             };
 
             try {
