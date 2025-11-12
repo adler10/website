@@ -8,47 +8,63 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* Stellt sicher, dass die App die volle Höhe nutzt (vh für mobil) */
         html, body {
             height: 100vh;
             width: 100%;
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Verhindert Scrollen auf der Wurzelebene */
+            overflow: hidden;
         }
-        /* Styling für die Details-Boxen im Alarmfall */
         .detail-box {
-            background-color: #1f2937; /* gray-800 */
-            border: 1px solid #374151; /* gray-700 */
-            border-radius: 0.75rem; /* rounded-xl */
-            padding: 1rem 1.25rem; /* p-4 sm:p-5 */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .detail-box h2 {
-            font-size: 1.125rem; /* text-lg */
-            font-weight: 600; /* font-semibold */
-            padding-bottom: 0.5rem; /* pb-2 */
-            border-bottom: 1px solid #374151; /* border-b border-gray-700 */
-            margin-bottom: 0.75rem; /* mb-3 */
+            font-size: 1.125rem;
+            font-weight: 600;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 0.75rem;
         }
 
-        /* GEÄNDERT: Status-Buttons im Modal sind größer (w-24 h-24) für leichtere Bedienung */
+        /* ===== GROSSE STATUS-BUTTONS ===== */
         .status-btn {
-            @apply w-24 h-24 flex items-center justify-center rounded-full text-white text-5xl font-bold shadow-lg transition-transform duration-150 active:scale-[0.95];
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            touch-action: manipulation;
         }
-        .status-1 { @apply bg-green-600 hover:bg-green-500; } /* Einsatzbereit über Funk */
-        .status-2 { @apply bg-green-700 hover:bg-green-600; } /* Einsatzbereit auf Wache */
-        .status-3 { @apply bg-orange-500 hover:bg-orange-400; } /* Einsatzübernahme */
-        .status-4 { @apply bg-red-600 hover:bg-red-500; } /* Am Einsatzort eingetroffen */
-        .status-5 { @apply bg-blue-600 hover:bg-blue-500; } /* Sprechwunsch */
-        .status-6 { @apply bg-gray-500 hover:bg-gray-400; } /* Nicht Einsatzbereit */
-
+        .status-btn:active {
+            transform: scale(0.95);
+        }
+        .status-1 { background-color: #16a34a; } /* green-600 */
+        .status-1:hover { background-color: #22c55e; }
+        .status-2 { background-color: #15803d; } /* green-700 */
+        .status-2:hover { background-color: #16a34a; }
+        .status-3 { background-color: #f97316; } /* orange-500 */
+        .status-3:hover { background-color: #fb923c; }
+        .status-4 { background-color: #dc2626; } /* red-600 */
+        .status-4:hover { background-color: #ef4444; }
+        .status-5 { background-color: #2563eb; } /* blue-600 */
+        .status-5:hover { background-color: #3b82f6; }
+        .status-6 { background-color: #6b7280; } /* gray-500 */
+        .status-6:hover { background-color: #9ca3af; }
     </style>
 </head>
 <body class="h-full text-gray-200 antialiased">
 
-    <!-- ========== STATUS-ANZEIGE (Kein Einsatz) ========== -->
     <div id="status-klar" class="fixed inset-0 z-10 flex flex-col items-center justify-center bg-gray-900 transition-opacity duration-1000 p-4">
         <div class="text-center">
             <div id="status-klar-text" class="text-6xl font-black text-gray-500 select-none mb-4 break-words px-4">
@@ -60,103 +76,63 @@
         </div>
     </div>
 
-    <!-- ========== ALARM-ANZEIGE (Aktiver Einsatz) ========== -->
     <div id="alarm-view" class="fixed inset-0 z-20 transition-opacity duration-500 hidden" style="background: radial-gradient(circle, #2b0000 0%, #000000 100%);">
-        <!-- Scrollbarer Container für den Inhalt -->
-        <div class="h-full overflow-y-auto p-4 md:p-6 space-y-4 pb-24"> <!-- Padding-Bottom für FAB -->
-            
-            <!-- Header -->
+        <div class="h-full overflow-y-auto p-4 md:p-6 space-y-4 pb-24">
             <div class="detail-box text-center bg-red-800/50 border-red-700">
                 <h1 id="alarm-view-header" class="text-xl font-bold text-red-300">EINSATZ FÜR: [FAHRZEUG]</h1>
             </div>
 
-            <!-- Stichwort & Schlagwort -->
             <div class="detail-box">
                 <div id="alarm-stichwort-schlagwort" class="text-3xl sm:text-4xl font-bold text-red-500 break-words">
                     LADE EINSATZ...
                 </div>
             </div>
-            
-            <!-- Adresse -->
+
             <div class="detail-box">
                 <h2 class="text-red-400">Adresse</h2>
-                <div id="alarm-adresse" class="text-2xl sm:text-3xl font-medium text-white break-words">
-                    -
-                </div>
+                <div id="alarm-adresse" class="text-2xl sm:text-3xl font-medium text-white break-words">-</div>
             </div>
 
-            <!-- Karte & Route -->
             <div class="detail-box">
                 <h2 class="text-red-400">Einsatzort</h2>
-                <iframe
-                    id="map-iframe"
-                    width="100%"
-                    height="250"
-                    style="border:0; border-radius: 0.5rem;"
-                    loading="lazy"
-                    allowfullscreen
-                    referrerpolicy="no-referrer-when-downgrade"
-                    src="about:blank">
-                </iframe>
-                <!-- Routen-Button, optimiert für mobile Geräte -->
-                <button id="open-route-button" class="mt-4 w-full py-3 px-5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition duration-200 text-lg">
-                    Route in Maps öffnen
-                </button>
+                <iframe id="map-iframe" width="100%" height="250" style="border:0; border-radius:0.5rem;" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+                <button id="open-route-button" class="mt-4 w-full py-3 px-5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition duration-200 text-lg">Route in Maps öffnen</button>
             </div>
 
-            <!-- Alarmzeit & Sonderechte -->
             <div class="grid grid-cols-2 gap-4">
                 <div class="detail-box">
                     <h2 class="text-yellow-400">Alarmzeit</h2>
-                    <div id="alarm-timestamp" class="text-2xl font-bold text-white">
-                        -
-                    </div>
+                    <div id="alarm-timestamp" class="text-2xl font-bold text-white">-</div>
                 </div>
                 <div class="detail-box">
                     <h2 class="text-yellow-400">Sonderechte</h2>
-                    <div id="alarm-sonderechte" class="text-2xl font-bold text-white">
-                        -
-                    </div>
+                    <div id="alarm-sonderechte" class="text-2xl font-bold text-white">-</div>
                 </div>
             </div>
 
-            <!-- Fahrzeuge -->
             <div class="detail-box">
                 <h2 class="text-blue-400">Alle alarmierten Fahrzeuge</h2>
-                <div id="alarm-fahrzeuge" class="flex flex-wrap gap-2">
-                    <span class="text-gray-400 italic">...</span>
-                </div>
+                <div id="alarm-fahrzeuge" class="flex flex-wrap gap-2"><span class="text-gray-400 italic">...</span></div>
             </div>
 
-            <!-- Freitext -->
             <div id="freitext-box" class="detail-box mb-16">
                 <h2 class="text-gray-400">Zusatz-Infos</h2>
-                <div id="alarm-freitext" class="text-lg text-gray-200 italic break-words">
-                    -
-                </div>
+                <div id="alarm-freitext" class="text-lg text-gray-200 italic break-words">-</div>
             </div>
+        </div>
+    </div>
 
-        </div> <!-- Ende Scroll-Container -->
-    </div> <!-- Ende Alarm-View -->
-    
-    
-    <!-- Status Senden (Floating Action Button) -->
-    <!-- HINWEIS: Ring-Klassen werden jetzt via JS hinzugefügt/entfernt -->
     <button id="status-fab" class="fixed bottom-4 right-4 z-30 w-16 h-16 bg-gray-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 transform hover:scale-110">
         <span id="status-fab-text" class="font-bold text-3xl">?</span>
     </button>
 
-    <!-- Status-Modal -->
     <div id="status-modal" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none">
-        <!-- GEÄNDERT: max-w-sm, damit die größeren Buttons besser passen -->
-        <div class="w-full max-w-sm bg-gray-800 rounded-2xl shadow-2xl p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">Status Senden</h2>
-                <button id="status-modal-close" class="text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
+        <div class="w-full max-w-lg bg-gray-800 rounded-2xl shadow-2xl p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-white">Status Senden</h2>
+                <button id="status-modal-close" class="text-gray-400 hover:text-white text-4xl font-bold">&times;</button>
             </div>
-            <!-- Status-Buttons Container (3x2 Gitter) -->
-            <div id="status-buttons-container" class="grid grid-cols-3 gap-4 justify-items-center">
-                <!-- Buttons sind jetzt w-24 h-24 text-5xl -->
+            <div id="status-buttons-container" class="grid grid-cols-2 gap-6 justify-items-center">
                 <button class="status-btn status-1" data-status="1">1</button>
                 <button class="status-btn status-2" data-status="2">2</button>
                 <button class="status-btn status-3" data-status="3">3</button>
@@ -166,37 +142,13 @@
             </div>
         </div>
     </div>
-    
 
-    <!-- Firebase App (Modular v9) -->
     <script type="module">
-        // Import der Firebase-Module
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            onAuthStateChanged,
-            signInAnonymously
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            collection, 
-            onSnapshot,
-            query,
-            where,
-            setDoc,
-            serverTimestamp,
-            setLogLevel
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, onSnapshot, query, where, setDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================================
-        // ----- HIER DAS FAHRZEUG FÜR DIESE APP EINSTELLEN -----
-        // ==========================================================
-        const MEIN_FAHRZEUG = "LH 19-1"; // z.B. "LH 40", "LH 19-1", "MTW"
-        // ==========================================================
-        
-        // Map für Status-Texte (mit Status 0 für "unbekannt")
+        const MEIN_FAHRZEUG = "LH 19-1";
         const statusMap = {
             "0": "Status Unbekannt",
             "1": "Einsatzbereit über Funk",
@@ -206,9 +158,6 @@
             "5": "Sprechwunsch",
             "6": "Nicht Einsatzbereit",
         };
-
-        // --- Firebase Konfiguration ---
-        // Exakt dieselbe Konfiguration wie in alarm-input.html
         const firebaseConfig = {
           apiKey: "AIzaSyAUmkqte2nAP9XOPfKZvK54aYXIZXtwoQc",
           authDomain: "alert-display.firebaseapp.com",
@@ -219,37 +168,21 @@
           measurementId: "G-3BX1HB9RXZ"
         };
         
-        // --- Initialisierung ---
-        let app, auth, db;
-        let userId;
-        
-        // Firestore Referenzen
-        let settingsDocRef;
-        let operationsCollectionRef;
-        let vehicleStatusRef;
-        
-        // Lokaler Cache für Adressen
-        let homeAddress = "Feuerwehrhaus";
-        let currentDestinationAddress = "";
-        
-        // Statusvariablen
+        let app, auth, db, userId;
+        let settingsDocRef, operationsCollectionRef, vehicleStatusRef;
+        let homeAddress = "Feuerwehrhaus", currentDestinationAddress = "";
         let displayedAlarmIds = new Set();
         
-        // DOM-Elemente
         const statusKlar = document.getElementById('status-klar');
         const statusKlarFahrzeug = document.getElementById('status-klar-fahrzeug');
         const statusKlarText = document.getElementById('status-klar-text');
         const alarmView = document.getElementById('alarm-view');
         const alarmViewHeader = document.getElementById('alarm-view-header');
-        
-        // Status-Modal DOM-Elemente
         const statusFab = document.getElementById('status-fab');
         const statusFabText = document.getElementById('status-fab-text');
         const statusModal = document.getElementById('status-modal');
         const statusModalClose = document.getElementById('status-modal-close');
         const statusButtonsContainer = document.getElementById('status-buttons-container');
-
-        // Alarm-Detail-Felder
         const alarmStichwortSchlagwort = document.getElementById('alarm-stichwort-schlagwort');
         const alarmAdresse = document.getElementById('alarm-adresse');
         const alarmTimestamp = document.getElementById('alarm-timestamp');
@@ -259,313 +192,122 @@
         const alarmFreitext = document.getElementById('alarm-freitext');
         const mapIframe = document.getElementById('map-iframe');
         const openRouteButton = document.getElementById('open-route-button');
-        
-        // --- 1. UI mit Fahrzeugnamen initialisieren ---
+
         statusKlarFahrzeug.textContent = `Status für: ${MEIN_FAHRZEUG}`;
         alarmViewHeader.textContent = `EINSATZ FÜR: ${MEIN_FAHRZEUG}`;
 
-        // --- 2. Event-Listener ---
-        
-        // Routen-Button Logik
         openRouteButton.addEventListener('click', () => {
-            if (!homeAddress || !currentDestinationAddress) {
-                console.warn("Start- oder Zieladresse fehlt für Routen-Link.");
-                return;
-            }
+            if (!homeAddress || !currentDestinationAddress) return;
             const routeUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(homeAddress)}&daddr=${encodeURIComponent(currentDestinationAddress)}`;
             window.open(routeUrl, '_blank');
         });
-        
-        // Status-Modal öffnen
-        statusFab.addEventListener('click', () => {
-            statusModal.classList.remove('opacity-0', 'pointer-events-none');
-        });
-        
-        // Status-Modal schließen
-        statusModalClose.addEventListener('click', () => {
-            statusModal.classList.add('opacity-0', 'pointer-events-none');
-        });
-        
-        // Status-Button-Klick (Event Delegation)
-        statusButtonsContainer.addEventListener('click', (e) => {
+        statusFab.addEventListener('click', () => statusModal.classList.remove('opacity-0','pointer-events-none'));
+        statusModalClose.addEventListener('click', () => statusModal.classList.add('opacity-0','pointer-events-none'));
+        statusButtonsContainer.addEventListener('click', e => {
             const button = e.target.closest('button');
-            if (button && button.dataset.status) {
-                const statusId = button.dataset.status;
-                sendStatus(statusId);
-                statusModal.classList.add('opacity-0', 'pointer-events-none');
-            }
+            if (!button) return;
+            sendStatus(button.dataset.status);
+            statusModal.classList.add('opacity-0','pointer-events-none');
         });
 
-        // --- 3. Firebase & App-Logik ---
-        
-        // Authentifizierung (Anonym)
         async function authInit() {
-            onAuthStateChanged(auth, async (user) => {
+            onAuthStateChanged(auth, async user => {
                 if (user) {
                     userId = user.uid;
-                    console.log("Fahrzeug-Display angemeldet:", userId);
-                    
-                    // Pfade definieren
                     settingsDocRef = doc(db, "settings", "mainSettings");
                     operationsCollectionRef = collection(db, "operations");
                     vehicleStatusRef = doc(db, "vehicleStatus", MEIN_FAHRZEUG);
-                    
-                    // Listener starten
                     await loadSettings(); 
                     listenForMyAlarm();   
                     listenToVehicleStatus();
-                    
-                } else {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Anonyme Anmeldung fehlgeschlagen: ", error);
-                    }
-                }
+                } else await signInAnonymously(auth);
             });
         }
-        
-        // Lädt die Einstellungen (unverändert)
         async function loadSettings() {
-            if (!settingsDocRef) return;
             try {
-                const docSnap = await getDoc(settingsDocRef);
-                if (docSnap.exists() && docSnap.data().address) {
-                    homeAddress = docSnap.data().address;
-                    console.log("Standort geladen:", homeAddress);
-                } else {
-                    console.log("Keine Start-Adresse in Einstellungen gefunden.");
-                }
-            } catch (error) {
-                console.error("Fehler beim Laden der Einstellungen:", error);
-            }
+                const snap = await getDoc(settingsDocRef);
+                if (snap.exists()) homeAddress = snap.data().address || homeAddress;
+            } catch {}
         }
-
-        // Echtzeit-Listener für Einsätze (unverändert)
         function listenForMyAlarm() {
-            if (!operationsCollectionRef) return;
-            
-            const q = query(
-                operationsCollectionRef, 
-                where("isActive", "==", true),
-                where("fahrzeuge", "array-contains", MEIN_FAHRZEUG)
-            );
-            
-            onSnapshot(q, (snapshot) => {
-                const activeAlarmsForMe = snapshot.docs;
-                
-                if (activeAlarmsForMe.length > 0) {
-                    const alarmData = activeAlarmsForMe[0].data();
-                    const alarmId = activeAlarmsForMe[0].id;
-
-                    displayedAlarmIds = new Set(activeAlarmsForMe.map(doc => doc.id));
-                    updateAlarmDisplay(alarmData);
-                    
+            const q = query(operationsCollectionRef, where("isActive","==",true), where("fahrzeuge","array-contains",MEIN_FAHRZEUG));
+            onSnapshot(q, snap => {
+                const docs = snap.docs;
+                if (docs.length>0) {
+                    const data = docs[0].data();
+                    updateAlarmDisplay(data);
                     statusKlar.classList.add('hidden');
                     alarmView.classList.remove('hidden');
-
                 } else {
                     statusKlar.classList.remove('hidden');
                     alarmView.classList.add('hidden');
-                    displayedAlarmIds.clear();
-                    currentDestinationAddress = "";
                 }
-                
-            }, (error) => {
-                console.error("Fehler beim Abhören der Einsätze:", error);
-                statusKlar.classList.remove('hidden');
-                alarmView.classList.add('hidden');
             });
         }
-        
-        // Füllt die Alarm-UI mit Daten (unverändert)
         function updateAlarmDisplay(data) {
             alarmStichwortSchlagwort.textContent = `${data.stichwort} - ${data.schlagwort}`;
             alarmAdresse.textContent = data.adresse;
             currentDestinationAddress = data.adresse;
-            
-            let timeStr = 'N/A';
-            if (data.timestamp) {
-                try {
-                    timeStr = new Date(data.timestamp.seconds * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                } catch (e) { timeStr = 'Gerade eben'; }
-            }
-            alarmTimestamp.textContent = timeStr;
-            
-            if (data.sonderechte) {
-                alarmSonderechte.textContent = "JA";
-                alarmSonderechte.classList.add('text-yellow-400');
-                alarmSonderechte.classList.remove('text-gray-500');
-            } else {
-                alarmSonderechte.textContent = "NEIN";
-                alarmSonderechte.classList.remove('text-yellow-400');
-                alarmSonderechte.classList.add('text-gray-500');
-            }
-            
+            alarmTimestamp.textContent = data.timestamp ? new Date(data.timestamp.seconds*1000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '-';
+            alarmSonderechte.textContent = data.sonderechte ? "JA" : "NEIN";
             alarmFahrzeuge.innerHTML = '';
-            if (data.fahrzeuge && data.fahrzeuge.length > 0) {
-                data.fahrzeuge.forEach(vehicle => {
-                    const vehicleEl = document.createElement('div');
-                    vehicleEl.className = 'py-1 px-3 bg-gray-700 rounded-full text-white text-sm font-medium shadow';
-                    if (vehicle === MEIN_FAHRZEUG) {
-                        vehicleEl.classList.add('bg-blue-500', 'font-bold');
-                    }
-                    vehicleEl.textContent = vehicle;
-                    alarmFahrzeuge.appendChild(vehicleEl);
-                });
-            } else {
-                alarmFahrzeuge.innerHTML = '<span class="text-gray-400 italic">Keine Fahrzeuge.</span>';
-            }
-            
+            if (data.fahrzeuge) data.fahrzeuge.forEach(v=>{
+                const el=document.createElement('div');
+                el.className='py-1 px-3 bg-gray-700 rounded-full text-white text-sm font-medium shadow';
+                if(v===MEIN_FAHRZEUG) el.classList.add('bg-blue-500','font-bold');
+                el.textContent=v;
+                alarmFahrzeuge.appendChild(el);
+            });
             if (data.freitext) {
                 alarmFreitext.textContent = `"${data.freitext}"`;
-                alarmFreitext.classList.remove('text-gray-500');
                 freitextBox.classList.remove('hidden');
-            } else {
-                alarmFreitext.textContent = '- Keine -';
-                alarmFreitext.classList.add('text-gray-500');
-                freitextBox.classList.add('hidden');
-            }
-            
-            const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(data.adresse)}&t=k&z=16&ie=UTF8&iwloc=&output=embed`;
-            mapIframe.src = mapUrl;
+            } else freitextBox.classList.add('hidden');
+            mapIframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(data.adresse)}&t=k&z=16&ie=UTF8&iwloc=&output=embed`;
         }
-
-        // --- FUNKTIONEN FÜR STATUS ---
-
-        /**
-         * Sendet den ausgewählten Status an Firebase.
-         */
-        async function sendStatus(statusId) {
-            if (!vehicleStatusRef || !statusMap[statusId]) return;
-            
-            // Holt den Text-Wert aus der Map
-            const statusText = statusMap[statusId];
-            const statusData = {
-                vehicleId: MEIN_FAHRZEUG,
-                currentStatus: parseInt(statusId, 10),
-                statusText: statusText, // Sendet den Text-Status mit
-                lastUpdated: serverTimestamp()
-            };
-            
-            try {
-                await setDoc(vehicleStatusRef, statusData, { merge: true });
-                console.log("Status gesendet:", statusData);
-            } catch (error) {
-                console.error("Fehler beim Senden des Status:", error);
-            }
+        async function sendStatus(id) {
+            if (!statusMap[id]) return;
+            await setDoc(vehicleStatusRef,{
+                vehicleId:MEIN_FAHRZEUG,
+                currentStatus:+id,
+                statusText:statusMap[id],
+                lastUpdated:serverTimestamp()
+            },{merge:true});
         }
-        
-        /**
-         * Hört auf Änderungen am eigenen Status-Dokument
-         * und aktualisiert den FAB (Farbe & Text) UND den "Klar"-Screen.
-         */
         function listenToVehicleStatus() {
-            if (!vehicleStatusRef) return;
-            
-            onSnapshot(vehicleStatusRef, (doc) => {
-                let statusId = 0; // Default (Unbekannt)
-                let statusText = "Status Unbekannt";
-        
-                if (doc.exists() && doc.data().currentStatus) {
-                    statusId = doc.data().currentStatus;
-                    // Stelle sicher, dass der Text aus der DB oder der Map gelesen wird
-                    statusText = doc.data().statusText || statusMap[statusId.toString()] || "Status Unbekannt";
-                } else {
-                    statusText = statusMap["0"]; // Holt "Status Unbekannt"
+            onSnapshot(vehicleStatusRef, docSnap => {
+                let id=0, text=statusMap["0"];
+                if (docSnap.exists()) {
+                    id=docSnap.data().currentStatus||0;
+                    text=docSnap.data().statusText||statusMap[id]||statusMap["0"];
                 }
-                
-                updateStatusFab(statusId); // Aktualisiert FAB
-                updateStatusKlarScreen(statusId, statusText);
+                updateStatusFab(id);
+                updateStatusKlarScreen(id,text);
             });
         }
-
-        /**
-         * Aktualisiert den "Status Klar"-Bildschirm (Text und Farbe).
-         */
-        function updateStatusKlarScreen(statusId, statusText) {
-            statusKlarText.textContent = statusText;
-            
-            // Alte Farbklassen entfernen
-            statusKlarText.classList.remove('text-green-600', 'text-green-700', 'text-orange-500', 'text-red-600', 'text-blue-600', 'text-gray-500');
-            
-            let statusColorClass = 'text-gray-500'; // Default
-            switch (statusId) {
-                case 1: statusColorClass = 'text-green-600'; break;
-                case 2: statusColorClass = 'text-green-700'; break;
-                case 3: statusColorClass = 'text-orange-500'; break;
-                case 4: statusColorClass = 'text-red-600'; break;
-                case 5: statusColorClass = 'text-blue-600'; break;
-                case 6: statusColorClass = 'text-gray-500'; break;
-            }
-            statusKlarText.classList.add(statusColorClass);
+        function updateStatusKlarScreen(id,text) {
+            statusKlarText.textContent=text;
+            statusKlarText.className="text-6xl font-black select-none mb-4 break-words px-4";
+            const map={
+                1:'text-green-600',2:'text-green-700',3:'text-orange-500',
+                4:'text-red-600',5:'text-blue-600',6:'text-gray-500'
+            };
+            statusKlarText.classList.add(map[id]||'text-gray-500');
         }
-        
-        /**
-         * Aktualisiert die Farbe, den Text UND DEN RING des FAB basierend auf dem Status.
-         */
-        function updateStatusFab(statusId) {
-            // Alte Farb- UND Ring-Klassen entfernen
-            statusFab.classList.remove(
-                'status-1', 'status-2', 'status-3', 'status-4', 'status-5', 'status-6', 'bg-gray-700',
-                'ring-4', 'ring-opacity-50', // Ring-Basisklassen
-                'ring-green-500', 'ring-green-600', 'ring-orange-400', 'ring-red-500', 'ring-blue-500', 'ring-gray-400', 'ring-gray-600' // Ring-Farbklassen
-            );
-            
-            let statusText = "?";
-            let colorClasses = "bg-gray-700 ring-4 ring-opacity-50 ring-gray-600"; // Default-Farben (mit Ring)
-
-            switch (statusId) {
-                case 1:
-                    statusText = "1";
-                    colorClasses = "status-1 ring-4 ring-opacity-50 ring-green-500";
-                    break;
-                case 2:
-                    statusText = "2";
-                    colorClasses = "status-2 ring-4 ring-opacity-50 ring-green-600";
-                    break;
-                case 3:
-                    statusText = "3";
-                    colorClasses = "status-3 ring-4 ring-opacity-50 ring-orange-400";
-                    break;
-                case 4:
-                    statusText = "4";
-                    colorClasses = "status-4 ring-4 ring-opacity-50 ring-red-500";
-                    break;
-                case 5:
-                    statusText = "5";
-                    colorClasses = "status-5 ring-4 ring-opacity-50 ring-blue-500";
-                    break;
-                case 6:
-                    statusText = "6";
-                    colorClasses = "status-6 ring-4 ring-opacity-50 ring-gray-400";
-                    break;
-            }
-            
-            statusFabText.textContent = statusText;
-            statusFab.classList.add(...colorClasses.split(' ')); // Fügt alle Klassen hinzu (bg, ring-basis, ring-farbe)
+        const ALL_FAB_BG_CLASSES=['bg-green-600','bg-green-700','bg-orange-500','bg-red-600','bg-blue-600','bg-gray-500','bg-gray-700'];
+        function updateStatusFab(id){
+            ALL_FAB_BG_CLASSES.forEach(c=>statusFab.classList.remove(c));
+            const map={1:'bg-green-600',2:'bg-green-700',3:'bg-orange-500',4:'bg-red-600',5:'bg-blue-600',6:'bg-gray-500'};
+            statusFabText.textContent=id?String(id):'?';
+            statusFab.classList.add(map[id]||'bg-gray-700');
         }
-
-        // --- Start der Anwendung ---
         function initializeAppLogic() {
-            try {
-                setLogLevel('Debug');
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                console.log("Firebase initialisiert.");
-                
-                // Authentifizierung starten
-                authInit();
-                
-            } catch (error) {
-                console.error("Firebase Initialisierungsfehler:", error);
-            }
+            setLogLevel('Debug');
+            app=initializeApp(firebaseConfig);
+            auth=getAuth(app);
+            db=getFirestore(app);
+            authInit();
         }
-        
-        // App-Logik starten, sobald das DOM geladen ist
         window.addEventListener('DOMContentLoaded', initializeAppLogic);
-        
     </script>
 </body>
 </html>
