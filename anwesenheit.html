@@ -5,62 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Anwesenheits-Tool</title>
 
-    <!-- Meta-Tags für "Add to Home Screen" (PWA-Feeling auf iOS) -->
+    <!-- Meta-Tags für "Add to Home Screen" -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Anwesend">
     <link rel="apple-touch-icon" href="https://placehold.co/180x180/007AFF/FFFFFF?text=A&font=inter">
 
-    <!-- Tailwind CSS via CDN -->
+    <!-- Tailwind CSS & Inter Font -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                },
-            },
-        }
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
     </script>
 
-    <!-- Inter Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior-x: none;
-        }
+        body { font-family: 'Inter', sans-serif; overscroll-behavior-x: none; }
         .view { display: none; }
         .view.active { display: block; }
 
         .swipe-card {
-            touch-action: pan-y;
-            user-select: none;
+            touch-action: pan-y; user-select: none;
             transition: transform 0.3s ease-out, background-color 0.3s ease-out;
         }
-        .swipe-card.transition-transform {
-            transition: transform 0.3s ease-out;
-        }
+        .swipe-card.transition-transform { transition: transform 0.3s ease-out; }
         .swipe-card[data-status="present"] { background-color: #dcfce7; }
         .swipe-card[data-status="absent"] { background-color: #fee2e2; }
 
         .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6;
+            border-radius: 50%; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-900">
@@ -68,21 +44,56 @@
     <!-- Ladebildschirm -->
     <div id="loading-view" class="view active min-h-screen flex flex-col items-center justify-center text-center p-4">
         <div class="loader mb-4"></div>
-        <h1 class="text-xl font-semibold text-gray-700">Lade App...</h1>
-        <p class="text-gray-500">Stelle Verbindung zu Firebase her...</p>
+        <h1 class="text-xl font-semibold text-gray-700">App wird geladen...</h1>
+    </div>
+
+    <!-- Login-Ansicht (OHNE Registrierung) -->
+    <div id="login-view" class="view min-h-screen flex flex-col justify-center items-center p-4">
+        <div class="w-full max-w-sm">
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">Anwesenheit</h1>
+
+            <!-- Login-Formular -->
+            <form id="login-form" class="active bg-white p-6 rounded-lg shadow-md space-y-4">
+                <h2 class="text-xl font-semibold text-center text-gray-800">Anmelden</h2>
+                <div>
+                    <label for="login-email" class="block text-sm font-medium text-gray-600">E-Mail</label>
+                    <input type="email" id="login-email" required class="mt-1 w-full border border-gray-300 rounded-lg p-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-gray-600">Passwort</label>
+                    <input type="password" id="login-password" required class="mt-1 w-full border border-gray-300 rounded-lg p-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <p id="login-error" class="text-red-500 text-sm hidden"></p>
+                <button type="submit" class="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 transition-all active:scale-95">
+                    Anmelden
+                </button>
+                 <p class="text-center text-sm text-gray-500 pt-2">
+                    Nur für autorisierte Benutzer.
+                </p>
+            </form>
+            
+            <!-- Registrierungsformular wurde entfernt -->
+
+        </div>
     </div>
 
     <!-- Haupt-App-Container -->
     <div id="app-container" class="hidden min-h-screen">
         
         <header class="bg-white shadow-md sticky top-0 z-20">
-            <div class="max-w-3xl mx-auto p-4 flex items-center space-x-4">
-                <button id="back-button" class="hidden text-blue-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
+            <div class="max-w-3xl mx-auto p-4 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button id="back-button" class="hidden text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h1 id="header-title" class="text-xl font-bold text-gray-900">Meine Gruppen</h1>
+                </div>
+                <!-- Logout Button -->
+                <button id="logout-button" class="hidden text-sm text-red-500 hover:text-red-700 font-medium">
+                    Abmelden
                 </button>
-                <h1 id="header-title" class="text-xl font-bold text-gray-900">Meine Gruppen</h1>
             </div>
         </header>
 
@@ -150,7 +161,7 @@
                 </div>
 
                 <div id="attendance-list" class="space-y-3">
-                    <!-- Personen-Karten werden hier per JS eingefügt -->
+                    <!-- Personen-Karten -->
                 </div>
             </div>
 
@@ -170,7 +181,7 @@
         </div>
     </div>
     
-    <!-- Bestätigungs-Modal (NEU) -->
+    <!-- Bestätigungs-Modal (für Löschen) -->
     <div id="confirm-modal" class="fixed inset-0 bg-black/50 z-40 hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-lg shadow-2xl p-6">
             <h3 id="confirm-title" class="text-lg font-semibold mb-3">Löschen bestätigen</h3>
@@ -193,16 +204,16 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getAuth, 
-            signInAnonymously, 
-            signInWithCustomToken, 
-            onAuthStateChanged 
+            onAuthStateChanged,
+            // createUserWithEmailAndPassword entfernt
+            signInWithEmailAndPassword,
+            signOut
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, 
             doc, 
-            getDoc, 
+            getDocs, 
             addDoc, 
-            setDoc, 
             updateDoc, 
             deleteDoc, 
             onSnapshot, 
@@ -211,18 +222,27 @@
             where, 
             writeBatch,
             serverTimestamp,
-            getDocs, // Wichtig für Batch
-            deleteField // KORREKTUR: Importiert
+            deleteField 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Globale Variablen ---
         
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-anwesenheit-app';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkVpUQ-HOnpyG-BhoeTxqsnyaJ4CsIvyA",
+            authDomain: "anwesenheit-adcc4.firebaseapp.com",
+            projectId: "anwesenheit-adcc4",
+            storageBucket: "anwesenheit-adcc4.firebasestorage.app",
+            messagingSenderId: "59435650599",
+            appId: "1:59435650599:web:e575a783cc90cd37b04802",
+            measurementId: "G-QK5MP26PLR"
+        };
+        
+        // KORREKTUR: Dies ist der Pfad für die GETEILTEN Daten
+        const appId = "anwesenheit-adcc4"; 
+        const dbSharedPath = ['artifacts', appId, 'public', 'data'];
 
         let app, auth, db;
-        let userId;
+        let userId; // Wird immer noch zur Authentifizierung benötigt
 
         let currentView = 'groups';
         let viewStack = ['groups'];
@@ -235,22 +255,23 @@
         let localPeople = {};
         let localEvents = {};
 
-        let unsubGroups = () => {};
-        let unsubPeople = () => {};
-        let unsubEvents = () => {};
-        let unsubEvent = () => {};
+        let unsubGroups = () => {}, unsubPeople = () => {}, unsubEvents = () => {}, unsubEvent = () => {};
         
-        let touchStartX = 0;
-        let touchCurrentX = 0;
-        let isDragging = false;
-        let swipeTarget = null;
-        let swipePersonId = null;
+        let touchStartX = 0, touchCurrentX = 0, isDragging = false;
+        let swipeTarget = null, swipePersonId = null;
+        let listenersAttached = false;
 
         // --- DOM-Elemente ---
         const loadingView = document.getElementById('loading-view');
+        const loginView = document.getElementById('login-view');
         const appContainer = document.getElementById('app-container');
+        
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        
         const headerTitle = document.getElementById('header-title');
         const backButton = document.getElementById('back-button');
+        const logoutButton = document.getElementById('logout-button');
 
         const views = {
             groups: document.getElementById('groups-view'),
@@ -263,7 +284,6 @@
         const eventsList = document.getElementById('events-list');
         const attendanceList = document.getElementById('attendance-list');
         
-        // Input-Modal
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
         const modalInput = document.getElementById('modal-input');
@@ -271,7 +291,6 @@
         const modalConfirm = document.getElementById('modal-confirm');
         const modalCancel = document.getElementById('modal-cancel');
         
-        // Confirm-Modal (NEU)
         const confirmModal = document.getElementById('confirm-modal');
         const confirmTitle = document.getElementById('confirm-title');
         const confirmMessage = document.getElementById('confirm-message');
@@ -281,31 +300,36 @@
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toast-message');
         
+        // --- Helper für Ansichten ---
+        function show(element) { element.classList.add('active'); element.classList.remove('hidden'); }
+        function hide(element) { element.classList.remove('active'); element.classList.add('hidden'); }
+        
         // --- Initialisierung ---
         
         document.addEventListener('DOMContentLoaded', initFirebase);
 
-        async function initFirebase() {
+        function initFirebase() {
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                
+                attachGlobalListeners();
 
-                onAuthStateChanged(auth, async (user) => {
+                onAuthStateChanged(auth, (user) => {
+                    hide(loadingView);
                     if (user) {
-                        userId = user.uid;
+                        userId = user.uid; // Wichtig für 'request.auth.uid' in Regeln
+                        hide(loginView);
+                        show(appContainer);
+                        show(logoutButton);
                         initializeAppUI();
                     } else {
-                        try {
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                        } catch (error) {
-                            console.error("Error signing in:", error);
-                            loadingView.innerHTML = '<p class="text-red-500">Authentifizierung fehlgeschlagen.</p>';
-                        }
+                        userId = null;
+                        show(loginView);
+                        hide(appContainer);
+                        hide(logoutButton);
+                        clearAllDataAndListeners();
                     }
                 });
 
@@ -314,31 +338,31 @@
                 loadingView.innerHTML = '<p class="text-red-500">Firebase-Initialisierung fehlgeschlagen.</p>';
             }
         }
-
+        
         function initializeAppUI() {
-            loadingView.classList.remove('active');
-            appContainer.style.display = 'block';
-            
-            attachGlobalListeners();
             navigateTo('groups', 'Meine Gruppen', true);
         }
         
+        function clearAllDataAndListeners() {
+            unsubGroups(); unsubPeople(); unsubEvents(); unsubEvent();
+            localGroups = {}; localPeople = {}; localEvents = {};
+            groupsList.innerHTML = ''; peopleList.innerHTML = '';
+            eventsList.innerHTML = ''; attendanceList.innerHTML = '';
+            viewStack = ['groups'];
+        }
+
         // --- Navigations-System ---
 
         function showView(viewId) {
             currentView = viewId;
             Object.values(views).forEach(v => v.classList.remove('active'));
-            if (views[viewId]) {
-                views[viewId].classList.add('active');
-            }
+            if (views[viewId]) views[viewId].classList.add('active');
         }
 
         function navigateTo(viewId, title, isHome = false) {
-            if (!isHome) {
-                viewStack.push(viewId);
-            } else {
-                viewStack = [viewId];
-            }
+            if (!userId) return;
+            if (!isHome) viewStack.push(viewId);
+            else viewStack = [viewId];
             updateHeader(title);
             showView(viewId);
             loadDataForView(viewId);
@@ -346,15 +370,10 @@
         
         function navigateBack() {
             if (viewStack.length <= 1) return;
-            
             viewStack.pop();
             const prevViewId = viewStack[viewStack.length - 1];
-            
             let prevTitle = 'Meine Gruppen';
-            if (prevViewId === 'groupDetail') {
-                prevTitle = selectedGroupName;
-            }
-
+            if (prevViewId === 'groupDetail') prevTitle = selectedGroupName;
             updateHeader(prevTitle);
             showView(prevViewId);
             loadDataForView(prevViewId);
@@ -364,258 +383,208 @@
             headerTitle.textContent = title;
             backButton.classList.toggle('hidden', viewStack.length <= 1);
         }
-
-        backButton.addEventListener('click', navigateBack);
-
-        // --- Daten-Lade-System ---
+        
+        // --- Daten-Lade-System (Pfade angepasst) ---
 
         function loadDataForView(viewId) {
-            unsubGroups();
-            unsubPeople();
-            unsubEvents();
-            unsubEvent();
-
-            if (viewId === 'groups') {
-                loadGroups();
-            } else if (viewId === 'groupDetail') {
-                if (selectedGroupId) {
-                    loadPeople(selectedGroupId);
-                    loadEvents(selectedGroupId);
-                }
-            } else if (viewId === 'event') {
-                if (selectedEventId) {
-                    loadEvent(selectedEventId);
-                }
+            if (!userId) return;
+            unsubGroups(); unsubPeople(); unsubEvents(); unsubEvent();
+            if (viewId === 'groups') loadGroups();
+            else if (viewId === 'groupDetail' && selectedGroupId) {
+                loadPeople(selectedGroupId);
+                loadEvents(selectedGroupId);
+            } else if (viewId === 'event' && selectedEventId) {
+                loadEvent(selectedEventId);
             }
         }
         
         function loadGroups() {
-            const groupsCol = collection(db, 'artifacts', appId, 'users', userId, 'groups');
+            if (!userId) return;
+            // KORREKTUR: Geteilter Pfad
+            const groupsCol = collection(db, ...dbSharedPath, 'groups');
             unsubGroups = onSnapshot(groupsCol, (snapshot) => {
                 localGroups = {};
                 if (snapshot.empty) {
-                    groupsList.innerHTML = '<p class="text-gray-500 text-center py-4">Tippe auf das (+) um deine erste Gruppe zu erstellen.</p>';
+                    groupsList.innerHTML = '<p class="text-gray-500 text-center py-4">Tippe auf das (+) um die erste Gruppe zu erstellen.</p>';
                     return;
                 }
-                
                 groupsList.innerHTML = '';
-                const groups = [];
-                snapshot.forEach(doc => {
-                    const group = { id: doc.id, ...doc.data() };
-                    localGroups[doc.id] = group;
-                    groups.push(group);
-                });
-                
+                const groups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 groups.sort((a, b) => a.name.localeCompare(b.name));
                 
                 groups.forEach(group => {
+                    localGroups[group.id] = group;
                     const div = document.createElement('div');
-                    div.className = 'group-item bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer flex justify-between items-center';
-                    div.dataset.groupId = group.id;
-                    div.dataset.groupName = group.name;
-                    div.innerHTML = `
-                        <span class="font-semibold text-lg">${group.name}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
+                    div.className = 'group-item-container bg-white p-4 rounded-lg shadow-sm flex justify-between items-center';
+                    const linkDiv = document.createElement('div');
+                    linkDiv.className = 'group-item flex-grow hover:bg-gray-50 cursor-pointer -m-4 p-4 rounded-lg';
+                    linkDiv.dataset.groupId = group.id;
+                    linkDiv.dataset.groupName = group.name;
+                    linkDiv.innerHTML = `<span class="font-semibold text-lg">${group.name}</span>`;
+                    const buttonDiv = document.createElement('div');
+                    buttonDiv.className = 'flex items-center space-x-2 z-10';
+                    buttonDiv.innerHTML = `
+                        <button class="delete-group-btn text-red-400 hover:text-red-600 p-1" data-group-id="${group.id}" data-group-name="${group.name}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     `;
+                    div.appendChild(linkDiv);
+                    div.appendChild(buttonDiv);
                     groupsList.appendChild(div);
                 });
-
             }, (error) => console.error("Error loading groups:", error));
         }
         
         function loadPeople(groupId) {
-            const peopleCol = collection(db, 'artifacts', appId, 'users', userId, 'people');
+            if (!userId) return;
+            // KORREKTUR: Geteilter Pfad
+            const peopleCol = collection(db, ...dbSharedPath, 'people');
             const q = query(peopleCol, where("groupId", "==", groupId));
-            
             unsubPeople = onSnapshot(q, (snapshot) => {
                 localPeople = {};
                 if (snapshot.empty) {
                     peopleList.innerHTML = '<p class="text-gray-500 text-center p-4">Noch keine Personen in dieser Gruppe.</p>';
                     return;
                 }
-                
                 peopleList.innerHTML = '';
-                const people = [];
-                snapshot.forEach(doc => {
-                    const person = { id: doc.id, ...doc.data() };
-                    localPeople[doc.id] = person;
-                    people.push(person);
-                });
-                
+                const people = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 people.sort((a, b) => a.name.localeCompare(b.name));
-                
                 people.forEach(person => {
+                    localPeople[person.id] = person;
                     const div = document.createElement('div');
                     div.className = 'person-item p-4 border-b border-gray-100 last:border-b-0 flex justify-between items-center';
                     div.dataset.personId = person.id;
                     div.innerHTML = `
                         <span class="text-gray-800">${person.name}</span>
                         <button class="delete-person-btn text-red-400 hover:text-red-600 p-1" data-person-id="${person.id}" data-person-name="${person.name}">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                     `;
                     peopleList.appendChild(div);
                 });
-
             }, (error) => console.error("Error loading people:", error));
         }
 
         function loadEvents(groupId) {
-            const eventsCol = collection(db, 'artifacts', appId, 'users', userId, 'events');
+            if (!userId) return;
+            // KORREKTUR: Geteilter Pfad
+            const eventsCol = collection(db, ...dbSharedPath, 'events');
             const q = query(eventsCol, where("groupId", "==", groupId));
-            
             unsubEvents = onSnapshot(q, (snapshot) => {
                 localEvents = {};
                 if (snapshot.empty) {
                     eventsList.innerHTML = '<p class="text-gray-500 text-center py-4">Noch keine Termine für diese Gruppe.</p>';
                     return;
                 }
-                
                 eventsList.innerHTML = '';
                 const events = [];
                 snapshot.forEach(doc => {
                     const eventData = doc.data();
                     const eventDate = eventData.date?.toDate ? eventData.date.toDate() : new Date();
-                    
                     const event = { 
-                        id: doc.id, 
-                        ...eventData,
-                        dateObj: eventDate,
-                        dateString: eventDate.toLocaleString('de-DE', { 
-                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-                        }) + ' Uhr'
+                        id: doc.id, ...eventData, dateObj: eventDate,
+                        dateString: eventDate.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' Uhr'
                     };
-                    localEvents[doc.id] = event;
+                    localEvents[event.id] = event;
                     events.push(event);
                 });
-                
                 events.sort((a, b) => b.dateObj - a.dateObj);
-                
                 events.forEach(event => {
                     const div = document.createElement('div');
                     div.className = 'event-item bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer';
                     div.dataset.eventId = event.id;
-                    
-                    const stats = Object.values(event.attendance || {}).reduce((acc, status) => {
-                        acc[status] = (acc[status] || 0) + 1;
-                        return acc;
-                    }, { present: 0, absent: 0, unmarked: 0 });
-
+                    const attendance = event.attendance || {};
+                    const stats = Object.values(attendance).reduce((acc, status) => { acc[status] = (acc[status] || 0) + 1; return acc; }, { present: 0, absent: 0 });
+                    const total = Object.keys(attendance).length;
+                    const unmarked = total - (stats.present + stats.absent);
                     div.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <span class="font-semibold">${event.name}</span>
-                            <span class="text-sm text-gray-500">${event.dateString}</span>
-                        </div>
-                        <div class="flex space-x-4 mt-2 text-sm">
-                            <span class="text-green-600">Anw: ${stats.present}</span>
-                            <span class="text-red-600">Abw: ${stats.absent}</span>
-                            <span class="text-gray-500">Offen: ${Object.keys(event.attendance || {}).length - stats.present - stats.absent}</span>
-                        </div>
+                        <div class="flex justify-between items-center"><span class="font-semibold">${event.name}</span><span class="text-sm text-gray-500">${event.dateString}</span></div>
+                        <div class="flex space-x-4 mt-2 text-sm"><span class="text-green-600">Anw: ${stats.present}</span><span class="text-red-600">Abw: ${stats.absent}</span><span class="text-gray-500">Offen: ${unmarked}</span></div>
                     `;
                     eventsList.appendChild(div);
                 });
-
             }, (error) => console.error("Error loading events:", error));
         }
 
         function loadEvent(eventId) {
-            const eventRef = doc(db, 'artifacts', appId, 'users', userId, 'events', eventId);
-            
+            if (!userId) return;
+            // KORREKTUR: Geteilter Pfad
+            const eventRef = doc(db, ...dbSharedPath, 'events', eventId);
             unsubEvent = onSnapshot(eventRef, (doc) => {
-                if (!doc.exists()) {
-                    console.error("Event not found!");
-                    navigateBack();
-                    return;
-                }
-                
+                if (!doc.exists()) { console.error("Event not found!"); navigateBack(); return; }
                 const event = { id: doc.id, ...doc.data() };
                 localEvents[doc.id] = event;
-                
-                if (Object.keys(localPeople).length === 0 || localPeople[Object.keys(event.attendance)[0]]?.groupId !== event.groupId) {
+                const peopleIds = Object.keys(event.attendance || {});
+                const firstPersonId = peopleIds[0];
+                if (!firstPersonId || !localPeople[firstPersonId] || localPeople[firstPersonId].groupId !== event.groupId) {
                     loadPeopleForEvent(event);
                 } else {
                     renderAttendanceList(event.attendance);
                 }
-
                 const eventDate = event.date?.toDate ? event.date.toDate() : new Date();
-                document.getElementById('event-date-display').textContent = eventDate.toLocaleString('de-DE', { 
-                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
-                });
-
+                document.getElementById('event-date-display').textContent = eventDate.toLocaleString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             }, (error) => console.error("Error loading event:", error));
         }
         
-        function loadPeopleForEvent(event) {
-            const peopleCol = collection(db, 'artifacts', appId, 'users', userId, 'people');
+        async function loadPeopleForEvent(event) {
+            if (!userId) return;
+            // KORREKTUR: Geteilter Pfad
+            const peopleCol = collection(db, ...dbSharedPath, 'people');
             const q = query(peopleCol, where("groupId", "==", event.groupId));
-            
-            getDocs(q).then(snapshot => {
+            try {
+                const snapshot = await getDocs(q);
                 localPeople = {};
-                snapshot.forEach(doc => {
-                    localPeople[doc.id] = { id: doc.id, ...doc.data() };
-                });
+                snapshot.forEach(doc => { localPeople[doc.id] = { id: doc.id, ...doc.data() }; });
                 renderAttendanceList(event.attendance);
-            }).catch(error => console.error("Error loading people for event:", error));
+            } catch (error) { console.error("Error loading people for event:", error); }
         }
         
-        // --- Render-Funktionen ---
-        
+        // --- Render-Funktionen (unverändert) ---
         function renderAttendanceList(attendance) {
-            if (!attendance || Object.keys(localPeople).length === 0) {
-                attendanceList.innerHTML = '<p class="text-gray-500 text-center py-4">Lade Personen...</p>';
-                return;
-            }
-            
+            if (!attendance) { attendanceList.innerHTML = '<p class="text-gray-500 text-center py-4">Keine Personen in diesem Termin.</p>'; return; }
             attendanceList.innerHTML = '';
             let stats = { present: 0, absent: 0, unmarked: 0 };
-            
-            const sortedPeopleIds = Object.keys(attendance)
-                .filter(id => localPeople[id]) // KORREKTUR: Filtert gelöschte Personen raus
-                .sort((a, b) => localPeople[a].name.localeCompare(localPeople[b].name));
-
+            const sortedPeopleIds = Object.keys(attendance).filter(id => localPeople[id]).sort((a, b) => localPeople[a].name.localeCompare(localPeople[b].name));
+            if (sortedPeopleIds.length === 0) { attendanceList.innerHTML = '<p class="text-gray-500 text-center py-4">Keine Personen (mehr) in diesem Termin.</p>'; }
             sortedPeopleIds.forEach(personId => {
                 const person = localPeople[personId];
-                if (!person) return; // Sollte durch Filter oben verhindert werden
-                
+                if (!person) return;
                 const status = attendance[personId] || 'unmarked';
                 stats[status]++;
-                
                 const div = document.createElement('div');
                 div.className = 'swipe-card bg-white p-5 rounded-lg shadow-md relative';
-                div.dataset.personId = personId;
-                div.dataset.status = status;
-                
+                div.dataset.personId = personId; div.dataset.status = status;
                 div.innerHTML = `
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-5" style="opacity: 0.5;">
-                        <span class="text-green-500 font-bold text-lg hidden">Anwesend</span>
-                    </div>
-                    <div class="absolute inset-y-0 right-0 flex items-center pr-5" style="opacity: 0.5;">
-                        <span class="text-red-500 font-bold text-lg hidden">Abwesend</span>
-                    </div>
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-5" style="opacity: 0.5;"><span class="text-green-500 font-bold text-lg hidden">Anwesend</span></div>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-5" style="opacity: 0.5;"><span class="text-red-500 font-bold text-lg hidden">Abwesend</span></div>
                     <span class="text-lg font-medium relative z-10 pointer-events-none">${person.name}</span>
                 `;
-                
                 attendanceList.appendChild(div);
             });
-            
-            // Status-Header
             stats.unmarked = sortedPeopleIds.length - stats.present - stats.absent;
             document.getElementById('status-present').textContent = stats.present;
             document.getElementById('status-absent').textContent = stats.absent;
             document.getElementById('status-unmarked').textContent = stats.unmarked;
         }
 
-        // --- Event-Handler ---
-
+        // --- Event-Handler (Registrierung entfernt) ---
         function attachGlobalListeners() {
+            if (listenersAttached) return;
+            listenersAttached = true;
+            
+            loginForm.addEventListener('submit', handleLogin);
+            logoutButton.addEventListener('click', handleLogout);
+            
+            // Registrierungs-Listener entfernt
+
+            backButton.addEventListener('click', navigateBack);
+
             document.body.addEventListener('click', (e) => {
                 const groupItem = e.target.closest('.group-item');
                 const eventItem = e.target.closest('.event-item');
                 const deletePersonBtn = e.target.closest('.delete-person-btn');
+                const deleteGroupBtn = e.target.closest('.delete-group-btn');
                 const swipeCard = e.target.closest('.swipe-card');
 
                 if (groupItem) {
@@ -628,55 +597,64 @@
                     const eventTitle = localEvents[selectedEventId]?.name || "Termin";
                     navigateTo('event', eventTitle);
                 }
-                else if (deletePersonBtn) {
-                    e.stopPropagation();
-                    handleDeletePerson(deletePersonBtn.dataset.personId, deletePersonBtn.dataset.personName);
-                }
-                else if (swipeCard && !isDragging) {
-                    handleTap(swipeCard);
-                }
+                else if (deletePersonBtn) { e.stopPropagation(); handleDeletePerson(deletePersonBtn.dataset.personId, deletePersonBtn.dataset.personName); }
+                else if (deleteGroupBtn) { e.stopPropagation(); handleDeleteGroup(deleteGroupBtn.dataset.groupId, deleteGroupBtn.dataset.groupName); }
+                else if (swipeCard && !isDragging) { handleTap(swipeCard); }
             });
 
-            // Modal-Handler
             document.getElementById('show-add-group-modal').addEventListener('click', showAddGroupModal);
             document.getElementById('show-add-person-modal').addEventListener('click', showAddPersonModal);
             document.getElementById('start-new-event').addEventListener('click', handleStartNewEvent);
             
             modalCancel.addEventListener('click', hideModal);
             
-            // Confirm-Modal-Handler (NEU)
             confirmCancel.addEventListener('click', hideConfirmModal);
-            confirmDanger.addEventListener('click', () => {
-                if (confirmCallback) {
-                    confirmCallback();
-                }
-                hideConfirmModal();
-            });
+            confirmDanger.addEventListener('click', () => { if (confirmCallback) confirmCallback(); hideConfirmModal(); });
 
-            // Touch-Handler
             attendanceList.addEventListener('touchstart', handleTouchStart, { passive: true });
             attendanceList.addEventListener('touchmove', handleTouchMove, { passive: false });
             attendanceList.addEventListener('touchend', handleTouchEnd);
             attendanceList.addEventListener('touchcancel', handleTouchEnd);
         }
+        
+        // --- Authentifizierungs-Funktionen (Registrierung entfernt) ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            loginError.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login failed:", error.code);
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    loginError.textContent = 'E-Mail oder Passwort ist falsch.';
+                } else {
+                    loginError.textContent = 'Ein Fehler ist aufgetreten.';
+                }
+                loginError.classList.remove('hidden');
+            }
+        }
+        
+        // handleRegister-Funktion entfernt
+        
+        async function handleLogout() {
+            try { await signOut(auth); } 
+            catch (error) { console.error("Logout failed:", error); showToast('Abmeldung fehlgeschlagen.', 'error'); }
+        }
 
-        // --- CRUD-Operationen ---
-
+        // --- CRUD-Operationen (Pfade angepasst) ---
         function showAddGroupModal() {
             modalTitle.textContent = 'Neue Gruppe erstellen';
             modalInput.placeholder = 'Name der Gruppe (z.B. Klasse 10B)';
             showModal(async (name) => {
-                if (!name) return;
+                if (!name || !userId) return;
                 try {
-                    const groupsCol = collection(db, 'artifacts', appId, 'users', userId, 'groups');
+                    // KORREKTUR: Geteilter Pfad
+                    const groupsCol = collection(db, ...dbSharedPath, 'groups');
                     await addDoc(groupsCol, { name: name, createdAt: serverTimestamp() });
-                    showToast('Gruppe erstellt!');
-                    hideModal();
-                } catch (error) {
-                    console.error("Error adding group:", error);
-                    modalError.textContent = 'Fehler beim Speichern.';
-                    modalError.classList.remove('hidden');
-                }
+                    showToast('Gruppe erstellt!'); hideModal();
+                } catch (error) { console.error("Error adding group:", error); modalError.textContent = 'Fehler.'; modalError.classList.remove('hidden'); }
             });
         }
         
@@ -684,135 +662,100 @@
             modalTitle.textContent = 'Neue Person hinzufügen';
             modalInput.placeholder = 'Name der Person (z.B. Max Mustermann)';
             showModal(async (name) => {
-                if (!name) return;
+                if (!name || !userId || !selectedGroupId) return;
                 try {
-                    const peopleCol = collection(db, 'artifacts', appId, 'users', userId, 'people');
-                    await addDoc(peopleCol, { 
-                        name: name, 
-                        groupId: selectedGroupId,
-                        createdAt: serverTimestamp() 
-                    });
-                    showToast('Person hinzugefügt!');
-                    hideModal();
-                } catch (error) {
-                    console.error("Error adding person:", error);
-                    modalError.textContent = 'Fehler beim Speichern.';
-                    modalError.classList.remove('hidden');
-                }
+                    // KORREKTUR: Geteilter Pfad
+                    const peopleCol = collection(db, ...dbSharedPath, 'people');
+                    await addDoc(peopleCol, { name: name, groupId: selectedGroupId, createdAt: serverTimestamp() });
+                    showToast('Person hinzugefügt!'); hideModal();
+                } catch (error) { console.error("Error adding person:", error); modalError.textContent = 'Fehler.'; modalError.classList.remove('hidden'); }
             });
         }
         
         async function handleStartNewEvent() {
-            if (Object.keys(localPeople).length === 0) {
-                showToast('Füge zuerst Personen zu dieser Gruppe hinzu.', 'error');
-                return;
-            }
-
+            if (!userId || !selectedGroupId) return;
+            if (Object.keys(localPeople).length === 0) { showToast('Füge zuerst Personen hinzu.', 'error'); return; }
             const eventName = `Termin ${new Date().toLocaleDateString('de-DE')}`;
-            
             const attendance = {};
-            Object.keys(localPeople).forEach(personId => {
-                attendance[personId] = 'unmarked';
-            });
-            
+            Object.keys(localPeople).forEach(personId => { attendance[personId] = 'unmarked'; });
             try {
-                const eventsCol = collection(db, 'artifacts', appId, 'users', userId, 'events');
-                const newEventRef = await addDoc(eventsCol, {
-                    name: eventName,
-                    groupId: selectedGroupId,
-                    date: serverTimestamp(),
-                    attendance: attendance
-                });
-                
+                // KORREKTUR: Geteilter Pfad
+                const eventsCol = collection(db, ...dbSharedPath, 'events');
+                const newEventRef = await addDoc(eventsCol, { name: eventName, groupId: selectedGroupId, date: serverTimestamp(), attendance: attendance });
                 showToast('Neuer Termin gestartet!');
                 selectedEventId = newEventRef.id;
                 navigateTo('event', eventName);
-                
-            } catch (error) {
-                console.error("Error starting new event:", error);
-                showToast('Fehler beim Starten des Termins.', 'error');
-            }
+            } catch (error) { console.error("Error starting event:", error); showToast('Fehler beim Starten.', 'error'); }
         }
 
-        // KORRIGIERTE Löschfunktion
         function handleDeletePerson(personId, personName) {
-            showConfirmModal(
-                'Person löschen',
-                `Möchtest du "${personName}" wirklich löschen? Diese Person wird aus allen vergangenen und zukünftigen Terminen dieser Gruppe entfernt.`,
+            showConfirmModal('Person löschen', `Möchtest du "${personName}" wirklich löschen? Sie wird aus allen Terminen entfernt.`,
                 async () => {
-                    // Diese Callback-Funktion wird ausgeführt, wenn der Benutzer auf "Löschen" klickt
+                    if (!userId || !selectedGroupId) return;
                     try {
                         const batch = writeBatch(db);
-
-                        // 1. Person selbst löschen
-                        const personRef = doc(db, 'artifacts', appId, 'users', userId, 'people', personId);
+                        // KORREKTUR: Geteilter Pfad
+                        const personRef = doc(db, ...dbSharedPath, 'people', personId);
                         batch.delete(personRef);
-                        
-                        // 2. Person aus allen Terminen dieser Gruppe entfernen
-                        const eventsCol = collection(db, 'artifacts', appId, 'users', userId, 'events');
+                        const eventsCol = collection(db, ...dbSharedPath, 'events');
                         const q = query(eventsCol, where("groupId", "==", selectedGroupId));
-                        
                         const eventSnapshot = await getDocs(q);
-                        eventSnapshot.forEach(eventDoc => {
-                            // updateDoc mit dot-notation, um nur das Feld zu entfernen
-                            batch.update(eventDoc.ref, {
-                                [`attendance.${personId}`]: deleteField()
-                            });
-                        });
-                        
-                        // Batch ausführen
+                        eventSnapshot.forEach(eventDoc => { batch.update(eventDoc.ref, { [`attendance.${personId}`]: deleteField() }); });
                         await batch.commit();
+                        showToast(`"${personName}" gelöscht.`);
+                    } catch (error) { console.error("Error deleting person:", error); showToast('Fehler beim Löschen.', 'error'); }
+                }
+            );
+        }
+        
+        function handleDeleteGroup(groupId, groupName) {
+            showConfirmModal('Gruppe löschen', `Möchtest du "${groupName}" WIRKLICH löschen? ALLE Personen und Termine darin werden DAUERHAFT gelöscht.`,
+                async () => {
+                    if (!userId) return;
+                    try {
+                        const batch = writeBatch(db);
+                        // KORREKTUR: Geteilter Pfad
+                        const peopleCol = collection(db, ...dbSharedPath, 'people');
+                        const peopleQuery = query(peopleCol, where("groupId", "==", groupId));
+                        const peopleSnapshot = await getDocs(peopleQuery);
+                        peopleSnapshot.forEach(doc => batch.delete(doc.ref));
+
+                        const eventsCol = collection(db, ...dbSharedPath, 'events');
+                        const eventsQuery = query(eventsCol, where("groupId", "==", groupId));
+                        const eventsSnapshot = await getDocs(eventsQuery);
+                        eventsSnapshot.forEach(doc => batch.delete(doc.ref));
                         
-                        showToast(`"${personName}" wurde gelöscht.`);
-                        // onSnapshot wird die UI automatisch aktualisieren
+                        const groupRef = doc(db, ...dbSharedPath, 'groups', groupId);
+                        batch.delete(groupRef);
                         
-                    } catch (error) {
-                        console.error("Error deleting person and references:", error);
-                        showToast('Fehler beim Löschen.', 'error');
-                    }
+                        await batch.commit();
+                        showToast(`Gruppe "${groupName}" gelöscht.`);
+                    } catch (error) { console.error("Error deleting group:", error); showToast('Fehler beim Löschen.', 'error'); }
                 }
             );
         }
         
         async function updateAttendance(personId, newStatus) {
-            if (!selectedEventId || !personId) return;
-            
-            const eventRef = doc(db, 'artifacts', appId, 'users', userId, 'events', selectedEventId);
-            try {
-                await updateDoc(eventRef, {
-                    [`attendance.${personId}`]: newStatus
-                });
-            } catch (error) {
-                console.error("Error updating attendance:", error);
-                showToast('Status-Update fehlgeschlagen.', 'error');
-            }
+            if (!userId || !selectedEventId || !personId) return;
+            // KORREKTUR: Geteilter Pfad
+            const eventRef = doc(db, ...dbSharedPath, 'events', selectedEventId);
+            try { await updateDoc(eventRef, { [`attendance.${personId}`]: newStatus }); } 
+            catch (error) { console.error("Error updating attendance:", error); showToast('Status-Update fehlgeschlagen.', 'error'); }
         }
 
-        // --- Wisch-Gesten-Logik ---
-
+        // --- Wisch-Gesten-Logik (unverändert) ---
         function handleTouchStart(e) {
-            const target = e.target.closest('.swipe-card');
-            if (!target) return;
-            
-            swipeTarget = target;
-            swipePersonId = target.dataset.personId;
-            touchStartX = e.touches[0].clientX;
-            touchCurrentX = touchStartX;
-            isDragging = true;
-            
+            const target = e.target.closest('.swipe-card'); if (!target) return;
+            swipeTarget = target; swipePersonId = target.dataset.personId;
+            touchStartX = e.touches[0].clientX; touchCurrentX = touchStartX; isDragging = true;
             swipeTarget.classList.remove('transition-transform');
             swipeTarget.querySelector('.text-green-500').classList.remove('hidden');
             swipeTarget.querySelector('.text-red-500').classList.remove('hidden');
         }
-
         function handleTouchMove(e) {
             if (!isDragging || !swipeTarget) return;
-            
-            touchCurrentX = e.touches[0].clientX;
-            let deltaX = touchCurrentX - touchStartX;
-            
+            touchCurrentX = e.touches[0].clientX; let deltaX = touchCurrentX - touchStartX;
             swipeTarget.style.transform = `translateX(${deltaX}px)`;
-            
             const swipeAmount = Math.abs(deltaX) / (swipeTarget.offsetWidth / 2);
             if (deltaX > 0) {
                 swipeTarget.querySelector('.text-green-500').style.opacity = Math.min(swipeAmount, 1);
@@ -821,127 +764,62 @@
                 swipeTarget.querySelector('.text-red-500').style.opacity = Math.min(swipeAmount, 1);
                 swipeTarget.querySelector('.text-green-500').style.opacity = 0;
             }
-            
-            if (Math.abs(deltaX) > 10) {
-                e.preventDefault();
-            }
+            if (Math.abs(deltaX) > 10) e.preventDefault();
         }
-
         function handleTouchEnd(e) {
             if (!isDragging || !swipeTarget) return;
-
-            isDragging = false;
-            let deltaX = touchCurrentX - touchStartX;
+            isDragging = false; let deltaX = touchCurrentX - touchStartX;
             const swipeThreshold = swipeTarget.offsetWidth * 0.3;
-            
             let newStatus = swipeTarget.dataset.status;
-
             swipeTarget.classList.add('transition-transform');
             swipeTarget.querySelector('.text-green-500').classList.add('hidden');
             swipeTarget.querySelector('.text-red-500').classList.add('hidden');
-
-            if (deltaX > swipeThreshold) {
-                newStatus = 'present';
-                swipeTarget.style.transform = 'translateX(100%)';
-            } else if (deltaX < -swipeThreshold) {
-                newStatus = 'absent';
-                swipeTarget.style.transform = 'translateX(-100%)';
-            } else {
-                swipeTarget.style.transform = 'translateX(0)';
-            }
-            
+            if (deltaX > swipeThreshold) newStatus = 'present';
+            else if (deltaX < -swipeThreshold) newStatus = 'absent';
+            else swipeTarget.style.transform = 'translateX(0)';
             if (newStatus !== swipeTarget.dataset.status) {
+                if (newStatus === 'present') swipeTarget.style.transform = 'translateX(100%)';
+                if (newStatus === 'absent') swipeTarget.style.transform = 'translateX(-100%)';
                 updateAttendance(swipePersonId, newStatus);
             }
-            
-            swipeTarget = null;
-            swipePersonId = null;
-            touchStartX = 0;
-            touchCurrentX = 0;
+            swipeTarget = null; swipePersonId = null;
         }
-        
         function handleTap(card) {
-            const personId = card.dataset.personId;
-            const currentStatus = card.dataset.status;
-            
-            let newStatus;
-            if (currentStatus === 'unmarked') newStatus = 'present';
-            else if (currentStatus === 'present') newStatus = 'absent';
-            else newStatus = 'unmarked';
-            
-            card.dataset.status = newStatus; 
-            updateAttendance(personId, newStatus);
+            const personId = card.dataset.personId; const currentStatus = card.dataset.status;
+            let newStatus = (currentStatus === 'unmarked') ? 'present' : (currentStatus === 'present') ? 'absent' : 'unmarked';
+            card.dataset.status = newStatus; updateAttendance(personId, newStatus);
         }
 
-        // --- Modal-Helfer ---
-
+        // --- Modal-Helfer (unverändert) ---
         let modalConfirmCallback = null;
-
         function showModal(onConfirm) {
-            modalInput.value = '';
-            modalError.classList.add('hidden');
-            modalError.textContent = '';
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            modalInput.focus();
-            
+            modalInput.value = ''; modalError.classList.add('hidden'); modalError.textContent = '';
+            modal.classList.remove('hidden'); modal.classList.add('flex'); modalInput.focus();
             modalConfirm.removeEventListener('click', handleModalConfirm);
             modalConfirmCallback = onConfirm;
             modalConfirm.addEventListener('click', handleModalConfirm);
         }
-
         function handleModalConfirm() {
             const value = modalInput.value.trim();
-            if (!value) {
-                modalError.textContent = 'Name darf nicht leer sein.';
-                modalError.classList.remove('hidden');
-                return;
-            }
-            if (modalConfirmCallback) {
-                modalConfirmCallback(value);
-            }
+            if (!value) { modalError.textContent = 'Name darf nicht leer sein.'; modalError.classList.remove('hidden'); return; }
+            if (modalConfirmCallback) modalConfirmCallback(value);
         }
-        
-        function hideModal() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            modalConfirmCallback = null;
-        }
-
-        // --- Confirm-Modal-Helfer (NEU) ---
+        function hideModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); modalConfirmCallback = null; }
         let confirmCallback = null;
-        
         function showConfirmModal(title, message, onConfirm) {
-            confirmTitle.textContent = title;
-            confirmMessage.textContent = message;
-            confirmCallback = onConfirm; // Speichert die Löschfunktion
-            
-            confirmModal.classList.remove('hidden');
-            confirmModal.classList.add('flex');
+            confirmTitle.textContent = title; confirmMessage.textContent = message; confirmCallback = onConfirm;
+            confirmModal.classList.remove('hidden'); confirmModal.classList.add('flex');
         }
-        
-        function hideConfirmModal() {
-            confirmModal.classList.add('hidden');
-            confirmModal.classList.remove('flex');
-            confirmCallback = null;
-        }
-
-        // --- Toast-Helfer ---
-        
+        function hideConfirmModal() { confirmModal.classList.add('hidden'); confirmModal.classList.remove('flex'); confirmCallback = null; }
         let toastTimer;
         function showToast(message, type = 'success') {
             toastMessage.textContent = message;
-            
             toast.classList.remove('bg-gray-900', 'bg-red-600');
             toast.classList.add(type === 'error' ? 'bg-red-600' : 'bg-gray-900');
-            
             clearTimeout(toastTimer);
             toast.classList.remove('opacity-0');
-            toastTimer = setTimeout(() => {
-                toast.classList.add('opacity-0');
-            }, 2500);
+            toastTimer = setTimeout(() => { toast.classList.add('opacity-0'); }, 2500);
         }
-
     </script>
 </body>
 </html>
