@@ -2,57 +2,61 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA Meta Tags -->
     <title>Spiel-Controller</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="data:application/manifest+json;base64,ew0KICAgICJuYW1lIjogIkdhbWUgQ29udHJvbGxlciIsDQogICAgInNob3J0X25hbWUiOiAiQ29udHJvbGxlciIsDQogICAgInN0YXJ0X3VybCI6ICIuIiwNCiAgICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIg0KfQ==">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Game-Ctrl">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/000000/ffffff?text=GAME&font=roboto">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        html, body { height: 100%; overscroll-behavior: none; }
-    </style>
 </head>
-<body class="bg-gray-800 text-white min-h-screen font-sans flex flex-col">
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 font-sans flex flex-col">
 
-    <div class="flex-1 w-full max-w-md mx-auto p-4 flex flex-col space-y-6">
-        <h1 class="text-3xl font-bold text-center text-blue-400">Spiel-Controller</h1>
-        <p class="text-center text-xs text-gray-500">Projekt: game-8e351</p>
+    <div class="max-w-md mx-auto w-full">
+        <h1 class="text-3xl font-bold text-center text-purple-400 mb-6">Spiel-Controller</h1>
+        <p class="text-center text-sm text-gray-400 mb-4">Projekt: game-8e351</p>
 
-        <!-- Setup Section -->
-        <div id="setup-section" class="bg-gray-700 p-6 rounded-lg shadow-lg space-y-4">
-            <h2 class="text-xl font-semibold">Spiel einrichten</h2>
-            <div>
-                <label for="total-fields">Anzahl Felder</label>
-                <input type="number" id="total-fields" value="50" class="mt-1 w-full p-2 rounded-md bg-gray-800 text-white border border-gray-600">
+        <!-- Spiel-Setup -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-purple-300">Spiel-Setup</h2>
+            <div class="mb-3">
+                <label for="total-fields" class="block text-sm font-medium text-gray-300 mb-1">Anzahl Felder (ohne Start/Ziel):</label>
+                <input type="number" id="total-fields" value="50" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-inner text-white">
             </div>
-            <div>
-                <label for="num-players">Anzahl Spieler</label>
-                <input type="number" id="num-players" value="2" min="1" max="4" class="mt-1 w-full p-2 rounded-md bg-gray-800 text-white border border-gray-600">
+            <div class="mb-3">
+                <label for="player-count" class="block text-sm font-medium text-gray-300 mb-1">Anzahl Spieler (max 4):</label>
+                <input type="number" id="player-count" value="2" min="1" max="4" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-inner text-white">
             </div>
-            <button id="start-game-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">
+            <button id="start-game-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 ease-in-out transform hover:scale-105">
                 Spiel starten / Neu einrichten
             </button>
+            <p id="status" class="text-yellow-400 text-center text-sm mt-3"></p>
         </div>
 
-        <!-- Control Section -->
-        <div id="control-section" class="bg-gray-700 p-6 rounded-lg shadow-lg space-y-4 hidden">
-            <h2 class="text-xl font-semibold">Spielsteuerung</h2>
-            <div id="player-controls" class="space-y-4"></div>
-            <button id="reset-game-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg">
-                Spiel zurücksetzen
-            </button>
+        <!-- Spiel-Steuerung -->
+        <div id="game-controls" class="bg-gray-800 p-4 rounded-lg shadow-lg hidden">
+            <h2 class="text-xl font-semibold mb-3 text-purple-300">Steuerung</h2>
+            <div id="player-tabs" class="flex mb-3 border-b border-gray-700">
+                <!-- Tab-Reiter werden hier eingefügt -->
+            </div>
+            <div id="player-panels" class="space-y-4">
+                <!-- Spieler-Bedienfelder werden hier eingefügt -->
+            </div>
         </div>
-        
-        <div id="status-message" class="text-center text-gray-400 text-sm"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, runTransaction, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         setLogLevel('Debug');
 
-        // --- HIER IST IHRE FIREBASE-KONFIGURATION ---
+        // --- IHRE FIREBASE-KONFIGURATION ---
         const firebaseConfig = {
           apiKey: "AIzaSyD0bYsfuu1EipFJ_i-2WAikHQ9ycP1jye0",
           authDomain: "game-8e351.firebaseapp.com",
@@ -68,131 +72,227 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // --- Vereinfachter Firestore Document Reference ---
-        // Muss exakt mit dem Pfad in der board.safari.html übereinstimmen
+        // --- Firestore Document Reference ---
         const gameDocRef = doc(db, "publicGames", "mainGameState");
+        const playerColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; // red, blue, green, amber
 
-        const setupSection = document.getElementById("setup-section");
-        const controlSection = document.getElementById("control-section");
+        const statusEl = document.getElementById("status");
         const startGameBtn = document.getElementById("start-game-btn");
-        const resetGameBtn = document.getElementById("reset-game-btn");
-        const playerControlsContainer = document.getElementById("player-controls");
-        const totalFieldsInput = document.getElementById("total-fields");
-        const numPlayersInput = document.getElementById("num-players");
-        const statusMessage = document.getElementById("status-message");
+        const controlsEl = document.getElementById("game-controls");
+        const playerTabsEl = document.getElementById("player-tabs");
+        const playerPanelsEl = document.getElementById("player-panels");
 
-        let currentGameState = {};
-        const playerColors = ["#E53E3E", "#3182CE", "#38A169", "#D69E2E"];
+        let currentGameState = null;
 
-        async function startGame() {
-            const totalFields = parseInt(totalFieldsInput.value) || 50;
-            const numPlayers = parseInt(numPlayersInput.value) || 2;
-            let players = [];
-            for (let i = 0; i < numPlayers; i++) {
-                players.push({
-                    id: i + 1,
-                    name: `Spieler ${i + 1}`,
-                    position: 1,
-                    color: playerColors[i % playerColors.length]
-                });
-            }
-            const newGameState = { totalFields, players };
-
+        /**
+         * Erstellt ein neues Spiel oder setzt das bestehende zurück
+         */
+        async function setupNewGame() {
+            const totalFields = parseInt(document.getElementById("total-fields").value) || 50;
+            const playerCount = parseInt(document.getElementById("player-count").value) || 2;
+            
+            statusEl.textContent = "Erstelle Spiel...";
             try {
-                await setDoc(gameDocRef, newGameState);
-                currentGameState = newGameState;
-                renderPlayerControls(players);
-                setupSection.classList.add("hidden");
-                controlSection.classList.remove("hidden");
-                statusMessage.textContent = "Spiel gestartet!";
+                const newPlayers = [];
+                for (let i = 0; i < playerCount; i++) {
+                    newPlayers.push({
+                        id: i + 1,
+                        name: `Spieler ${i + 1}`,
+                        color: playerColors[i % playerColors.length],
+                        position: 0 // Startposition ist 0
+                    });
+                }
+                
+                await setDoc(gameDocRef, {
+                    totalFields: totalFields,
+                    players: newPlayers
+                });
+                
+                statusEl.textContent = "Spiel erfolgreich gestartet!";
+                console.log("Controller: Game (re)started.");
             } catch (error) {
-                console.error("Error starting game: ", error);
-                statusMessage.textContent = "Fehler beim Starten des Spiels.";
+                console.error("Controller: Error starting game: ", error);
+                statusEl.textContent = "Fehler beim Starten des Spiels.";
             }
         }
 
-        function renderPlayerControls(players) {
-            playerControlsContainer.innerHTML = "";
-            players.forEach(player => {
-                const playerDiv = document.createElement("div");
-                playerDiv.className = "p-3 rounded-lg";
-                playerDiv.style.border = `2px solid ${player.color}`;
-                playerDiv.innerHTML = `
-                    <div class="font-bold text-lg" style="color: ${player.color}">${player.name}</div>
-                    <div class="text-sm text-gray-300 mb-2">Aktuelles Feld: <span id="player-pos-${player.id}">${player.position}</span></div>
+        /**
+         * Baut die Steuerungs-UI basierend auf dem Spielstatus
+         */
+        function buildControls(gameState) {
+            currentGameState = gameState; // Lokalen Status speichern
+            playerTabsEl.innerHTML = "";
+            playerPanelsEl.innerHTML = "";
+
+            gameState.players.forEach((player, index) => {
+                const isActive = index === 0;
+
+                // Tab-Reiter
+                const tab = document.createElement("button");
+                tab.id = `tab-player-${player.id}`;
+                tab.className = `player-tab py-2 px-4 font-medium text-sm ${isActive ? 'border-b-2 text-purple-400 border-purple-400' : 'text-gray-400 hover:text-gray-200'}`;
+                tab.style.borderBottomColor = isActive ? player.color : 'transparent';
+                if(isActive) tab.style.color = player.color;
+                tab.textContent = player.name;
+                tab.onclick = () => switchTab(player.id);
+                playerTabsEl.appendChild(tab);
+
+                // Bedienfeld
+                const panel = document.createElement("div");
+                panel.id = `panel-player-${player.id}`;
+                panel.className = `player-panel ${isActive ? '' : 'hidden'}`;
+                
+                const endPosition = gameState.totalFields + 1;
+                const isWinner = player.position >= endPosition;
+                
+                panel.innerHTML = `
+                    <p class="text-lg font-semibold text-center mb-3" style="color: ${player.color};">
+                        Position: ${isWinner ? 'Ziel!' : player.position}
+                    </p>
                     <div class="grid grid-cols-3 gap-2">
-                        ${[1, 2, 3, 4, 5, 6].map(steps => `<button data-player-id="${player.id}" data-steps="${steps}" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+${steps}</button>`).join('')}
+                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="1" ${isWinner ? 'disabled' : ''}>+1</button>
+                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="2" ${isWinner ? 'disabled' : ''}>+2</button>
+                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="3" ${isWinner ? 'disabled' : ''}>+3</button>
+                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="4" ${isWinner ? 'disabled' : ''}>+4</button>
+                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="5" ${isWinner ? 'disabled' : ''}>+5</button>
+                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="6" ${isWinner ? 'disabled' : ''}>+6</button>
                     </div>
+                    <button class="move-btn bg-red-700 hover:bg-red-600 p-3 rounded-lg mt-4 w-full" data-steps="reset">Auf Start (0) setzen</button>
+                    <!-- *** NEUER BUTTON HINZUGEFÜGT *** -->
+                    <button class="move-btn bg-yellow-700 hover:bg-yellow-600 p-3 rounded-lg mt-2 w-full" data-steps="-1">-1 Feld zurück</button>
                 `;
-                playerControlsContainer.appendChild(playerDiv);
+                
+                panel.querySelectorAll('.move-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const steps = btn.dataset.steps === 'reset' ? 'reset' : parseInt(btn.dataset.steps);
+                        movePlayer(player.id, steps);
+                    };
+                });
+                
+                playerPanelsEl.appendChild(panel);
+            });
+
+            controlsEl.classList.remove("hidden");
+        }
+
+        /**
+         * Wechselt den aktiven Spieler-Tab
+         */
+        function switchTab(playerId) {
+            document.querySelectorAll('.player-tab').forEach(tab => {
+                const id = parseInt(tab.id.split('-')[2]);
+                const player = currentGameState.players.find(p => p.id === id);
+                if (id === playerId) {
+                    tab.classList.remove('text-gray-400', 'hover:text-gray-200');
+                    tab.classList.add('text-purple-400', 'border-b-2', 'border-purple-400');
+                    tab.style.borderBottomColor = player.color;
+                    tab.style.color = player.color;
+                } else {
+                    tab.classList.add('text-gray-400', 'hover:text-gray-200');
+                    tab.classList.remove('text-purple-400', 'border-b-2', 'border-purple-400');
+                    tab.style.borderBottomColor = 'transparent';
+                    tab.style.color = '';
+                }
+            });
+            document.querySelectorAll('.player-panel').forEach(panel => {
+                panel.id === `panel-player-${playerId}` ? panel.classList.remove('hidden') : panel.classList.add('hidden');
             });
         }
 
+        /**
+         * Bewegt einen Spieler (Firestore Transaktion)
+         * *** LOGIK AKTUALISIERT ***
+         */
         async function movePlayer(playerId, steps) {
-            const playerIndex = currentGameState.players.findIndex(p => p.id === playerId);
-            if (playerIndex === -1) return;
-            const player = currentGameState.players[playerIndex];
-            const newPosition = Math.min(currentGameState.totalFields, player.position + steps);
-            if (newPosition === player.position) return;
-            player.position = newPosition;
-            document.getElementById(`player-pos-${player.id}`).textContent = newPosition;
+            statusEl.textContent = `Bewege Spieler ${playerId}...`;
             try {
-                await updateDoc(gameDocRef, { players: currentGameState.players });
-                statusMessage.textContent = `${player.name} ist auf Feld ${newPosition} gerückt.`;
+                await runTransaction(db, async (transaction) => {
+                    const doc = await transaction.get(gameDocRef);
+                    if (!doc.exists()) {
+                        throw "Game document does not exist!";
+                    }
+                    
+                    const gameState = doc.data();
+                    const playerIndex = gameState.players.findIndex(p => p.id === playerId);
+                    if (playerIndex === -1) return;
+
+                    const player = gameState.players[playerIndex];
+                    const endPosition = gameState.totalFields + 1;
+                    
+                    if (steps === 'reset') {
+                        player.position = 0; // Setzt auf Start zurück
+                        statusEl.textContent = `Spieler ${playerId} zurück auf Start!`;
+                    
+                    } else if (steps > 0) { // Positive Schritte (vorwärts)
+                        // Verhindert Vorwärts-Bewegung, wenn schon im Ziel
+                        if (player.position >= endPosition) {
+                            statusEl.textContent = `Spieler ${playerId} ist bereits im Ziel.`;
+                            return;
+                        }
+                        
+                        let newPos = player.position + steps;
+                        
+                        if (newPos >= endPosition) {
+                            newPos = endPosition; // Landet genau auf Ziel
+                            statusEl.textContent = `Spieler ${playerId} hat das Ziel erreicht!`;
+                        } else {
+                            statusEl.textContent = `Spieler ${playerId} rückt auf Feld ${newPos}.`;
+                        }
+                        player.position = newPos;
+
+                    } else if (steps < 0) { // Negative Schritte (rückwärts)
+                        let newPos = player.position + steps; // z.B. 5 + (-1) = 4
+                        
+                        if (newPos < 0) {
+                            newPos = 0; // Kann nicht vor Start (Position 0)
+                        }
+                        
+                        statusEl.textContent = `Spieler ${playerId} rückt auf Feld ${newPos}.`;
+                        player.position = newPos;
+                    }
+                    
+                    // Aktualisiertes Spieler-Array zurückschreiben
+                    transaction.update(gameDocRef, { players: gameState.players });
+                });
             } catch (error) {
-                console.error("Error moving player: ", error);
-                statusMessage.textContent = "Fehler beim Bewegen des Spielers.";
+                console.error("Controller: Error moving player: ", error);
+                statusEl.textContent = "Fehler beim Bewegen des Spielers.";
             }
         }
 
-        async function resetGame() {
-            try {
-                await deleteDoc(gameDocRef);
-                currentGameState = {};
-                controlSection.classList.add("hidden");
-                setupSection.classList.remove("hidden");
-                statusMessage.textContent = "Spiel zurückgesetzt.";
-            } catch (error) {
-                console.error("Error resetting game: ", error);
-                statusMessage.textContent = "Fehler beim Zurücksetzen.";
-            }
-        }
-
-        startGameBtn.addEventListener("click", startGame);
-        resetGameBtn.addEventListener("click", resetGame);
-        playerControlsContainer.addEventListener("click", (e) => {
-            if (e.target.classList.contains("move-btn")) {
-                movePlayer(parseInt(e.target.dataset.playerId), parseInt(e.target.dataset.steps));
-            }
-        });
-
-        async function initializeController() {
+        /**
+         * Haupt-Initialisierung
+         */
+        async function init() {
             try {
                 await signInAnonymously(auth);
-                statusMessage.textContent = "Authentifiziert. Bereit.";
-                console.log("Controller: Authenticated successfully (Anonymously) in your project.");
+                console.log("Controller: Authenticated successfully.");
+                statusEl.textContent = "Verbunden. Lade Spiel...";
 
-                const docSnap = await getDoc(gameDocRef);
-                if (docSnap.exists()) {
-                    console.log("Controller: Existing game found in YOUR project.");
-                    currentGameState = docSnap.data();
-                    renderPlayerControls(currentGameState.players);
-                    totalFieldsInput.value = currentGameState.totalFields;
-                    numPlayersInput.value = currentGameState.players.length;
-                    setupSection.classList.add("hidden");
-                    controlSection.classList.remove("hidden");
-                } else {
-                    console.log("Controller: No existing game. Ready for setup.");
-                    setupSection.classList.remove("hidden");
-                    controlSection.classList.add("hidden");
-                }
+                // Listener für Spielstatus
+                onSnapshot(gameDocRef, (doc) => {
+                    if (doc.exists()) {
+                        console.log("Controller: Game data received.");
+                        statusEl.textContent = "Spiel geladen.";
+                        buildControls(doc.data());
+                    } else {
+                        console.log("Controller: No existing game found.");
+                        statusEl.textContent = "Kein Spiel gefunden. Bitte starte ein neues.";
+                        controlsEl.classList.add("hidden");
+                    }
+                }, (error) => {
+                    console.error("Controller: Error in onSnapshot: ", error);
+                    statusEl.textContent = "Fehler: Verbindung zum Spiel verloren.";
+                });
+
             } catch (error) {
-                console.error("Controller: Initialization failed: ", error);
-                statusMessage.textContent = "Initialisierung fehlgeschlagen.";
+                console.error("Controller: Authentication failed: ", error);
+                statusEl.textContent = "Authentifizierung fehlgeschlagen.";
             }
         }
-        
-        initializeController();
+
+        startGameBtn.onclick = setupNewGame;
+        init();
     </script>
 </body>
 </html>
