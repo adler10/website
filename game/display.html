@@ -2,126 +2,42 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spielbrett-Anzeige</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Sanfte "Schwebe"-Animation */
-        @keyframes float {
-            0% { transform: translate(0, 0px); }
-            50% { transform: translate(0, -6px); }
-            100% { transform: translate(0, 0px); }
-        }
-
-        /* --- NEUES FARBSCHEMA (Goal 1) --- */
-        /* Controller-Hintergrund */
         body {
             background-color: #111827; /* gray-900 */
         }
-
-        /* Controller-UI-Box Hintergrund */
-        #game-board-container {
-            background-color: #1f2937; /* gray-800 */
-            /* Statt Rand: Starker Schatten für Schwebe-Effekt */
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
-            /* Feste Höhe (aus Bugfix v3) */
-            height: 80vh; 
-            position: relative;
-            overflow: hidden; 
-        }
-
-        /* SVG-Linie jetzt in Controller-Akzentfarbe */
-        #path-svg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1; /* Hinter den Feldern */
-        }
-        #path-line {
-            fill: none;
-            /* Transparente Controller-Akzentfarbe */
-            stroke: rgba(196, 181, 253, 0.4); /* purple-300 mit 40% Opacity */
-            stroke-width: 8;
-            stroke-dasharray: 15 10;
-        }
-
-        #game-board {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            z-index: 2; /* Vor der Linie */
-        }
-
-        /* Felder in Controller-UI-Farben */
-        .board-field {
-            position: absolute;
-            width: 60px; 
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%; 
-            border: 2px solid rgba(0,0,0,0.3);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: white;
-            transform: translate(-50%, -50%);
-            transition: all 0.5s ease;
-        }
-        .board-field:nth-child(odd) { background-color: #374151; } /* gray-700 */
-        .board-field:nth-child(even) { background-color: #4b5563; } /* gray-600 */
         
-        .field-start {
-            background-color: #22c55e !important; /* green-500 (Standard) */
-            color: white;
-            transform: translate(-50%, -50%) scale(1.1);
+        body.grid-center {
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
         }
-        .field-end {
-            background-color: #eab308 !important; /* yellow-500 (Standard) */
-            color: black;
-            transform: translate(-50%, -50%) scale(1.1);
+        
+        #game-canvas {
+            background-color: #1f2937; /* gray-800 */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+            border-radius: 0.5rem;
+            max-width: 1000px;
+            width: 100%;
+            aspect-ratio: 16 / 10;
         }
-
-        /* Spielfigur (unverändert) */
-        .player-pawn {
-            transition: all 0.5s ease-in-out;
-            width: 48px;
-            height: 48px;
-            position: absolute;
-            z-index: 10;
-            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
-            animation: float 3s ease-in-out infinite;
-        }
-        .player-pawn:nth-child(2) { transform: translateX(20%); z-index: 11; animation-delay: -0.5s; }
-        .player-pawn:nth-child(3) { transform: translateX(-20%); z-index: 12; animation-delay: -1s; }
-        .player-pawn:nth-child(4) { transform: translateY(20%); z-index: 13; animation-delay: -1.5s; }
     </style>
 </head>
-<body class="text-white min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="w-full max-w-6xl mx-auto">
-        <!-- Titel jetzt in Controller-Akzentfarbe -->
+<body class="text-white min-h-screen p-4 font-sans grid-center">
+
+    <main class="w-full max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold text-center mb-6 text-purple-400" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Das Große Rennen</h1>
         
-        <div id="game-board-container" class="p-4 rounded-lg w-[90vw] lg:w-[1000px]">
-            
-            <!-- Warte-Nachricht jetzt in Controller-Statusfarbe -->
-            <div id="waiting-message" class="text-center text-xl p-10 text-yellow-400">
-                <p>Warte auf Spielstart vom Controller...</p>
-                <p class="text-sm text-gray-400 mt-2">Verbinde mit Firebase-Projekt: game-8e351</p>
-            </div>
-            
-            <svg id="path-svg">
-                <path id="path-line" d="" />
-            </svg>
-            
-            <div id="game-board">
-                <!-- Felder werden dynamisch eingefügt -->
-            </div>
+        <canvas id="game-canvas" width="1600" height="1000"></canvas>
+        
+        <div id="waiting-message" class="text-center text-xl p-10 text-yellow-400">
+            <p>Warte auf Spielstart vom Controller...</p>
         </div>
-    </div>
+    </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -130,6 +46,7 @@
 
         setLogLevel('Debug');
 
+        // --- Firebase Konfiguration ---
         const firebaseConfig = {
           apiKey: "AIzaSyD0bYsfuu1EipFJ_i-2WAikHQ9ycP1jye0",
           authDomain: "game-8e351.firebaseapp.com",
@@ -145,151 +62,210 @@
         const auth = getAuth(app);
         const gameDocRef = doc(db, "publicGames", "mainGameState");
 
-        const boardElement = document.getElementById("game-board");
-        const pathLineElement = document.getElementById("path-line");
+        // --- Canvas Setup ---
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
         const waitingMessage = document.getElementById("waiting-message");
 
-        /**
-         * Baut das Spielbrett mit einem DYNAMISCHEN Schlangenpfad auf
-         */
-        function renderBoard(totalFields) {
-            boardElement.innerHTML = "";
-            if (!totalFields || totalFields === 0) {
-                waitingMessage.classList.remove("hidden");
-                return;
-            }
-            waitingMessage.classList.add("hidden");
+        // Globale Speicher für den Pfad und den Status
+        let fieldPath = [];
+        let currentGameState = null;
 
-            // --- NEUE DYNAMISCHE LAYOUT-LOGIK (Goal 2) ---
-            const numFields = totalFields + 2; // Inkl. Start (0) und Ziel (N+1)
+        // --- 1. Pfad-Berechnungslogik (ZENTRIERUNGS-KORREKTUR) ---
+        function generateFieldPath(totalFields) {
+            const path = [];
+            const numFields = totalFields + 2; // Start + Felder + Ziel
             
-            // Annahme eines Querformat-Verhältnisses (z.B. 1000px Breite zu 800px Höhe)
-            const assumedAspectRatio = 1.3; 
-            
-            // Berechnet die "optimale" Anzahl von Zeilen (fieldsPerColumn),
-            // um den Platz basierend auf der Feldanzahl zu füllen.
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const padding = 100; // Pixel-Abstand zum Rand
+
+            // Dynamisches Layout
+            const assumedAspectRatio = canvasWidth / canvasHeight;
             const fieldsPerColumn = Math.round(Math.sqrt(numFields / assumedAspectRatio));
-            
-            // Berechnet die Spaltenanzahl basierend auf der dynamischen Zeilenanzahl
             const numColumns = Math.ceil(numFields / fieldsPerColumn);
             
-            // --- Ende der neuen Logik ---
-
-            const vSpacing = 100 / (fieldsPerColumn + 1); // Vertikaler Abstand
-            const hSpacing = 100 / (numColumns + 1); // Horizontaler Abstand
+            // --- KORREKTUR FÜR ZENTRIERUNG ---
+            // Berechne Spalten- und Zeilenabstände basierend auf den "Lücken"
             
-            let pathString = "";
-            let lastPos = null;
+            // Vertikaler Abstand
+            const vSpacing = (fieldsPerColumn > 1) 
+                ? (canvasHeight - 2 * padding) / (fieldsPerColumn - 1) 
+                : 0; // Kein Abstand, wenn nur 1 Zeile
+            const vOffset = (fieldsPerColumn > 1) ? padding : canvasHeight / 2; // Zentrieren, wenn 1 Zeile
+
+            // Horizontaler Abstand
+            const hSpacing = (numColumns > 1) 
+                ? (canvasWidth - 2 * padding) / (numColumns - 1) 
+                : 0; // Kein Abstand, wenn nur 1 Spalte
+            const hOffset = (numColumns > 1) ? padding : canvasWidth / 2; // Zentrieren, wenn 1 Spalte
+            
+            // --- Ende der Korrektur ---
 
             for (let i = 0; i < numFields; i++) {
                 const col = Math.floor(i / fieldsPerColumn);
                 let row = i % fieldsPerColumn;
                 
-                // Schlangenmuster (unverändert)
-                if (col % 2 !== 0) {
+                // Schlangenpfad
+                if (col % 2 !== 0 && fieldsPerColumn > 1) { // Nur umkehren, wenn es Zeilen gibt
                     row = (fieldsPerColumn - 1) - row;
                 }
 
-                const y = (row * vSpacing) + (vSpacing / 2);
-                const hBase = (col * hSpacing) + (hSpacing / 2);
-                
-                // "Zufällig aussehender" Pfad (unverändert)
-                const sway = Math.sin(y * 0.15 + col) * (hSpacing * 0.2);
-                const x = hBase + sway;
-
-                if (lastPos) {
-                    pathString += `L ${x}% ${y}% `;
+                // --- KORRIGIERTE POSITIONSBERECHNUNG ---
+                let y;
+                if (fieldsPerColumn > 1) {
+                    y = (row * vSpacing) + vOffset;
                 } else {
-                    pathString = `M ${x}% ${y}% `;
+                    y = vOffset; // Immer in der Mitte
                 }
-                lastPos = { x, y };
 
-                // Feld-Element erstellen
-                const field = document.createElement("div");
-                field.className = "board-field";
-                field.style.left = `${x}%`;
-                field.style.top = `${y}%`;
+                let x;
+                if (numColumns > 1) {
+                    const hBase = (col * hSpacing) + hOffset;
+                    // "Zufälliger" Schwung
+                    const sway = (fieldsPerColumn > 1) // Nur schwanken, wenn es Zeilen gibt
+                                 ? Math.sin(y * 0.05 + col) * (hSpacing * 0.2) 
+                                 : 0;
+                    x = hBase + sway;
+                } else {
+                    x = hOffset; // Immer in der Mitte
+                }
+                // --- Ende der Korrektur ---
                 
-                let fieldId;
+                let label, type;
                 if (i === 0) {
-                    fieldId = "field-0";
-                    field.textContent = "Start";
-                    field.classList.add("field-start");
+                    label = "Start";
+                    type = "start";
                 } else if (i === numFields - 1) {
-                    fieldId = `field-${totalFields + 1}`;
-                    field.textContent = "Ziel";
-                    field.classList.add("field-end");
+                    label = "Ziel";
+                    type = "end";
                 } else {
-                    fieldId = `field-${i}`;
-                    field.textContent = i; // Felder 1 bis N
+                    label = i.toString();
+                    type = "field";
                 }
-                field.id = fieldId;
-                boardElement.appendChild(field);
+                
+                path.push({ x, y, label, type, fieldId: `field-${i === numFields - 1 ? totalFields + 1 : i}` });
             }
-            
-            pathLineElement.setAttribute('d', pathString);
+            return path;
         }
 
-        /**
-         * Platziert die Spielfiguren (SVGs) auf dem Brett
-         */
-        function renderPlayers(players, totalFields) {
-            document.querySelectorAll('.player-pawn').forEach(pawn => pawn.remove());
-            if (!players) return;
+        // --- 2. Zeichenfunktionen ---
+        
+        function drawPath(path) {
+            if (path.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.strokeStyle = "rgba(196, 181, 253, 0.6)"; // purple-300
+            ctx.lineWidth = 8;
+            ctx.setLineDash([15, 10]);
+            ctx.stroke();
+            ctx.setLineDash([]); // Zurücksetzen
+        }
 
-            players.forEach(player => {
-                let fieldId;
-                if (player.position === 0) {
-                    fieldId = "field-0";
-                } else if (player.position > totalFields) {
-                    fieldId = `field-${totalFields + 1}`;
+        function drawFields(path) {
+            const radius = 30; // 30px Radius für Felder
+            
+            ctx.font = "bold 20px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            for (const field of path) {
+                ctx.beginPath();
+                ctx.arc(field.x, field.y, radius, 0, 2 * Math.PI);
+                
+                if (field.type === 'start') {
+                    ctx.fillStyle = "#22c55e"; // Grün
+                } else if (field.type === 'end') {
+                    ctx.fillStyle = "#eab308"; // Gelb
+                } else if (parseInt(field.label) % 2 === 0) {
+                    ctx.fillStyle = "#4b5563"; // gray-600
                 } else {
-                    fieldId = `field-${player.position}`;
+                    ctx.fillStyle = "#374151"; // gray-700
                 }
+                ctx.fill();
+                
+                ctx.fillStyle = (field.type === 'end') ? "black" : "white";
+                ctx.fillText(field.label, field.x, field.y);
+            }
+        }
 
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    const pawn = document.createElement("div");
-                    pawn.id = `pawn-${player.id}`;
-                    pawn.className = "player-pawn";
-                    pawn.innerHTML = `
-                        <svg viewBox="0 0 32 32" style="width: 100%; height: 100%;">
-                            <path 
-                                d="M16,2 C12.69,2 10,4.69 10,8 C10,11.31 12.69,14 16,14 C19.31,14 22,11.31 22,8 C22,4.69 19.31,2 16,2 Z M16,16 C12,16 6,18 6,22 L6,26 C6,28.21 7.79,30 10,30 L22,30 C24.21,30 26,28.21 26,26 L26,22 C26,18 20,16 16,16 Z" 
-                                fill="${player.color}" 
-                                stroke="rgba(0,0,0,0.4)" 
-                                stroke-width="1.5"
-                            />
-                        </svg>`;
-                    field.appendChild(pawn);
-                }
+        function drawPlayers(players, path, totalFields) {
+            if (!players || !path.length) return;
+            const pawnRadius = 15;
+            const offsets = [
+                {x: -pawnRadius, y: -pawnRadius}, 
+                {x: pawnRadius, y: -pawnRadius}, 
+                {x: -pawnRadius, y: pawnRadius}, 
+                {x: pawnRadius, y: pawnRadius}
+            ];
+
+            players.forEach((player, index) => {
+                let fieldId;
+                if (player.position === 0) fieldId = "field-0";
+                else if (player.position > totalFields) fieldId = `field-${totalFields + 1}`;
+                else fieldId = `field-${player.position}`;
+                
+                const field = path.find(p => p.fieldId === fieldId);
+                if (!field) return;
+
+                const offset = offsets[index % 4];
+                const x = field.x + offset.x;
+                const y = field.y + offset.y;
+
+                ctx.beginPath();
+                ctx.arc(x, y, pawnRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = player.color;
+                ctx.fill();
+                ctx.strokeStyle = "rgba(0,0,0,0.5)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
             });
         }
+        
+        // --- 3. Haupt-Update-Funktion ---
+        function drawFrame(gameState) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameState || !gameState.totalFields) {
+                canvas.classList.add("hidden");
+                waitingMessage.classList.remove("hidden");
+                return;
+            }
+            
+            canvas.classList.remove("hidden");
+            waitingMessage.classList.add("hidden");
 
+            const newTotalFields = gameState.totalFields || 0;
+            const oldTotalFields = (fieldPath.length > 0) ? fieldPath.length - 2 : -1;
+            
+            if (newTotalFields !== oldTotalFields) {
+                console.log("Board: Total fields changed, re-generating path.");
+                fieldPath = generateFieldPath(newTotalFields);
+            }
+
+            drawPath(fieldPath);
+            drawFields(fieldPath);
+            drawPlayers(gameState.players, fieldPath, newTotalFields);
+        }
+
+        // --- 4. Firebase Listener ---
         async function setupRealtimeListener() {
             try {
                 await signInAnonymously(auth);
                 console.log("Board: Authenticated successfully.");
-                waitingMessage.innerHTML = '<p>Erfolgreich verbunden. Warte auf Daten...</p>';
 
                 onSnapshot(gameDocRef, (doc) => {
                     console.log("Board: Received data update.");
                     if (doc.exists()) {
-                        const gameState = doc.data();
-                        
-                        // Überprüft, ob das Layout neu berechnet werden muss
-                        const newNumFields = gameState.totalFields + 2;
-                        const currentFields = boardElement.childElementCount;
-
-                        if (currentFields !== newNumFields) {
-                            console.log("Board: Total fields changed, re-rendering board.");
-                            renderBoard(gameState.totalFields);
-                        }
-                        
-                        renderPlayers(gameState.players, gameState.totalFields);
+                        currentGameState = doc.data();
+                        drawFrame(currentGameState);
                     } else {
                         console.log("Board: No game state document.");
-                        renderBoard(0); 
+                        currentGameState = null;
+                        drawFrame(null);
                     }
                 });
             } catch (error) {
@@ -297,7 +273,14 @@
                 waitingMessage.textContent = "Fehler bei der Authentifizierung.";
             }
         }
+        
+        window.addEventListener("resize", () => {
+             drawFrame(currentGameState);
+        });
+
+        drawFrame(null);
         setupRealtimeListener();
+        
     </script>
 </body>
 </html>
