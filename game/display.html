@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spielbrett-Anzeige</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Simple transition for pawn movement */
         .player-pawn {
             transition: all 0.5s ease-in-out;
             width: 60%;
@@ -20,22 +18,18 @@
             color: white;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            position: absolute; /* Allow stacking */
+            position: absolute;
             z-index: 10;
         }
-        /* Stacking pawns */
         .player-pawn:nth-child(2) { transform: translateX(20%); z-index: 11; }
         .player-pawn:nth-child(3) { transform: translateX(-20%); z-index: 12; }
         .player-pawn:nth-child(4) { transform: translateY(20%); z-index: 13; }
-
         .board-field {
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        /* Zig-zag pattern simulation */
-        /* This is complex, for now we use a simple grid */
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4 font-sans">
@@ -43,61 +37,52 @@
     <div class="w-full max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-center mb-6">Spielbrett</h1>
         <div id="game-board-container" class="bg-gray-800 p-4 rounded-lg shadow-xl">
-            <!-- Message shown while waiting for game start -->
             <div id="waiting-message" class="text-center text-xl p-10">
                 <p>Warte auf Spielstart vom Controller...</p>
-                <p class="text-sm text-gray-400 mt-2">Öffnen Sie die Controller-PWA auf Ihrem Smartphone, um zu beginnen.</p>
+                <p class="text-sm text-gray-400 mt-2">Verbinde mit Firebase-Projekt: game-8e351</p>
             </div>
-            <!-- Game board will be generated here -->
             <div id="game-board" class="grid grid-cols-10 gap-2">
                 <!-- Fields will be dynamically inserted here -->
             </div>
         </div>
     </div>
 
-    <!-- Player pawns will be stored here to move them around -->
-    <div id="pawn-container"></div>
-
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Enable debug logging
         setLogLevel('Debug');
 
-        // --- Firebase Initialization ---
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // --- HIER IST IHRE FIREBASE-KONFIGURATION ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyD0bYsfuu1EipFJ_i-2WAikHQ9ycP1jye0",
+          authDomain: "game-8e351.firebaseapp.com",
+          projectId: "game-8e351",
+          storageBucket: "game-8e351.firebasestorage.app",
+          messagingSenderId: "713515393193",
+          appId: "1:713515393193:web:534d68c9f0d223f6e149b8",
+          measurementId: "G-F21SP6RW0B"
+        };
+        // ----------------------------------------------
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // --- Firestore Document Reference ---
-        // Using a public path so both controller and board can access it
-        const gameDocRef = doc(db, `artifacts/${appId}/public/data/games`, "gameState");
+        // --- Vereinfachter Firestore Document Reference ---
+        // Dieser Pfad wird jetzt in IHREM Projekt verwendet.
+        const gameDocRef = doc(db, "publicGames", "mainGameState");
 
-        // --- DOM Elements ---
         const boardElement = document.getElementById("game-board");
         const waitingMessage = document.getElementById("waiting-message");
-        const pawnContainer = document.getElementById("pawn-container");
 
-        // --- State ---
-        let playerPawns = {}; // Store pawn elements { playerId: element }
-
-        // --- Render Functions ---
-
-        /**
-         * Renders the game board fields
-         */
         function renderBoard(totalFields) {
-            boardElement.innerHTML = ""; // Clear existing board
-            if (totalFields === 0) {
+            boardElement.innerHTML = "";
+            if (!totalFields || totalFields === 0) {
                 waitingMessage.classList.remove("hidden");
                 return;
             }
-            
             waitingMessage.classList.add("hidden");
 
             for (let i = 1; i <= totalFields; i++) {
@@ -105,26 +90,14 @@
                 field.id = `field-${i}`;
                 field.className = "board-field aspect-square bg-gray-700 rounded-md text-xs text-gray-400 p-1 flex items-center justify-center relative";
                 field.textContent = i;
-
-                if (i === 1) {
-                    field.classList.add("bg-green-600", "text-white", "font-bold");
-                    field.textContent = "Start";
-                }
-                if (i === totalFields) {
-                    field.classList.add("bg-yellow-500", "text-white", "font-bold");
-                    field.textContent = "Ziel";
-                }
+                if (i === 1) field.classList.add("bg-green-600", "text-white");
+                if (i === totalFields) field.classList.add("bg-yellow-500", "text-white");
                 boardElement.appendChild(field);
             }
         }
 
-        /**
-         * Updates player pawn positions
-         */
         function renderPlayers(players) {
-            // Remove all pawns from fields first
             document.querySelectorAll('.player-pawn').forEach(pawn => pawn.remove());
-
             if (!players) return;
 
             players.forEach(player => {
@@ -142,30 +115,21 @@
             });
         }
 
-        // --- Firebase Authentication & Data Listener ---
         async function setupRealtimeListener() {
             try {
-                // Sign in
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                console.log("Board: Authenticated successfully.");
+                // Nur noch anonyme Anmeldung
+                await signInAnonymously(auth);
+                console.log("Board: Authenticated successfully (Anonymously) in your project.");
+                waitingMessage.innerHTML = '<p>Erfolgreich verbunden. Warte auf Daten...</p>';
 
-                // Listen for game state changes
                 onSnapshot(gameDocRef, (doc) => {
-                    console.log("Board: Received data update.");
+                    console.log("Board: Received data update from YOUR project.");
                     if (doc.exists()) {
                         const gameState = doc.data();
-                        
-                        // Check if board size changed
                         const currentFields = boardElement.childElementCount;
                         if (currentFields !== gameState.totalFields) {
                             renderBoard(gameState.totalFields);
                         }
-                        
-                        // Always re-render players
                         renderPlayers(gameState.players);
                     } else {
                         console.log("Board: No game state document.");
@@ -173,18 +137,16 @@
                     }
                 }, (error) => {
                     console.error("Board: Error in onSnapshot: ", error);
-                    waitingMessage.textContent = "Fehler bei der Verbindung zur Datenbank.";
+                    waitingMessage.textContent = "Fehler bei der Verbindung (onSnapshot).";
                 });
 
             } catch (error) {
                 console.error("Board: Authentication failed: ", error);
-                waitingMessage.textContent = "Fehler bei der Authentifizierung.";
+                waitingMessage.textContent = "Fehler bei der Authentifizierung (Anonym).";
             }
         }
 
-        // Start the application
         setupRealtimeListener();
-
     </script>
 </body>
 </html>
