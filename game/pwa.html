@@ -8,9 +8,9 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://placehold.co/180x180/3498db/ffffff?text=Game">
+    <link rel="apple-touch-icon" href="httpshttps://placehold.co/180x180/3498db/ffffff?text=Game">
     <!-- Base64-encoded Manifest for PWA -->
-    <link rel="manifest" href="data:application/manifest+json;base64,ew0KICAgICJuYW1lIjogIkdhbWUgQ29udHJvbGxlciIsDQogICAgInNob3J0X25hbWUiOiAiQ29udHJvbGxlciIsDQogICAgInN0YXJ0X3VybCI6ICIuIiwNCiAgICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwNCiAgICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTYzNjVGIiwNCiAgICAidGhlbWVfY29sb3IiOiAiIzM0OThkYiIsDQogICAgImljb25zIjogWw0KICAgICAgICB7DQogICAgICAgICAgICAic3JjIjogImh0dHBzOi8vcGxhY2Vob2xkLmNvLzE5MngxOTIvMzQ5OGRiL2ZmZmZmZj90ZXh0PUciLA0KICAgICAgICAgICAgInNpemVzIjogIjE5MngxOTIiLA0KICAgICAgICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIg0KICAgICAgICB9LA0KICAgICAgICB7DQogICAgICAgICAgICAic3JjIjogImh0dHBzOi8vcGxhY2Vob2xkLmNvLzUxMng1MTIvMzQ5OGRiL2ZmZmZmZj90ZXh0PUciLA0KICAgICAgICAgICAgInNpemVzIjogIjUxMng1MTIiLA0KICAgICAgICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIg0KICAgICAgICB9DQogICAgXQ0KfQ==">
+    <link rel="manifest" href="data:application/manifest+json;base64,ew0KICAgICJuYW1lIjogIkdhbWUgQ29udHJvbGxlciIsDQogICAgInNob3J0X25hbWUiOiAiQ29udHJvbGxlciIsDQogICAgInN0YXJ0X3VybCI6ICIuIiwNCiAgICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwNCiAgICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTYzNjVGIiwNCiAgICAidGhlbWVfY29sb3IiOiAiIzM0OThkYiIsDQogICAgImljb25zIjogWw0KICAgICAgICB7DQogICAgICAgICAgICAic3JjIjogImh0dHBzOi8vcGxhY2Vob2xkLmNvLzE5MngxOTIvMzQ5OGRiL2ZmZmZmZj90ZXh0PUciLA0KICAgICAgICAgICAgInNpemVzIjogIjE5MngxOTIiLA0KICAgICAgICAgICAgInR5cGUiOiAiaW1wZ2UvcG5nIg0KICAgICAgICB9LA0KICAgICAgICB7DQogICAgICAgICAgICAic3JjIjogImh0dHBzOi8vcGxhY2Vob2xkLmNvLzUxMng1MTIvMzQ5OGRiL2ZmZmZmZj90ZXh0PUciLA0KICAgICAgICAgICAgInNpemVzIjogIjUxMng1MTIiLA0KICAgICAgICAgICAgInR5cGUiOiAiaW1wZ2UvcG5nIg0KICAgICAgICB9DQogICAgXQ0KfQ==">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -247,14 +247,9 @@
             }
         }
         
-        // Register Service Worker for PWA (basic)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(
-                'data:text/javascript,' +
-                'self.addEventListener("fetch", (e) => { /* basic no-op */ });'
-            ).then(() => console.log('Service Worker (minimal) registriert.'))
-             .catch((err) => console.log('Service Worker Registrierung fehlgeschlagen:', err));
-        }
+        // ** (DELETED) **
+        // Service Worker registration removed as it was causing a console error
+        // and is not essential for the core app logic.
 
         initializeController();
 
