@@ -25,7 +25,6 @@
             aspect-ratio: 16 / 10;
         }
         
-        /* --- KARTEN-MODAL-STYLING (FINALE ANPASSUNG) --- */
         #card-modal {
             position: fixed;
             top: 50%;
@@ -34,35 +33,50 @@
             background-color: white;
             border: 10px solid #4b5563; /* gray-600 */
             border-radius: 1rem;
-            padding: 0.75rem; /* Reduziert von 1rem */
+            padding: 0.75rem;
             width: 280px;
-            height: 370px; /* Reduziert von 380px */
+            height: 370px;
             z-index: 100;
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Inhalte verteilen */
+            justify-content: space-between;
             align-items: center;
             font-family: 'Times New Roman', Times, serif;
             transition: all 0.3s ease-out;
+            overflow: hidden; /* Verhindert, dass Reste überlappen */
         }
         #card-modal.hidden {
             display: none;
         }
-        .card-corner { /* Wrapper für Ecke oben/unten */
+        .card-corner {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            line-height: 1; /* Abstand zwischen Rang und Farbe reduzieren */
+            line-height: 1;
         }
         .card-rank {
-            font-size: 3.25rem; /* Reduziert von 4rem */
+            font-size: 3.25rem;
             font-weight: bold;
         }
         .card-suit {
-            font-size: 2.75rem; /* Reduziert von 3.5rem */
+            font-size: 2.75rem;
         }
+        
+        /* --- NEUER STIL FÜR DIE KARTENMITTE --- */
+        #card-center-rank {
+            font-size: 7rem; /* 112px */
+            font-weight: bold;
+            line-height: 1;
+            /* Zentriert das große Symbol/Rank */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Stellt sicher, dass es nicht ausbricht (wichtig für "10") */
+            max-width: 100%; 
+        }
+
         .suit-red { color: #ef4444; } /* red-500 */
         .suit-black { color: #000000; }
         
@@ -89,8 +103,11 @@
             <div id="card-suit-top" class="card-suit">♠</div>
         </div>
         
-        <!-- Mittleres Symbol -->
-        <div id="card-suit-mid" class="card-suit" style="font-size: 5rem;">♠</div> <!-- Reduziert von 6rem -->
+        <!-- 
+          Mittleres Symbol (jetzt #card-center-rank) 
+          Wird per JS gefüllt
+        -->
+        <div id="card-center-rank" class="suit-black">A</div>
 
         <!-- Untere Ecke -->
         <div class="self-end card-corner" style="transform: rotate(180deg);">
@@ -100,9 +117,6 @@
     </div>
     
     <script type="module">
-        // --- DAS GESAMTE JAVASCRIPT IST IDENTISCH ZU VORHER ---
-        // --- Es werden keine logischen Änderungen benötigt ---
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -128,13 +142,15 @@
         const ctx = canvas.getContext("2d");
         const waitingMessage = document.getElementById("waiting-message");
 
+        // --- DOM-Elemente für das Modal ---
         const cardModal = document.getElementById("card-modal");
         const cardRankTop = document.getElementById("card-rank-top");
         const cardSuitTop = document.getElementById("card-suit-top");
-        const cardSuitMid = document.getElementById("card-suit-mid");
+        const cardCenterRank = document.getElementById("card-center-rank"); // Geändertes Element
         const cardRankBottom = document.getElementById("card-rank-bottom");
         const cardSuitBottom = document.getElementById("card-suit-bottom");
 
+        // --- Skat-Deck (unverändert) ---
         const SKAT_DECK = (function() {
             const ranks = ['7', '8', '9', '10', 'B', 'D', 'K', 'A'];
             const suits = ['♦', '♥', '♠', '♣'];
@@ -147,17 +163,16 @@
             return deck;
         })();
 
+        // --- getCardForField (unverändert) ---
         function getCardForField(fieldNumber, totalFields) {
             if (fieldNumber <= 0 || fieldNumber > totalFields) {
                 return null;
             }
-
             if (totalFields < 32) {
                 const numCardsToSkip = 32 - totalFields;
                 const gameDeck = SKAT_DECK.slice(numCardsToSkip);
                 return gameDeck[fieldNumber - 1];
             }
-            
             const cardIndex = (fieldNumber - 1) % 32;
             return SKAT_DECK[cardIndex];
         }
@@ -167,6 +182,7 @@
         let lastShowRequestTimestamp = 0;
         let modalHideTimer = null;
 
+        // --- generateFieldPath (unverändert) ---
         function generateFieldPath(totalFields) {
             const path = [];
             const numFields = totalFields + 2;
@@ -178,14 +194,9 @@
             const fieldsPerColumn = Math.round(Math.sqrt(numFields / assumedAspectRatio));
             const numColumns = Math.ceil(numFields / fieldsPerColumn);
             
-            const vSpacing = (fieldsPerColumn > 1) 
-                ? (canvasHeight - 2 * padding) / (fieldsPerColumn - 1) 
-                : 0;
+            const vSpacing = (fieldsPerColumn > 1) ? (canvasHeight - 2 * padding) / (fieldsPerColumn - 1) : 0;
             const vOffset = (fieldsPerColumn > 1) ? padding : canvasHeight / 2;
-
-            const hSpacing = (numColumns > 1) 
-                ? (canvasWidth - 2 * padding) / (numColumns - 1) 
-                : 0;
+            const hSpacing = (numColumns > 1) ? (canvasWidth - 2 * padding) / (numColumns - 1) : 0;
             const hOffset = (numColumns > 1) ? padding : canvasWidth / 2;
             
             for (let i = 0; i < numFields; i++) {
@@ -195,41 +206,30 @@
                 if (col % 2 !== 0 && fieldsPerColumn > 1) {
                     row = (fieldsPerColumn - 1) - row;
                 }
-
                 let y = (fieldsPerColumn > 1) ? (row * vSpacing) + vOffset : vOffset;
                 let x = (numColumns > 1) ? (col * hSpacing) + hOffset : hOffset;
 
                 if (numColumns > 1) {
-                    const sway = (fieldsPerColumn > 1) 
-                                 ? Math.sin(y * 0.05 + col) * (hSpacing * 0.2) 
-                                 : 0;
+                    const sway = (fieldsPerColumn > 1) ? Math.sin(y * 0.05 + col) * (hSpacing * 0.2) : 0;
                     x += sway;
                 }
                 
                 let label, type;
-                if (i === 0) {
-                    label = "Start";
-                    type = "start";
-                } else if (i === numFields - 1) {
-                    label = "Ziel";
-                    type = "end";
-                } else {
-                    label = i.toString();
-                    type = "field";
-                }
+                if (i === 0) label = "Start";
+                else if (i === numFields - 1) label = "Ziel";
+                else label = i.toString();
                 
-                path.push({ x, y, label, type, fieldId: `field-${i === numFields - 1 ? totalFields + 1 : i}` });
+                path.push({ x, y, label, type: label, fieldId: `field-${i === numFields - 1 ? totalFields + 1 : i}` });
             }
             return path;
         }
 
+        // --- drawPath, drawFields, drawPlayers (unverändert) ---
         function drawPath(path) {
             if (path.length < 2) return;
             ctx.beginPath();
             ctx.moveTo(path[0].x, path[0].y);
-            for (let i = 1; i < path.length; i++) {
-                ctx.lineTo(path[i].x, path[i].y);
-            }
+            for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
             ctx.strokeStyle = "rgba(196, 181, 253, 0.6)";
             ctx.lineWidth = 8;
             ctx.setLineDash([15, 10]);
@@ -245,12 +245,12 @@
             for (const field of path) {
                 ctx.beginPath();
                 ctx.arc(field.x, field.y, radius, 0, 2 * Math.PI);
-                if (field.type === 'start') ctx.fillStyle = "#22c55e";
-                else if (field.type === 'end') ctx.fillStyle = "#eab308";
+                if (field.label === 'Start') ctx.fillStyle = "#22c55e";
+                else if (field.label === 'Ziel') ctx.fillStyle = "#eab308";
                 else if (parseInt(field.label) % 2 === 0) ctx.fillStyle = "#4b5563";
                 else ctx.fillStyle = "#374151";
                 ctx.fill();
-                ctx.fillStyle = (field.type === 'end') ? "black" : "white";
+                ctx.fillStyle = (field.label === 'Ziel') ? "black" : "white";
                 ctx.fillText(field.label, field.x, field.y);
             }
         }
@@ -280,15 +280,14 @@
             });
         }
         
+        // --- drawFrame (unverändert) ---
         function drawFrame(gameState) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             if (!gameState || !gameState.totalFields) {
                 canvas.classList.add("hidden");
                 waitingMessage.classList.remove("hidden");
                 return;
             }
-            
             canvas.classList.remove("hidden");
             waitingMessage.classList.add("hidden");
 
@@ -296,28 +295,24 @@
             const oldTotalFields = (fieldPath.length > 0) ? fieldPath.length - 2 : -1;
             
             if (newTotalFields !== oldTotalFields) {
-                console.log("Board: Total fields changed, re-generating path.");
                 fieldPath = generateFieldPath(newTotalFields);
             }
-
             drawPath(fieldPath);
             drawFields(fieldPath);
             drawPlayers(gameState.players, fieldPath, newTotalFields);
         }
 
+        // --- setupRealtimeListener (unverändert) ---
         async function setupRealtimeListener() {
             try {
                 await signInAnonymously(auth);
                 console.log("Board: Authenticated successfully.");
-
                 onSnapshot(gameDocRef, (doc) => {
-                    console.log("Board: Received data update.");
                     if (doc.exists()) {
                         currentGameState = doc.data();
                         drawFrame(currentGameState);
                         handleCardReveal(currentGameState);
                     } else {
-                        console.log("Board: No game state document.");
                         currentGameState = null;
                         drawFrame(null);
                     }
@@ -328,57 +323,59 @@
             }
         }
         
+        // --- handleCardReveal (MODIFIZIERT) ---
         function handleCardReveal(gameState) {
             const request = gameState.showCardForPlayer;
-            
             if (request && request.timestamp > lastShowRequestTimestamp) {
-                console.log("Board: New card reveal request detected.");
                 lastShowRequestTimestamp = request.timestamp;
                 
                 const player = gameState.players.find(p => p.id === request.id);
                 if (!player) return;
 
                 const card = getCardForField(player.position, gameState.totalFields);
-                
                 if (modalHideTimer) clearTimeout(modalHideTimer);
+
+                // Elemente für Farbe zurücksetzen
+                const allCardElements = [cardRankTop, cardRankBottom, cardSuitTop, cardSuitBottom, cardCenterRank];
+                allCardElements.forEach(el => el.classList.remove('suit-red', 'suit-black'));
+
+                // Schriftgröße für die Mitte zurücksetzen (falls "Keine Karte" gezeigt wurde)
+                cardCenterRank.style.fontSize = ''; // Setzt es zurück auf den CSS-Standard (7rem)
 
                 if (card) {
                     const colorClass = card.color;
-                    [cardRankTop, cardRankBottom, cardSuitTop, cardSuitBottom, cardSuitMid].forEach(el => {
-                        el.classList.remove('suit-red', 'suit-black');
-                        el.classList.add(colorClass);
-                    });
+                    allCardElements.forEach(el => el.classList.add(colorClass));
                     
+                    // Ecken füllen
                     cardRankTop.textContent = card.rank;
                     cardRankBottom.textContent = card.rank;
                     cardSuitTop.textContent = card.suit;
                     cardSuitBottom.textContent = card.suit;
-                    cardSuitMid.textContent = card.suit;
+                    
+                    // --- NEU: Mitte füllen ---
+                    cardCenterRank.textContent = card.rank; 
                     
                 } else {
-                    [cardRankTop, cardRankBottom, cardSuitTop, cardSuitBottom, cardSuitMid].forEach(el => {
-                        el.classList.remove('suit-red');
-                        el.classList.add('suit-black');
-                    });
+                    // "Keine Karte"-Zustand (Start/Ziel)
+                    allCardElements.forEach(el => el.classList.add('suit-black'));
                     cardRankTop.textContent = "";
-                    cardSuitTop.textContent = "";
-                    cardSuitMid.textContent = "Keine Karte";
                     cardRankBottom.textContent = "";
+                    cardSuitTop.textContent = "";
                     cardSuitBottom.textContent = "";
+                    
+                    // --- NEU: Mitte füllen ---
+                    cardCenterRank.textContent = "Keine Karte";
+                    cardCenterRank.style.fontSize = "2.5rem"; // Kleinere Schrift für die Nachricht
                 }
                 
                 cardModal.classList.remove("hidden");
-
                 modalHideTimer = setTimeout(() => {
                     cardModal.classList.add("hidden");
                 }, 3000);
             }
         }
 
-        window.addEventListener("resize", () => {
-             drawFrame(currentGameState);
-        });
-
+        window.addEventListener("resize", () => drawFrame(currentGameState));
         drawFrame(null);
         setupRealtimeListener();
         
