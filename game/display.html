@@ -4,45 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spielbrett-Anzeige</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .player-pawn {
-            transition: all 0.5s ease-in-out;
-            width: 60%;
-            height: 60%;
-            border-radius: 9999px;
+        /* Sanfte "Schwebe"-Animation */
+        @keyframes float {
+            0% { transform: translate(0, 0px); }
+            50% { transform: translate(0, -6px); }
+            100% { transform: translate(0, 0px); }
+        }
+
+        /* "Holz" Hintergrund bleibt */
+        body {
+            background-color: #78350f; /* amber-900 */
+        }
+
+        /* Der "Filz"-Container, jetzt mit starkem Schatten für Schwebe-Effekt */
+        #game-board-container {
+            background-color: #064e3b; /* green-900 */
+            border: 4px solid #fde047; /* yellow-300 */
+            /* Dieser Schatten erzeugt den "Schwebe"-Effekt */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+            
+            /* --- DER BUGFIX ---
+               min-height zu height geändert, damit 100%
+               für Kind-Elemente funktioniert.
+            */
+            height: 80vh; 
+            
+            position: relative;
+            /* Verhindert, dass Felder aus dem Kasten "schwingen" */
+            overflow: hidden; 
+        }
+
+        /* Der SVG-Container für die Linie */
+        #path-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1; /* Hinter den Feldern */
+        }
+
+        /* Das Spielbrett selbst, jetzt ein relativer Container */
+        #game-board {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 2; /* Vor der Linie */
+        }
+
+        /* Die Felder sind jetzt runde, absolut positionierte Kreise */
+        .board-field {
+            position: absolute;
+            width: 60px; /* Feste Größe für bessere Kontrolle */
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 50%; /* Rund */
+            border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
             font-weight: bold;
             color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            /* Zentriert sich auf seinen (left, top) Anker */
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+        }
+        .board-field:nth-child(odd) { background-color: #4b5563; } /* gray-600 */
+        .board-field:nth-child(even) { background-color: #374151; } /* gray-700 */
+        
+        .field-start {
+            background-color: #22c55e !important; /* green-500 */
+            color: white;
+            transform: translate(-50%, -50%) scale(1.1); /* Größer */
+        }
+        .field-end {
+            background-color: #eab308 !important; /* yellow-500 */
+            color: black;
+            transform: translate(-50%, -50%) scale(1.1); /* Größer */
+        }
+
+        /* Spielfigur */
+        .player-pawn {
+            transition: all 0.5s ease-in-out;
+            width: 48px; /* 80% von 60px */
+            height: 48px;
             position: absolute;
             z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+            /* Wendet die Schwebe-Animation an */
+            animation: float 3s ease-in-out infinite;
         }
-        .player-pawn:nth-child(2) { transform: translateX(20%); z-index: 11; }
-        .player-pawn:nth-child(3) { transform: translateX(-20%); z-index: 12; }
-        .player-pawn:nth-child(4) { transform: translateY(20%); z-index: 13; }
-        .board-field {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        /* Stacking-Logik - leicht angepasst für neue Animation */
+        .player-pawn:nth-child(2) { transform: translateX(20%); z-index: 11; animation-delay: -0.5s; }
+        .player-pawn:nth-child(3) { transform: translateX(-20%); z-index: 12; animation-delay: -1s; }
+        .player-pawn:nth-child(4) { transform: translateY(20%); z-index: 13; animation-delay: -1.5s; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4 font-sans">
+<body class="text-white min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="w-full max-w-6xl mx-auto">
-        <h1 class="text-3xl font-bold text-center mb-6">Spielbrett</h1>
-        <div id="game-board-container" class="bg-gray-800 p-4 rounded-lg shadow-xl">
-            <div id="waiting-message" class="text-center text-xl p-10">
+    <div classs="w-full max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-100" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Das Große Rennen</h1>
+        
+        <div id="game-board-container" class="p-4 rounded-lg w-[90vw] lg:w-[1000px]">
+            
+            <div id="waiting-message" class="text-center text-xl p-10 text-green-200">
                 <p>Warte auf Spielstart vom Controller...</p>
-                <p class="text-sm text-gray-400 mt-2">Verbinde mit Firebase-Projekt: game-8e351</p>
+                <p class="text-sm text-green-400 mt-2">Verbinde mit Firebase-Projekt: game-8e351</p>
             </div>
-            <div id="game-board" class="grid grid-cols-10 gap-2">
-                <!-- Fields will be dynamically inserted here -->
+            
+            <!-- SVG-Layer für die Verbindungslinie -->
+            <svg id="path-svg">
+                <path id="path-line" d="" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="8" stroke-dasharray="15 10"/>
+            </svg>
+            
+            <!-- Spielbrett-Layer für die Felder -->
+            <div id="game-board">
+                <!-- Felder werden dynamisch eingefügt -->
             </div>
         </div>
     </div>
@@ -54,7 +133,6 @@
 
         setLogLevel('Debug');
 
-        // --- HIER IST IHRE FIREBASE-KONFIGURATION ---
         const firebaseConfig = {
           apiKey: "AIzaSyD0bYsfuu1EipFJ_i-2WAikHQ9ycP1jye0",
           authDomain: "game-8e351.firebaseapp.com",
@@ -64,19 +142,19 @@
           appId: "1:713515393193:web:534d68c9f0d223f6e149b8",
           measurementId: "G-F21SP6RW0B"
         };
-        // ----------------------------------------------
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-
-        // --- Vereinfachter Firestore Document Reference ---
-        // Dieser Pfad wird jetzt in IHREM Projekt verwendet.
         const gameDocRef = doc(db, "publicGames", "mainGameState");
 
         const boardElement = document.getElementById("game-board");
+        const pathLineElement = document.getElementById("path-line");
         const waitingMessage = document.getElementById("waiting-message");
 
+        /**
+         * Baut das Spielbrett mit einem Schlangenpfad auf
+         */
         function renderBoard(totalFields) {
             boardElement.innerHTML = "";
             if (!totalFields || totalFields === 0) {
@@ -85,67 +163,134 @@
             }
             waitingMessage.classList.add("hidden");
 
-            for (let i = 1; i <= totalFields; i++) {
+            const numFields = totalFields + 2; // Inkl. Start (0) und Ziel (N+1)
+            const fieldsPerColumn = 10;
+            const numColumns = Math.ceil(numFields / fieldsPerColumn);
+            
+            // Vertikaler Abstand
+            const vSpacing = 100 / (fieldsPerColumn + 1); // 10 Felder + Ränder
+            // Horizontaler Abstand
+            const hSpacing = 100 / (numColumns + 1); // Spalten + Ränder
+            
+            let pathString = "";
+            let lastPos = null;
+
+            for (let i = 0; i < numFields; i++) {
+                const col = Math.floor(i / fieldsPerColumn);
+                let row = i % fieldsPerColumn;
+                
+                // Schlangenmuster: Jede zweite Spalte läuft von unten nach oben
+                if (col % 2 !== 0) {
+                    row = (fieldsPerColumn - 1) - row;
+                }
+
+                const y = (row * vSpacing) + (vSpacing / 2);
+                const hBase = (col * hSpacing) + (hSpacing / 2);
+                
+                // --- NEU: "Zufällig aussehender" Pfad ---
+                // Fügt eine deterministische "Welle" basierend auf der y-Position hinzu
+                const sway = Math.sin(y * 0.15 + col) * (hSpacing * 0.2); // Schwingt +/- 20% des Spaltenabstands
+                const x = hBase + sway;
+
+                // Pfad für die SVG-Linie erstellen
+                if (lastPos) {
+                    pathString += `L ${x}% ${y}% `;
+                } else {
+                    pathString = `M ${x}% ${y}% `;
+                }
+                lastPos = { x, y };
+
+                // Feld-Element erstellen
                 const field = document.createElement("div");
-                field.id = `field-${i}`;
-                field.className = "board-field aspect-square bg-gray-700 rounded-md text-xs text-gray-400 p-1 flex items-center justify-center relative";
-                field.textContent = i;
-                if (i === 1) field.classList.add("bg-green-600", "text-white");
-                if (i === totalFields) field.classList.add("bg-yellow-500", "text-white");
+                field.className = "board-field";
+                field.style.left = `${x}%`;
+                field.style.top = `${y}%`;
+                
+                let fieldId;
+                if (i === 0) {
+                    fieldId = "field-0";
+                    field.textContent = "Start";
+                    field.classList.add("field-start");
+                } else if (i === numFields - 1) {
+                    fieldId = `field-${totalFields + 1}`;
+                    field.textContent = "Ziel";
+                    field.classList.add("field-end");
+                } else {
+                    fieldId = `field-${i}`;
+                    field.textContent = i; // Felder 1 bis N
+                }
+                field.id = fieldId;
                 boardElement.appendChild(field);
             }
+            
+            // SVG-Linienpfad setzen
+            pathLineElement.setAttribute('d', pathString);
         }
 
-        function renderPlayers(players) {
+        /**
+         * Platziert die Spielfiguren (SVGs) auf dem Brett
+         */
+        function renderPlayers(players, totalFields) {
             document.querySelectorAll('.player-pawn').forEach(pawn => pawn.remove());
             if (!players) return;
 
             players.forEach(player => {
-                if (player.position > 0) {
-                    const field = document.getElementById(`field-${player.position}`);
-                    if (field) {
-                        const pawn = document.createElement("div");
-                        pawn.id = `pawn-${player.id}`;
-                        pawn.className = "player-pawn";
-                        pawn.style.backgroundColor = player.color;
-                        pawn.textContent = `S${player.id}`;
-                        field.appendChild(pawn);
-                    }
+                let fieldId;
+                // Logik, um die ID des Feldes zu finden
+                if (player.position === 0) {
+                    fieldId = "field-0";
+                } else if (player.position > totalFields) {
+                    // Spieler ist im Ziel (oder darüber hinaus)
+                    fieldId = `field-${totalFields + 1}`;
+                } else {
+                    fieldId = `field-${player.position}`;
+                }
+
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    const pawn = document.createElement("div");
+                    pawn.id = `pawn-${player.id}`;
+                    pawn.className = "player-pawn";
+                    pawn.innerHTML = `
+                        <svg viewBox="0 0 32 32" style="width: 100%; height: 100%;">
+                            <path 
+                                d="M16,2 C12.69,2 10,4.69 10,8 C10,11.31 12.69,14 16,14 C19.31,14 22,11.31 22,8 C22,4.69 19.31,2 16,2 Z M16,16 C12,16 6,18 6,22 L6,26 C6,28.21 7.79,30 10,30 L22,30 C24.21,30 26,28.21 26,26 L26,22 C26,18 20,16 16,16 Z" 
+                                fill="${player.color}" 
+                                stroke="rgba(0,0,0,0.4)" 
+                                stroke-width="1.5"
+                            />
+                        </svg>`;
+                    field.appendChild(pawn);
                 }
             });
         }
 
         async function setupRealtimeListener() {
             try {
-                // Nur noch anonyme Anmeldung
                 await signInAnonymously(auth);
-                console.log("Board: Authenticated successfully (Anonymously) in your project.");
+                console.log("Board: Authenticated successfully.");
                 waitingMessage.innerHTML = '<p>Erfolgreich verbunden. Warte auf Daten...</p>';
 
                 onSnapshot(gameDocRef, (doc) => {
-                    console.log("Board: Received data update from YOUR project.");
+                    console.log("Board: Received data update.");
                     if (doc.exists()) {
                         const gameState = doc.data();
                         const currentFields = boardElement.childElementCount;
-                        if (currentFields !== gameState.totalFields) {
+                        // Neu rendern, wenn sich Feldanzahl ändert (+2 für Start/Ziel)
+                        if (currentFields !== (gameState.totalFields + 2)) {
                             renderBoard(gameState.totalFields);
                         }
-                        renderPlayers(gameState.players);
+                        renderPlayers(gameState.players, gameState.totalFields);
                     } else {
                         console.log("Board: No game state document.");
-                        renderBoard(0); // Show waiting message
+                        renderBoard(0); 
                     }
-                }, (error) => {
-                    console.error("Board: Error in onSnapshot: ", error);
-                    waitingMessage.textContent = "Fehler bei der Verbindung (onSnapshot).";
                 });
-
             } catch (error) {
                 console.error("Board: Authentication failed: ", error);
-                waitingMessage.textContent = "Fehler bei der Authentifizierung (Anonym).";
+                waitingMessage.textContent = "Fehler bei der Authentifizierung.";
             }
         }
-
         setupRealtimeListener();
     </script>
 </body>
