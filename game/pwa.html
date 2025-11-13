@@ -3,60 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <!-- PWA Meta Tags -->
     <title>Spiel-Controller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Game-Ctrl">
-    <link rel="apple-touch-icon" href="https://placehold.co/180x180/000000/ffffff?text=GAME&font=roboto">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="apple-mobile-web-app-title" content="Game PWA">
+    <style>
+        body { -webkit-font-smoothing: antialiased; }
+        .btn { transition: all 0.1s ease; }
+        .btn:active { transform: scale(0.95); }
+        .player-btn.selected {
+            box-shadow: 0 0 0 4px #a78bfa; /* violet-400 */
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 font-sans flex flex-col">
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen font-sans">
 
-    <div class="max-w-md mx-auto w-full">
-        <h1 class="text-3xl font-bold text-center text-purple-400 mb-6">Spiel-Controller</h1>
-        <p class="text-center text-sm text-gray-400 mb-4">Projekt: game-8e351</p>
+    <div class="p-6 rounded-lg bg-gray-800 shadow-xl w-full max-w-md mx-4">
+        <h1 class="text-2xl font-bold text-center mb-6 text-purple-400">Spiel-Steuerung</h1>
 
-        <!-- Spiel-Setup -->
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
-            <h2 class="text-xl font-semibold mb-3 text-purple-300">Spiel-Setup</h2>
-            <div class="mb-3">
-                <label for="total-fields" class="block text-sm font-medium text-gray-300 mb-1">Anzahl Felder (ohne Start/Ziel):</label>
-                <input type="number" id="total-fields" value="50" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-inner text-white">
+        <!-- SETUP SECTION -->
+        <div class="mb-6 p-4 bg-gray-700 rounded-lg">
+            <h2 class="text-lg font-semibold mb-3 text-purple-300">Spiel-Setup</h2>
+            <div class="flex space-x-4 mb-4">
+                <div class="flex-1">
+                    <label for="totalFields" class="block text-sm font-medium text-gray-300 mb-1">Felder</label>
+                    <input type="number" id="totalFields" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500" value="50">
+                </div>
+                <div class="flex-1">
+                    <label for="playerCount" class="block text-sm font-medium text-gray-300 mb-1">Spieler</label>
+                    <select id="playerCount" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                        <option value="1">1 Spieler</option>
+                        <option value="2" selected>2 Spieler</option>
+                        <option value="3">3 Spieler</option>
+                        <option value="4">4 Spieler</option>
+                    </select>
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="player-count" class="block text-sm font-medium text-gray-300 mb-1">Anzahl Spieler (max 4):</label>
-                <input type="number" id="player-count" value="2" min="1" max="4" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-inner text-white">
-            </div>
-            <button id="start-game-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 ease-in-out transform hover:scale-105">
+            <button id="startGameBtn" class="btn w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-md shadow-lg">
                 Spiel starten / Neu einrichten
             </button>
-            <p id="status" class="text-yellow-400 text-center text-sm mt-3"></p>
         </div>
 
-        <!-- Spiel-Steuerung -->
-        <div id="game-controls" class="bg-gray-800 p-4 rounded-lg shadow-lg hidden">
-            <h2 class="text-xl font-semibold mb-3 text-purple-300">Steuerung</h2>
-            <div id="player-tabs" class="flex mb-3 border-b border-gray-700">
-                <!-- Tab-Reiter werden hier eingefügt -->
+        <!-- SPIELER-KONTROLLEN -->
+        <div id="game-controls" class="hidden">
+            <div class="mb-4 p-4 bg-gray-700 rounded-lg">
+                <h2 class="text-lg font-semibold mb-3 text-purple-300">1. Spieler auswählen</h2>
+                <div id="player-selection" class="flex justify-center space-x-3">
+                    <!-- Player buttons will be injected here -->
+                </div>
             </div>
-            <div id="player-panels" class="space-y-4">
-                <!-- Spieler-Bedienfelder werden hier eingefügt -->
+
+            <div class="mb-6 p-4 bg-gray-700 rounded-lg">
+                <h2 class="text-lg font-semibold mb-3 text-purple-300">2. Aktionen</h2>
+                
+                <!-- NEUER BUTTON -->
+                <button id="revealCardBtn" class="btn w-full px-4 py-2 mb-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-md shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Karte aufdecken
+                </button>
+                
+                <div class="grid grid-cols-3 gap-3 mb-3">
+                    <button data-move="1" class="btn move-btn px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md shadow-lg disabled:opacity-50">+1</button>
+                    <button data-move="2" class="btn move-btn px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md shadow-lg disabled:opacity-50">+2</button>
+                    <button data-move="3" class="btn move-btn px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md shadow-lg disabled:opacity-50">+3</button>
+                    <button data-move="4" class="btn move-btn px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md shadow-lg disabled:opacity-50">+4</button>
+                    <button data-move="5" class="btn move-btn px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md shadow-lg disabled:opacity-50">+5</button>
+                    <button data-move="6" class="btn move-btn px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md shadow-lg disabled:opacity-50">+6</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="resetPlayerBtn" class="btn px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md shadow-lg disabled:opacity-50">Auf Start setzen</button>
+                    <button data-move="-1" class="btn move-btn px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-black font-bold rounded-md shadow-lg disabled:opacity-50">-1 Feld zurück</button>
+                </div>
             </div>
         </div>
+        
+        <p id="status-text" class="text-center text-yellow-400 text-sm h-4"></p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, runTransaction, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         setLogLevel('Debug');
 
-        // --- IHRE FIREBASE-KONFIGURATION ---
         const firebaseConfig = {
           apiKey: "AIzaSyD0bYsfuu1EipFJ_i-2WAikHQ9ycP1jye0",
           authDomain: "game-8e351.firebaseapp.com",
@@ -66,233 +96,179 @@
           appId: "1:713515393193:web:534d68c9f0d223f6e149b8",
           measurementId: "G-F21SP6RW0B"
         };
-        // ----------------------------------------------
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-
-        // --- Firestore Document Reference ---
         const gameDocRef = doc(db, "publicGames", "mainGameState");
-        const playerColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; // red, blue, green, amber
 
-        const statusEl = document.getElementById("status");
-        const startGameBtn = document.getElementById("start-game-btn");
-        const controlsEl = document.getElementById("game-controls");
-        const playerTabsEl = document.getElementById("player-tabs");
-        const playerPanelsEl = document.getElementById("player-panels");
+        const statusText = document.getElementById("status-text");
+        const gameControls = document.getElementById("game-controls");
+        const playerSelectionDiv = document.getElementById("player-selection");
+        const moveButtons = document.querySelectorAll(".move-btn");
+        const resetPlayerBtn = document.getElementById("resetPlayerBtn");
+        const revealCardBtn = document.getElementById("revealCardBtn"); // Neuer Knopf
+        const startGameBtn = document.getElementById("startGameBtn");
 
-        let currentGameState = null;
+        let selectedPlayer = null;
+        let controlButtons = [];
 
-        /**
-         * Erstellt ein neues Spiel oder setzt das bestehende zurück
-         */
-        async function setupNewGame() {
-            const totalFields = parseInt(document.getElementById("total-fields").value) || 50;
-            const playerCount = parseInt(document.getElementById("player-count").value) || 2;
-            
-            statusEl.textContent = "Erstelle Spiel...";
-            try {
-                const newPlayers = [];
-                for (let i = 0; i < playerCount; i++) {
-                    newPlayers.push({
-                        id: i + 1,
-                        name: `Spieler ${i + 1}`,
-                        color: playerColors[i % playerColors.length],
-                        position: 0 // Startposition ist 0
-                    });
-                }
-                
-                await setDoc(gameDocRef, {
-                    totalFields: totalFields,
-                    players: newPlayers
-                });
-                
-                statusEl.textContent = "Spiel erfolgreich gestartet!";
-                console.log("Controller: Game (re)started.");
-            } catch (error) {
-                console.error("Controller: Error starting game: ", error);
-                statusEl.textContent = "Fehler beim Starten des Spiels.";
-            }
-        }
-
-        /**
-         * Baut die Steuerungs-UI basierend auf dem Spielstatus
-         */
-        function buildControls(gameState) {
-            currentGameState = gameState; // Lokalen Status speichern
-            playerTabsEl.innerHTML = "";
-            playerPanelsEl.innerHTML = "";
-
-            gameState.players.forEach((player, index) => {
-                const isActive = index === 0;
-
-                // Tab-Reiter
-                const tab = document.createElement("button");
-                tab.id = `tab-player-${player.id}`;
-                tab.className = `player-tab py-2 px-4 font-medium text-sm ${isActive ? 'border-b-2 text-purple-400 border-purple-400' : 'text-gray-400 hover:text-gray-200'}`;
-                tab.style.borderBottomColor = isActive ? player.color : 'transparent';
-                if(isActive) tab.style.color = player.color;
-                tab.textContent = player.name;
-                tab.onclick = () => switchTab(player.id);
-                playerTabsEl.appendChild(tab);
-
-                // Bedienfeld
-                const panel = document.createElement("div");
-                panel.id = `panel-player-${player.id}`;
-                panel.className = `player-panel ${isActive ? '' : 'hidden'}`;
-                
-                const endPosition = gameState.totalFields + 1;
-                const isWinner = player.position >= endPosition;
-                
-                panel.innerHTML = `
-                    <p class="text-lg font-semibold text-center mb-3" style="color: ${player.color};">
-                        Position: ${isWinner ? 'Ziel!' : player.position}
-                    </p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="1" ${isWinner ? 'disabled' : ''}>+1</button>
-                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="2" ${isWinner ? 'disabled' : ''}>+2</button>
-                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="3" ${isWinner ? 'disabled' : ''}>+3</button>
-                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="4" ${isWinner ? 'disabled' : ''}>+4</button>
-                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="5" ${isWinner ? 'disabled' : ''}>+5</button>
-                        <button class="move-btn bg-gray-700 hover:bg-gray-600 p-3 rounded-lg" data-steps="6" ${isWinner ? 'disabled' : ''}>+6</button>
-                    </div>
-                    <button class="move-btn bg-red-700 hover:bg-red-600 p-3 rounded-lg mt-4 w-full" data-steps="reset">Auf Start (0) setzen</button>
-                    <!-- *** NEUER BUTTON HINZUGEFÜGT *** -->
-                    <button class="move-btn bg-yellow-700 hover:bg-yellow-600 p-3 rounded-lg mt-2 w-full" data-steps="-1">-1 Feld zurück</button>
-                `;
-                
-                panel.querySelectorAll('.move-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        const steps = btn.dataset.steps === 'reset' ? 'reset' : parseInt(btn.dataset.steps);
-                        movePlayer(player.id, steps);
-                    };
-                });
-                
-                playerPanelsEl.appendChild(panel);
-            });
-
-            controlsEl.classList.remove("hidden");
-        }
-
-        /**
-         * Wechselt den aktiven Spieler-Tab
-         */
-        function switchTab(playerId) {
-            document.querySelectorAll('.player-tab').forEach(tab => {
-                const id = parseInt(tab.id.split('-')[2]);
-                const player = currentGameState.players.find(p => p.id === id);
-                if (id === playerId) {
-                    tab.classList.remove('text-gray-400', 'hover:text-gray-200');
-                    tab.classList.add('text-purple-400', 'border-b-2', 'border-purple-400');
-                    tab.style.borderBottomColor = player.color;
-                    tab.style.color = player.color;
-                } else {
-                    tab.classList.add('text-gray-400', 'hover:text-gray-200');
-                    tab.classList.remove('text-purple-400', 'border-b-2', 'border-purple-400');
-                    tab.style.borderBottomColor = 'transparent';
-                    tab.style.color = '';
-                }
-            });
-            document.querySelectorAll('.player-panel').forEach(panel => {
-                panel.id === `panel-player-${playerId}` ? panel.classList.remove('hidden') : panel.classList.add('hidden');
-            });
-        }
-
-        /**
-         * Bewegt einen Spieler (Firestore Transaktion)
-         * *** LOGIK AKTUALISIERT ***
-         */
-        async function movePlayer(playerId, steps) {
-            statusEl.textContent = `Bewege Spieler ${playerId}...`;
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const doc = await transaction.get(gameDocRef);
-                    if (!doc.exists()) {
-                        throw "Game document does not exist!";
-                    }
-                    
-                    const gameState = doc.data();
-                    const playerIndex = gameState.players.findIndex(p => p.id === playerId);
-                    if (playerIndex === -1) return;
-
-                    const player = gameState.players[playerIndex];
-                    const endPosition = gameState.totalFields + 1;
-                    
-                    if (steps === 'reset') {
-                        player.position = 0; // Setzt auf Start zurück
-                        statusEl.textContent = `Spieler ${playerId} zurück auf Start!`;
-                    
-                    } else if (steps > 0) { // Positive Schritte (vorwärts)
-                        // Verhindert Vorwärts-Bewegung, wenn schon im Ziel
-                        if (player.position >= endPosition) {
-                            statusEl.textContent = `Spieler ${playerId} ist bereits im Ziel.`;
-                            return;
-                        }
-                        
-                        let newPos = player.position + steps;
-                        
-                        if (newPos >= endPosition) {
-                            newPos = endPosition; // Landet genau auf Ziel
-                            statusEl.textContent = `Spieler ${playerId} hat das Ziel erreicht!`;
-                        } else {
-                            statusEl.textContent = `Spieler ${playerId} rückt auf Feld ${newPos}.`;
-                        }
-                        player.position = newPos;
-
-                    } else if (steps < 0) { // Negative Schritte (rückwärts)
-                        let newPos = player.position + steps; // z.B. 5 + (-1) = 4
-                        
-                        if (newPos < 0) {
-                            newPos = 0; // Kann nicht vor Start (Position 0)
-                        }
-                        
-                        statusEl.textContent = `Spieler ${playerId} rückt auf Feld ${newPos}.`;
-                        player.position = newPos;
-                    }
-                    
-                    // Aktualisiertes Spieler-Array zurückschreiben
-                    transaction.update(gameDocRef, { players: gameState.players });
-                });
-            } catch (error) {
-                console.error("Controller: Error moving player: ", error);
-                statusEl.textContent = "Fehler beim Bewegen des Spielers.";
-            }
-        }
-
-        /**
-         * Haupt-Initialisierung
-         */
-        async function init() {
+        async function initAuth() {
             try {
                 await signInAnonymously(auth);
                 console.log("Controller: Authenticated successfully.");
-                statusEl.textContent = "Verbunden. Lade Spiel...";
-
-                // Listener für Spielstatus
-                onSnapshot(gameDocRef, (doc) => {
-                    if (doc.exists()) {
-                        console.log("Controller: Game data received.");
-                        statusEl.textContent = "Spiel geladen.";
-                        buildControls(doc.data());
-                    } else {
-                        console.log("Controller: No existing game found.");
-                        statusEl.textContent = "Kein Spiel gefunden. Bitte starte ein neues.";
-                        controlsEl.classList.add("hidden");
-                    }
-                }, (error) => {
-                    console.error("Controller: Error in onSnapshot: ", error);
-                    statusEl.textContent = "Fehler: Verbindung zum Spiel verloren.";
-                });
-
+                statusText.textContent = "Verbunden.";
+                
+                const docSnap = await getDoc(gameDocRef);
+                if (docSnap.exists()) {
+                    console.log("Controller: Existing game found");
+                    const gameData = docSnap.data();
+                    setupGameControls(gameData.players);
+                } else {
+                    statusText.textContent = "Verbunden. Starte ein neues Spiel.";
+                }
             } catch (error) {
                 console.error("Controller: Authentication failed: ", error);
-                statusEl.textContent = "Authentifizierung fehlgeschlagen.";
+                statusText.textContent = "Authentifizierung fehlgeschlagen.";
             }
         }
 
-        startGameBtn.onclick = setupNewGame;
-        init();
+        function setupGameControls(players) {
+            playerSelectionDiv.innerHTML = "";
+            controlButtons = [
+                ...moveButtons, 
+                resetPlayerBtn, 
+                revealCardBtn // Neuer Knopf zu den Kontrollen hinzufügen
+            ];
+            
+            controlButtons.forEach(btn => btn.disabled = true);
+
+            players.forEach(player => {
+                const btn = document.createElement("button");
+                btn.className = "player-btn btn w-14 h-14 rounded-full font-bold text-lg border-4";
+                btn.textContent = player.id.replace('player', 'P');
+                btn.style.backgroundColor = player.color;
+                btn.style.borderColor = player.color;
+                btn.style.color = "black";
+                btn.dataset.playerId = player.id;
+
+                btn.addEventListener("click", () => {
+                    selectedPlayer = player.id;
+                    document.querySelectorAll('.player-btn').forEach(b => b.classList.remove("selected"));
+                    btn.classList.add("selected");
+                    controlButtons.forEach(btn => btn.disabled = false);
+                    statusText.textContent = `${player.id} ausgewählt.`;
+                });
+                playerSelectionDiv.appendChild(btn);
+            });
+            gameControls.classList.remove("hidden");
+        }
+
+        async function handleStartGame() {
+            statusText.textContent = "Spiel wird erstellt...";
+            const totalFields = parseInt(document.getElementById("totalFields").value, 10);
+            const playerCount = parseInt(document.getElementById("playerCount").value, 10);
+            
+            const playerColors = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b"];
+            const players = [];
+            for (let i = 0; i < playerCount; i++) {
+                players.push({
+                    id: `player${i + 1}`,
+                    color: playerColors[i],
+                    position: 0
+                });
+            }
+
+            try {
+                await setDoc(gameDocRef, {
+                    totalFields: totalFields,
+                    players: players
+                });
+                console.log("Controller: Game started/reset.");
+                statusText.textContent = "Spiel gestartet!";
+                setupGameControls(players);
+                selectedPlayer = null;
+            } catch (error) {
+                console.error("Controller: Error starting game: ", error);
+                statusText.textContent = "Fehler beim Starten des Spiels.";
+            }
+        }
+
+        async function movePlayer(moveAmount) {
+            if (!selectedPlayer) return;
+            statusText.textContent = "Spieler wird bewegt...";
+            try {
+                const docSnap = await getDoc(gameDocRef);
+                if (!docSnap.exists()) return;
+
+                const gameData = docSnap.data();
+                const playerIndex = gameData.players.findIndex(p => p.id === selectedPlayer);
+                if (playerIndex === -1) return;
+                
+                let newPosition = gameData.players[playerIndex].position + moveAmount;
+                if (newPosition < 0) newPosition = 0;
+                
+                gameData.players[playerIndex].position = newPosition;
+
+                await setDoc(gameDocRef, gameData);
+                statusText.textContent = `${selectedPlayer} bewegt.`;
+            } catch (error) {
+                console.error("Controller: Error moving player: ", error);
+                statusText.textContent = "Fehler beim Bewegen.";
+            }
+        }
+        
+        async function resetPlayer() {
+            if (!selectedPlayer) return;
+            statusText.textContent = "Spieler wird zurückgesetzt...";
+            try {
+                const docSnap = await getDoc(gameDocRef);
+                if (!docSnap.exists()) return;
+
+                const gameData = docSnap.data();
+                const playerIndex = gameData.players.findIndex(p => p.id === selectedPlayer);
+                if (playerIndex === -1) return;
+                
+                gameData.players[playerIndex].position = 0; // Auf Start setzen
+
+                await setDoc(gameDocRef, gameData);
+                statusText.textContent = `${selectedPlayer} auf Start gesetzt.`;
+            } catch (error) {
+                console.error("Controller: Error resetting player: ", error);
+                statusText.textContent = "Fehler beim Zurücksetzen.";
+            }
+        }
+        
+        // --- NEUE FUNKTION ---
+        async function revealCard() {
+            if (!selectedPlayer) return;
+            statusText.textContent = "Karte wird aufgedeckt...";
+            try {
+                // Wir 'mergen', um nur dieses eine Feld zu aktualisieren
+                // Wir senden ein Objekt mit ID und Zeitstempel, 
+                // damit das Board das Update bemerkt, 
+                // auch wenn derselbe Spieler es erneut anklickt.
+                await setDoc(gameDocRef, { 
+                    showCardForPlayer: {
+                        id: selectedPlayer,
+                        timestamp: Date.now()
+                    }
+                }, { merge: true });
+                statusText.textContent = `Karten-Aufdeck-Befehl gesendet.`;
+            } catch (error) {
+                console.error("Controller: Error revealing card: ", error);
+                statusText.textContent = "Fehler beim Aufdecken.";
+            }
+        }
+
+        startGameBtn.addEventListener("click", handleStartGame);
+        moveButtons.forEach(btn => {
+            btn.addEventListener("click", () => movePlayer(parseInt(btn.dataset.move, 10)));
+        });
+        resetPlayerBtn.addEventListener("click", resetPlayer);
+        revealCardBtn.addEventListener("click", revealCard); // Event Listener hinzufügen
+
+        initAuth();
     </script>
 </body>
 </html>
