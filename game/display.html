@@ -25,7 +25,7 @@
             aspect-ratio: 16 / 10;
         }
         
-        /* --- NEUES KARTEN-MODAL-STYLING --- */
+        /* --- KARTEN-MODAL-STYLING (FINALE ANPASSUNG) --- */
         #card-modal {
             position: fixed;
             top: 50%;
@@ -34,14 +34,14 @@
             background-color: white;
             border: 10px solid #4b5563; /* gray-600 */
             border-radius: 1rem;
-            padding: 2rem;
-            width: 300px;
-            height: 420px;
+            padding: 0.75rem; /* Reduziert von 1rem */
+            width: 280px;
+            height: 370px; /* Reduziert von 380px */
             z-index: 100;
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: space-between; /* Inhalte verteilen */
             align-items: center;
             font-family: 'Times New Roman', Times, serif;
             transition: all 0.3s ease-out;
@@ -49,12 +49,19 @@
         #card-modal.hidden {
             display: none;
         }
+        .card-corner { /* Wrapper für Ecke oben/unten */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1; /* Abstand zwischen Rang und Farbe reduzieren */
+        }
         .card-rank {
-            font-size: 6rem; /* 96px */
+            font-size: 3.25rem; /* Reduziert von 4rem */
             font-weight: bold;
         }
         .card-suit {
-            font-size: 5rem; /* 80px */
+            font-size: 2.75rem; /* Reduziert von 3.5rem */
         }
         .suit-red { color: #ef4444; } /* red-500 */
         .suit-black { color: #000000; }
@@ -74,30 +81,34 @@
         </div>
     </main>
     
-    <!-- 
-      --- NEUES KARTEN-MODAL --- 
-      Dies ist das Pop-up-Fenster für die Karte.
-    -->
     <div id="card-modal" class="hidden">
-        <div class="self-start">
-            <div id="card-rank-top" class="card-rank leading-none">A</div>
-            <div id="card-suit-top" class="card-suit leading-none">♠</div>
+        
+        <!-- Obere Ecke -->
+        <div class="self-start card-corner"> 
+            <div id="card-rank-top" class="card-rank">A</div>
+            <div id="card-suit-top" class="card-suit">♠</div>
         </div>
-        <div id="card-suit-mid" class="card-suit" style="font-size: 8rem;">♠</div>
-        <div class="self-end" style="transform: rotate(180deg);">
-             <div id="card-rank-bottom" class="card-rank leading-none">A</div>
-             <div id="card-suit-bottom" class="card-suit leading-none">♠</div>
+        
+        <!-- Mittleres Symbol -->
+        <div id="card-suit-mid" class="card-suit" style="font-size: 5rem;">♠</div> <!-- Reduziert von 6rem -->
+
+        <!-- Untere Ecke -->
+        <div class="self-end card-corner" style="transform: rotate(180deg);">
+             <div id="card-rank-bottom" class="card-rank">A</div>
+             <div id="card-suit-bottom" class="card-suit">♠</div>
         </div>
     </div>
     
     <script type="module">
+        // --- DAS GESAMTE JAVASCRIPT IST IDENTISCH ZU VORHER ---
+        // --- Es werden keine logischen Änderungen benötigt ---
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         setLogLevel('Debug');
 
-        // --- Firebase Konfiguration (wie gehabt) ---
         const firebaseConfig = {
           apiKey: "AIzaSyD0bYsfuu1EipFJ_i-2WAikHQ9ycP1jye0",
           authDomain: "game-8e351.firebaseapp.com",
@@ -113,12 +124,10 @@
         const auth = getAuth(app);
         const gameDocRef = doc(db, "publicGames", "mainGameState");
 
-        // --- Canvas Setup (wie gehabt) ---
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
         const waitingMessage = document.getElementById("waiting-message");
 
-        // --- NEUES KARTEN-MODAL Setup ---
         const cardModal = document.getElementById("card-modal");
         const cardRankTop = document.getElementById("card-rank-top");
         const cardSuitTop = document.getElementById("card-suit-top");
@@ -126,65 +135,57 @@
         const cardRankBottom = document.getElementById("card-rank-bottom");
         const cardSuitBottom = document.getElementById("card-suit-bottom");
 
-        // --- NEUE KARTEN-LOGIK ---
-        
-        // Das volle 32-Karten-Skat-Deck, geordnet vom niedrigsten zum höchsten Wert
         const SKAT_DECK = (function() {
             const ranks = ['7', '8', '9', '10', 'B', 'D', 'K', 'A'];
-            const suits = ['♦', '♥', '♠', '♣']; // Karo, Herz, Pik, Kreuz
+            const suits = ['♦', '♥', '♠', '♣'];
             const deck = [];
             for (const suit of suits) {
                 for (const rank of ranks) {
                     deck.push({ rank, suit, color: (suit === '♦' || suit === '♥') ? 'suit-red' : 'suit-black' });
                 }
             }
-            return deck; // Ergibt ein 32-Karten-Array
+            return deck;
         })();
 
-        // Holt die korrekte Karte für ein Feld, basierend auf der Gesamtzahl der Felder
         function getCardForField(fieldNumber, totalFields) {
-            // Start (0) und Ziel (über totalFields) haben keine Karten
             if (fieldNumber <= 0 || fieldNumber > totalFields) {
                 return null;
             }
 
-            // Fall 1: Weniger Felder als Karten (z.B. 30 Felder)
             if (totalFields < 32) {
                 const numCardsToSkip = 32 - totalFields;
-                // Wir überspringen die niedrigsten Karten (z.B. ♦7, ♦8)
                 const gameDeck = SKAT_DECK.slice(numCardsToSkip);
-                return gameDeck[fieldNumber - 1]; // Feld 1 bekommt Karte 0
+                return gameDeck[fieldNumber - 1];
             }
             
-            // Fall 2: Mehr oder gleich viele Felder als Karten (z.B. 40 Felder)
-            // Wir verwenden Modulo, um das Deck zu wiederholen
             const cardIndex = (fieldNumber - 1) % 32;
             return SKAT_DECK[cardIndex];
         }
 
-        // --- Ende der Kartenlogik ---
-
-        let fieldPath = []; // Speichert die (x, y) Koordinaten der Felder
+        let fieldPath = [];
         let currentGameState = null;
-        let lastShowRequestTimestamp = 0; // Um doppelte Aufrufe zu verhindern
-        let modalHideTimer = null; // Timer zum Ausblenden des Modals
+        let lastShowRequestTimestamp = 0;
+        let modalHideTimer = null;
 
-        // --- 1. Pfad-Berechnungslogik (unverändert) ---
         function generateFieldPath(totalFields) {
-            // ... (Code aus v9 ist hier, unverändert) ...
             const path = [];
-            const numFields = totalFields + 2; 
+            const numFields = totalFields + 2;
             const canvasWidth = canvas.width;
             const canvasHeight = canvas.height;
-            const padding = 100; 
+            const padding = 100;
 
             const assumedAspectRatio = canvasWidth / canvasHeight;
             const fieldsPerColumn = Math.round(Math.sqrt(numFields / assumedAspectRatio));
             const numColumns = Math.ceil(numFields / fieldsPerColumn);
             
-            const vSpacing = (fieldsPerColumn > 1) ? (canvasHeight - 2 * padding) / (fieldsPerColumn - 1) : 0;
+            const vSpacing = (fieldsPerColumn > 1) 
+                ? (canvasHeight - 2 * padding) / (fieldsPerColumn - 1) 
+                : 0;
             const vOffset = (fieldsPerColumn > 1) ? padding : canvasHeight / 2;
-            const hSpacing = (numColumns > 1) ? (canvasWidth - 2 * padding) / (numColumns - 1) : 0;
+
+            const hSpacing = (numColumns > 1) 
+                ? (canvasWidth - 2 * padding) / (numColumns - 1) 
+                : 0;
             const hOffset = (numColumns > 1) ? padding : canvasWidth / 2;
             
             for (let i = 0; i < numFields; i++) {
@@ -199,7 +200,9 @@
                 let x = (numColumns > 1) ? (col * hSpacing) + hOffset : hOffset;
 
                 if (numColumns > 1) {
-                    const sway = (fieldsPerColumn > 1) ? Math.sin(y * 0.05 + col) * (hSpacing * 0.2) : 0;
+                    const sway = (fieldsPerColumn > 1) 
+                                 ? Math.sin(y * 0.05 + col) * (hSpacing * 0.2) 
+                                 : 0;
                     x += sway;
                 }
                 
@@ -214,15 +217,13 @@
                     label = i.toString();
                     type = "field";
                 }
+                
                 path.push({ x, y, label, type, fieldId: `field-${i === numFields - 1 ? totalFields + 1 : i}` });
             }
             return path;
         }
 
-        // --- 2. Zeichenfunktionen (unverändert) ---
-        
         function drawPath(path) {
-            // ... (Code aus v9) ...
             if (path.length < 2) return;
             ctx.beginPath();
             ctx.moveTo(path[0].x, path[0].y);
@@ -237,7 +238,6 @@
         }
 
         function drawFields(path) {
-            // ... (Code aus v9) ...
             const radius = 30;
             ctx.font = "bold 20px sans-serif";
             ctx.textAlign = "center";
@@ -256,7 +256,6 @@
         }
 
         function drawPlayers(players, path, totalFields) {
-            // ... (Code aus v9) ...
             if (!players || !path.length) return;
             const pawnRadius = 15;
             const offsets = [{x: -pawnRadius, y: -pawnRadius}, {x: pawnRadius, y: -pawnRadius}, {x: -pawnRadius, y: pawnRadius}, {x: pawnRadius, y: pawnRadius}];
@@ -281,7 +280,6 @@
             });
         }
         
-        // --- 3. Haupt-Update-Funktion (unverändert) ---
         function drawFrame(gameState) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
@@ -307,7 +305,6 @@
             drawPlayers(gameState.players, fieldPath, newTotalFields);
         }
 
-        // --- 4. Firebase Listener (MODIFIZIERT) ---
         async function setupRealtimeListener() {
             try {
                 await signInAnonymously(auth);
@@ -317,11 +314,8 @@
                     console.log("Board: Received data update.");
                     if (doc.exists()) {
                         currentGameState = doc.data();
-                        drawFrame(currentGameState); // Spiel wie gewohnt neu zeichnen
-                        
-                        // --- NEUE LOGIK: Auf Karten-Aufdeck-Befehl prüfen ---
+                        drawFrame(currentGameState);
                         handleCardReveal(currentGameState);
-                        
                     } else {
                         console.log("Board: No game state document.");
                         currentGameState = null;
@@ -334,26 +328,21 @@
             }
         }
         
-        // --- 5. NEUE FUNKTION: Karten-Modal anzeigen/verstecken ---
         function handleCardReveal(gameState) {
             const request = gameState.showCardForPlayer;
             
-            // Prüfen, ob eine neue Anfrage vorliegt (basierend auf dem Zeitstempel)
             if (request && request.timestamp > lastShowRequestTimestamp) {
                 console.log("Board: New card reveal request detected.");
                 lastShowRequestTimestamp = request.timestamp;
                 
-                // Finde den Spieler und seine Position
                 const player = gameState.players.find(p => p.id === request.id);
                 if (!player) return;
 
                 const card = getCardForField(player.position, gameState.totalFields);
                 
-                // Modal-Timer löschen, falls einer läuft
                 if (modalHideTimer) clearTimeout(modalHideTimer);
 
                 if (card) {
-                    // Karte gefunden -> Modal füllen und anzeigen
                     const colorClass = card.color;
                     [cardRankTop, cardRankBottom, cardSuitTop, cardSuitBottom, cardSuitMid].forEach(el => {
                         el.classList.remove('suit-red', 'suit-black');
@@ -367,7 +356,6 @@
                     cardSuitMid.textContent = card.suit;
                     
                 } else {
-                    // Keine Karte (Start/Ziel) -> Nachricht anzeigen
                     [cardRankTop, cardRankBottom, cardSuitTop, cardSuitBottom, cardSuitMid].forEach(el => {
                         el.classList.remove('suit-red');
                         el.classList.add('suit-black');
@@ -381,7 +369,6 @@
                 
                 cardModal.classList.remove("hidden");
 
-                // Modal nach 3 Sekunden automatisch verstecken
                 modalHideTimer = setTimeout(() => {
                     cardModal.classList.add("hidden");
                 }, 3000);
