@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Spiel-Controller</title>
+    <!-- PWA meta tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/3498db/ffffff?text=Game">
+    <!-- Base64-encoded Manifest for PWA -->
+    <link rel="manifest" href="data:application/manifest+json;base64,ew0KICAgICJuYW1lIjogIkdhbWUgQ29udHJvbGxlciIsDQogICAgInNob3J0X25hbWUiOiAiQ29udHJvbGxlciIsDQogICAgInN0YXJ0X3VybCI6ICIuIiwNCiAgICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwNCiAgICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTYzNjVGIiwNCiAgICAidGhlbWVfY29sb3IiOiAiIzM0OThkYiIsDQogICAgImljb25zIjogWw0KICAgICAgICB7DQogICAgICAgICAgICAic3JjIjogImh0dHBzOi8vcGxhY2Vob2xkLmNvLzE5MngxOTIvMzQ5OGRiL2ZmZmZmZj90ZXh0PUciLA0KICAgICAgICAgICAgInNpemVzIjogIjE5MngxOTIiLA0KICAgICAgICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIg0KICAgICAgICB9LA0KICAgICAgICB7DQogICAgICAgICAgICAic3JjIjogImh0dHBzOi8vcGxhY2Vob2xkLmNvLzUxMng1MTIvMzQ5OGRiL2ZmZmZmZj90ZXh0PUciLA0KICAgICAgICAgICAgInNpemVzIjogIjUxMng1MTIiLA0KICAgICAgICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIg0KICAgICAgICB9DQogICAgXQ0KfQ==">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Make body take full height for mobile */
+        html, body {
+            height: 100%;
+            overscroll-behavior: none; /* Prevent pull-to-refresh */
+        }
+    </style>
+</head>
+<body class="bg-gray-800 text-white min-h-screen font-sans flex flex-col">
+
+    <div class="flex-1 w-full max-w-md mx-auto p-4 flex flex-col space-y-6">
+        <h1 class="text-3xl font-bold text-center text-blue-400">Spiel-Controller</h1>
+
+        <!-- Setup Section -->
+        <div id="setup-section" class="bg-gray-700 p-6 rounded-lg shadow-lg space-y-4">
+            <h2 class="text-xl font-semibold">Spiel einrichten</h2>
+            <div>
+                <label for="total-fields" class="block text-sm font-medium text-gray-300">Anzahl Felder</label>
+                <input type="number" id="total-fields" value="50" class="mt-1 w-full p-2 rounded-md bg-gray-800 text-white border border-gray-600 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="num-players" class="block text-sm font-medium text-gray-300">Anzahl Spieler</label>
+                <input type="number" id="num-players" value="2" min="1" max="4" class="mt-1 w-full p-2 rounded-md bg-gray-800 text-white border border-gray-600 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <button id="start-game-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200">
+                Spiel starten / Neu einrichten
+            </button>
+        </div>
+
+        <!-- Control Section -->
+        <div id="control-section" class="bg-gray-700 p-6 rounded-lg shadow-lg space-y-4 hidden">
+            <h2 class="text-xl font-semibold">Spielsteuerung</h2>
+            <div id="player-controls" class="space-y-4">
+                <!-- Player controls will be generated here -->
+            </div>
+            <button id="reset-game-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200">
+                Spiel zurücksetzen
+            </button>
+        </div>
+        
+        <!-- Status Message -->
+        <div id="status-message" class="text-center text-gray-400 text-sm"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Enable debug logging
+        setLogLevel('Debug');
+
+        // --- Firebase Initialization ---
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- Firestore Document Reference ---
+        const gameDocRef = doc(db, `artifacts/${appId}/public/data/games`, "gameState");
+
+        // --- DOM Elements ---
+        const setupSection = document.getElementById("setup-section");
+        const controlSection = document.getElementById("control-section");
+        const startGameBtn = document.getElementById("start-game-btn");
+        const resetGameBtn = document.getElementById("reset-game-btn");
+        const playerControlsContainer = document.getElementById("player-controls");
+        const totalFieldsInput = document.getElementById("total-fields");
+        const numPlayersInput = document.getElementById("num-players");
+        const statusMessage = document.getElementById("status-message");
+
+        // --- Game State ---
+        let currentGameState = {};
+        const playerColors = ["#E53E3E", "#3182CE", "#38A169", "#D69E2E"]; // red, blue, green, yellow
+
+        // --- Functions ---
+
+        /**
+         * Creates a new game state and saves to Firestore
+         */
+        async function startGame() {
+            const totalFields = parseInt(totalFieldsInput.value) || 50;
+            const numPlayers = parseInt(numPlayersInput.value) || 2;
+
+            let players = [];
+            for (let i = 0; i < numPlayers; i++) {
+                players.push({
+                    id: i + 1,
+                    name: `Spieler ${i + 1}`,
+                    position: 1, // Start at field 1
+                    color: playerColors[i % playerColors.length]
+                });
+            }
+
+            const newGameState = {
+                totalFields: totalFields,
+                players: players
+            };
+
+            try {
+                await setDoc(gameDocRef, newGameState);
+                currentGameState = newGameState;
+                renderPlayerControls(players);
+                setupSection.classList.add("hidden");
+                controlSection.classList.remove("hidden");
+                statusMessage.textContent = "Spiel gestartet!";
+            } catch (error) {
+                console.error("Error starting game: ", error);
+                statusMessage.textContent = "Fehler beim Starten des Spiels.";
+            }
+        }
+
+        /**
+         * Renders the move buttons for each player
+         */
+        function renderPlayerControls(players) {
+            playerControlsContainer.innerHTML = "";
+            players.forEach(player => {
+                const playerDiv = document.createElement("div");
+                playerDiv.className = "p-3 rounded-lg";
+                playerDiv.style.border = `2px solid ${player.color}`;
+
+                playerDiv.innerHTML = `
+                    <div class="font-bold text-lg" style="color: ${player.color}">${player.name}</div>
+                    <div class="text-sm text-gray-300 mb-2">Aktuelles Feld: <span id="player-pos-${player.id}">${player.position}</span></div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button data-player-id="${player.id}" data-steps="1" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+1</button>
+                        <button data-player-id="${player.id}" data-steps="2" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+2</button>
+                        <button data-player-id="${player.id}" data-steps="3" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+3</button>
+                        <button data-player-id="${player.id}" data-steps="4" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+4</button>
+                        <button data-player-id="${player.id}" data-steps="5" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+5</button>
+                        <button data-player-id="${player.id}" data-steps="6" class="move-btn bg-gray-600 hover:bg-gray-500 text-white p-2 rounded-md">+6</button>
+                    </div>
+                `;
+                playerControlsContainer.appendChild(playerDiv);
+            });
+        }
+
+        /**
+         * Moves a player and updates Firestore
+         */
+        async function movePlayer(playerId, steps) {
+            const playerIndex = currentGameState.players.findIndex(p => p.id === playerId);
+            if (playerIndex === -1) return;
+
+            const player = currentGameState.players[playerIndex];
+            const newPosition = Math.min(currentGameState.totalFields, player.position + steps);
+            
+            if (newPosition === player.position) return; // No change
+
+            player.position = newPosition;
+
+            // Update UI immediately
+            document.getElementById(`player-pos-${player.id}`).textContent = newPosition;
+
+            try {
+                // Update only the players array in Firestore
+                await updateDoc(gameDocRef, {
+                    players: currentGameState.players
+                });
+                statusMessage.textContent = `${player.name} ist auf Feld ${newPosition} gerückt.`;
+            } catch (error) {
+                console.error("Error moving player: ", error);
+                statusMessage.textContent = "Fehler beim Bewegen des Spielers.";
+                // Revert UI change on error (optional)
+                player.position -= steps;
+                document.getElementById(`player-pos-${player.id}`).textContent = player.position;
+            }
+        }
+
+        /**
+         * Resets the game by deleting the doc and showing setup
+         */
+        async function resetGame() {
+            try {
+                await deleteDoc(gameDocRef);
+                currentGameState = {};
+                controlSection.classList.add("hidden");
+                setupSection.classList.remove("hidden");
+                statusMessage.textContent = "Spiel zurückgesetzt. Bitte neu einrichten.";
+            } catch (error) {
+                console.error("Error resetting game: ", error);
+                statusMessage.textContent = "Fehler beim Zurücksetzen.";
+            }
+        }
+
+        // --- Event Listeners ---
+        startGameBtn.addEventListener("click", startGame);
+        resetGameBtn.addEventListener("click", resetGame);
+
+        playerControlsContainer.addEventListener("click", (e) => {
+            if (e.target.classList.contains("move-btn")) {
+                const playerId = parseInt(e.target.dataset.playerId);
+                const steps = parseInt(e.target.dataset.steps);
+                movePlayer(playerId, steps);
+            }
+        });
+
+        // --- Main Execution ---
+        async function initializeController() {
+            try {
+                // Sign in
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                statusMessage.textContent = "Authentifiziert. Bereit zum Start.";
+                console.log("Controller: Authenticated successfully.");
+
+                // Check if a game is already in progress
+                const docSnap = await getDoc(gameDocRef);
+                if (docSnap.exists()) {
+                    console.log("Controller: Existing game found.");
+                    currentGameState = docSnap.data();
+                    renderPlayerControls(currentGameState.players);
+                    totalFieldsInput.value = currentGameState.totalFields;
+                    numPlayersInput.value = currentGameState.players.length;
+                    setupSection.classList.add("hidden");
+                    controlSection.classList.remove("hidden");
+                } else {
+                    console.log("Controller: No existing game. Ready for setup.");
+                    setupSection.classList.remove("hidden");
+                    controlSection.classList.add("hidden");
+                }
+            } catch (error) {
+                console.error("Controller: Initialization failed: ", error);
+                statusMessage.textContent = "Initialisierung fehlgeschlagen.";
+            }
+        }
+        
+        // Register Service Worker for PWA (basic)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(
+                'data:text/javascript,' +
+                'self.addEventListener("fetch", (e) => { /* basic no-op */ });'
+            ).then(() => console.log('Service Worker (minimal) registriert.'))
+             .catch((err) => console.log('Service Worker Registrierung fehlgeschlagen:', err));
+        }
+
+        initializeController();
+
+    </script>
+</body>
+</html>
