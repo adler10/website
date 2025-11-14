@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA und iPhone Metadaten -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fokus Timer">
+    <meta name="theme-color" content="#111827">
+
+    <title>Haptischer Fokus Timer</title>
+    
+    <!-- Tailwind CSS für schnelles, modernes Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Font "Inter" für ein sauberes UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Grundlegende Stile und Schriftart */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* Verhindert das "Hüpfen" beim Tippen auf iOS */
+            touch-action: manipulation;
+        }
+        /* Touch-Feedback für Buttons auf iOS */
+        button:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center overflow-hidden">
+
+    <div class="text-center p-6 w-full max-w-md">
+        <!-- Header -->
+        <h1 class="text-3xl font-bold text-indigo-400 mb-2">Haptischer Fokus Timer</h1>
+        <p class="text-gray-300 mb-12 text-lg">
+            Arbeite fokussiert. Erhalte eine leise Vibration statt einem lauten Alarm.
+        </p>
+
+        <!-- Timer-Anzeige -->
+        <div id="timer-display" class="text-8xl md:text-9xl font-black text-white mb-12 select-none" style="text-shadow: 0 0 20px rgba(79, 70, 229, 0.5);">
+            25:00
+        </div>
+
+        <!-- Steuerknöpfe -->
+        <div class="flex justify-center space-x-4 mb-8">
+            <button id="start-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 px-10 rounded-full text-xl transition-all duration-200 shadow-lg shadow-indigo-500/30">
+                Start
+            </button>
+            <button id="pause-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-4 px-10 rounded-full text-xl transition-all duration-200 hidden">
+                Pause
+            </button>
+            <button id="reset-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-4 px-10 rounded-full text-xl transition-all duration-200">
+                Zurücksetzen
+            </button>
+        </div>
+
+        <!-- Status-Nachricht -->
+        <p id="message" class="text-indigo-300 h-6 text-lg"></p>
+    </div>
+
+    <script>
+        // DOM-Elemente
+        const timerDisplay = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const messageEl = document.getElementById('message');
+
+        // Timer-Status
+        const FOCUS_TIME = 25 * 60; // 25 Minuten in Sekunden
+        let timeLeft = FOCUS_TIME;
+        let isRunning = false;
+        let timerId = null;
+
+        /**
+         * Aktualisiert die Timer-Anzeige im Format MM:SS
+         */
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * Die "coole" Funktion: Löst ein haptisches Feedback aus
+         */
+        function vibrateNotify() {
+            if ('vibrate' in navigator) {
+                // Ein Muster: 500ms Vibration, 100ms Pause, 500ms Vibration
+                navigator.vibrate([500, 100, 500]);
+            } else {
+                console.log("Vibration nicht unterstützt.");
+            }
+        }
+
+        /**
+         * Startet den Timer
+         */
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+            messageEl.textContent = "Fokus-Zeit läuft... 🧘";
+            
+            // UI-Buttons umschalten
+            startBtn.classList.add('hidden');
+            pauseBtn.classList.remove('hidden');
+
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    isRunning = false;
+                    messageEl.textContent = "Fokus-Sitzung beendet! 🚀";
+                    vibrateNotify(); // Vibrieren!
+                    // UI zurücksetzen
+                    pauseBtn.classList.add('hidden');
+                    startBtn.classList.remove('hidden');
+                    startBtn.textContent = "Neustart";
+                }
+            }, 1000);
+        }
+
+        /**
+         * Pausiert den Timer
+         */
+        function pauseTimer() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearInterval(timerId);
+            messageEl.textContent = "Pausiert.";
+            
+            // UI-Buttons umschalten
+            pauseBtn.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            startBtn.textContent = "Weiter";
+        }
+
+        /**
+         * Setzt den Timer zurück
+         */
+        function resetTimer() {
+            isRunning = false;
+            clearInterval(timerId);
+            timeLeft = FOCUS_TIME;
+            updateDisplay();
+            messageEl.textContent = "";
+
+            // UI-Buttons zurücksetzen
+            pauseBtn.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            startBtn.textContent = "Start";
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Timer beim Laden initial anzeigen
+        updateDisplay();
+
+
+        // --- PWA-Registrierungslogik (ohne Service Worker) ---
+
+        /**
+         * Erstellt und registriert das Web App Manifest dynamisch
+         * Dies ist für das "Zum Home-Bildschirm hinzufügen"-Icon und den App-Namen.
+         */
+        function registerManifest() {
+            const manifest = {
+                "name": "Haptischer Fokus Timer",
+                "short_name": "Fokus Timer",
+                "description": "Ein Pomodoro-Timer, der haptisches Feedback statt Ton verwendet.",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#111827",
+                "theme_color": "#4f46e5",
+                "icons": [
+                    {
+                        "src": "https://placehold.co/192x192/4f46e5/ffffff?text=Fokus&font=inter",
+                        "sizes": "192x192",
+                        "type": "image/png"
+                    },
+                    {
+                        "src": "https://placehold.co/512x512/4f46e5/ffffff?text=Fokus&font=inter",
+                        "sizes": "512x512",
+                        "type": "image/png"
+                    }
+                ]
+            };
+            
+            // Konvertiere das Manifest-Objekt in einen Data-URI
+            const manifestString = JSON.stringify(manifest);
+            const manifestBlob = new Blob([manifestString], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+
+            // Erstelle ein <link>-Element und füge es zum <head> hinzu
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestUrl;
+            document.head.appendChild(link);
+        }
+
+        // Registriere das Manifest, sobald die Seite geladen ist
+        window.addEventListener('load', () => {
+            registerManifest();
+            // Der Aufruf von registerServiceWorker() wurde entfernt
+        });
+
+    </script>
+</body>
+</html>
