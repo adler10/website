@@ -11,8 +11,8 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-button.active { 
-            border-bottom-color: #3b82f6; /* blue-600 */
-            color: #3b82f6;
+            border-bottom-color: #60a5fa; /* blue-400 */
+            color: #60a5fa;
             font-weight: 600;
         }
         .modal-hidden {
@@ -25,12 +25,12 @@
             pointer-events: auto;
         }
         .sprechwunsch-popup {
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            border: 1px solid #f87171; /* red-400 */
-            background-color: #fef2f2; /* red-50 */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid #fca5a5; /* red-300 */
+            background-color: #1f2937; /* gray-800 */
+            color: #fecaca; /* red-200 */
         }
         
-        /* NEU: Status-Farben-Klassen */
         .status-dot {
             display: inline-block;
             width: 1rem;
@@ -55,27 +55,58 @@
         .status-text-5 { color: #2563eb; }
         .status-text-6 { color: #6b7280; }
 
+        .form-input-dark {
+            background-color: #374151; /* gray-700 */
+            border: 1px solid #4b5563; /* gray-600 */
+            color: #f3f4f6; /* gray-100 */
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.15s ease;
+        }
+        .form-input-dark:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #374151;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        .form-input-dark::placeholder {
+            color: #9ca3af; /* gray-400 */
+        }
+        .form-select-dark {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        /* Hides the datalist icon in some browsers (not needed anymore) */
+        input::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-900 text-gray-300 min-h-screen">
 
     <div class="max-w-6xl mx-auto p-4 md:p-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-8">Alarm-Eingabe-Panel</h1>
+        <h1 class="text-4xl font-bold text-gray-100 mb-8">Alarm-Eingabe-Panel</h1>
 
         <!-- Tab-Navigation -->
-        <div class="mb-6 border-b border-gray-300">
+        <div class="mb-6 border-b border-gray-700">
             <nav class="flex -mb-px space-x-8">
-                <button class="tab-button active py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-manage">
+                <button class="tab-button active py-4 px-1 border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 whitespace-nowrap focus:outline-none" data-tab="tab-manage">
                     Einsätze Verwalten
                 </button>
-                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-create">
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 whitespace-nowrap focus:outline-none" data-tab="tab-create">
                     Einsatz Erstellen
                 </button>
-                <!-- NEU: Tab Fahrzeugstatus -->
-                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-status">
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 whitespace-nowrap focus:outline-none" data-tab="tab-status">
                     Fahrzeugstatus
                 </button>
-                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-settings">
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 whitespace-nowrap focus:outline-none" data-tab="tab-settings">
                     Einstellungen
                 </button>
             </nav>
@@ -83,71 +114,74 @@
 
         <!-- Tab 1: Einsätze Verwalten -->
         <div id="tab-manage" class="tab-content active space-y-8">
-            <!-- Aktive Einsätze -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-2 border-b-2 border-red-500 pb-2 inline-block">Aktive Einsätze</h2>
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-semibold text-gray-100 mb-2 border-b-2 border-red-500 pb-2 inline-block">Aktive Einsätze</h2>
                 <div id="activeOperationsContainer" class="space-y-4 mt-4">
-                    <!-- Aktive Einsätze werden hier von JS eingefügt -->
+                    <!-- Aktive Einsätze -->
                 </div>
             </div>
-            <!-- Vorbereitete Einsätze -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-2 border-b-2 border-blue-500 pb-2 inline-block">Vorbereitete Einsätze</h2>
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-semibold text-gray-100 mb-2 border-b-2 border-blue-500 pb-2 inline-block">Vorbereitete Einsätze</h2>
                 <div id="preppedOperationsContainer" class="space-y-4 mt-4">
-                    <!-- Vorbereitete Einsätze werden hier von JS eingefügt -->
+                    <!-- Vorbereitete Einsätze -->
                 </div>
             </div>
         </div>
 
         <!-- Tab 2: Einsatz Erstellen -->
         <div id="tab-create" class="tab-content">
-            <!-- Inhalt von Tab 2 (unverändert) -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
                 <form id="createOperationForm" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="stichwort" class="block text-sm font-medium text-gray-700 mb-1">Stichwort</label>
-                            <input type="text" id="stichwort" list="stichwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
-                            <datalist id="stichwort-list"></datalist>
+                            <label for="stichwort" class="block text-sm font-medium text-gray-300 mb-1">Stichwort</label>
+                            <!-- NEU: von input zu select -->
+                            <select id="stichwort" class="w-full px-3 py-2 form-input-dark form-select-dark">
+                                <!-- Optionen werden von JS gefüllt -->
+                            </select>
+                            <!-- <datalist id="stichwort-list"></datalist> ENTFERNT -->
                         </div>
                         <div>
-                            <label for="schlagwort" class="block text-sm font-medium text-gray-700 mb-1">Schlagwort</label>
-                            <input type="text" id="schlagwort" list="schlagwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
-                            <datalist id="schlagwort-list"></datalist>
+                            <label for="schlagwort" class="block text-sm font-medium text-gray-300 mb-1">Schlagwort</label>
+                            <!-- NEU: von input zu select -->
+                            <select id="schlagwort" class="w-full px-3 py-2 form-input-dark form-select-dark">
+                                <!-- Optionen werden von JS gefüllt -->
+                            </select>
+                            <!-- <datalist id="schlagwort-list"></datalist> ENTFERNT -->
                         </div>
                     </div>
                     <div>
-                        <label for="adresse" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                        <input type="text" id="adresse" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <label for="adresse" class="block text-sm font-medium text-gray-300 mb-1">Adresse</label>
+                        <input type="text" id="adresse" class="w-full px-3 py-2 form-input-dark">
                     </div>
                     
                     <div>
-                        <span class="block text-sm font-medium text-gray-700 mb-2">Alarmierte Fahrzeuge</span>
-                        <div id="fahrzeug-checkboxes-create" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
-                            <!-- Checkboxen werden hier von JS eingefügt -->
+                        <span class="block text-sm font-medium text-gray-300 mb-2">Alarmierte Fahrzeuge</span>
+                        <div id="fahrzeug-checkboxes-create" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 bg-gray-900 rounded-lg border border-gray-700 max-h-60 overflow-y-auto">
+                            <!-- Checkboxen -->
                         </div>
                     </div>
                     
                     <div>
-                        <span class="block text-sm font-medium text-gray-700">Sonderechte freigegeben?</span>
+                        <span class="block text-sm font-medium text-gray-300">Sonderechte freigegeben?</span>
                         <div class="mt-2 flex items-center space-x-6">
                             <label class="flex items-center">
-                                <input type="radio" name="sonderechte" value="ja" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                <span class="ml-2 text-gray-700">Ja</span>
+                                <input type="radio" name="sonderechte" value="ja" class="h-4 w-4 text-blue-500 border-gray-600 bg-gray-700 focus:ring-blue-500">
+                                <span class="ml-2 text-gray-300">Ja</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="sonderechte" value="nein" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked>
-                                <span class="ml-2 text-gray-700">Nein</span>
+                                <input type="radio" name="sonderechte" value="nein" class="h-4 w-4 text-blue-500 border-gray-600 bg-gray-700 focus:ring-blue-500" checked>
+                                <span class="ml-2 text-gray-300">Nein</span>
                             </label>
                         </div>
                     </div>
 
                     <div>
-                        <label for="freitext" class="block text-sm font-medium text-gray-700 mb-1">Freitext / Zusatz-Infos</label>
-                        <textarea id="freitext" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <label for="freitext" class="block text-sm font-medium text-gray-300 mb-1">Freitext / Zusatz-Infos</label>
+                        <textarea id="freitext" rows="4" class="w-full px-3 py-2 form-input-dark"></textarea>
                     </div>
                     
-                    <div class="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+                    <div class="flex flex-wrap gap-4 pt-4 border-t border-gray-700">
                         <button type="submit" data-action="alarm" class="px-6 py-3 font-semibold text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-150 transform hover:scale-105">
                             SOFORT ALARMIEREN
                         </button>
@@ -159,12 +193,12 @@
             </div>
         </div>
         
-        <!-- NEU: Tab 3: Fahrzeugstatus -->
+        <!-- Tab 3: Fahrzeugstatus -->
         <div id="tab-status" class="tab-content">
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-4">Globaler Fahrzeugstatus</h2>
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-semibold text-gray-100 mb-4">Globaler Fahrzeugstatus</h2>
                 <div id="globalVehicleStatusContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <p class="text-gray-500 italic">Statusübersicht wird geladen...</p>
+                    <p class="text-gray-400 italic">Statusübersicht wird geladen...</p>
                     <!-- Status wird hier von JS eingefügt -->
                 </div>
             </div>
@@ -172,125 +206,108 @@
 
         <!-- Tab 4: Einstellungen -->
         <div id="tab-settings" class="tab-content">
-            <!-- Inhalt von Tab 4 (unverändert) -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-8">
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 space-y-8">
                 <!-- Adresse FW-Haus -->
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-3">Adresse Feuerwehrhaus</h2>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-3">Adresse Feuerwehrhaus</h2>
                     <div class="flex gap-4">
-                        <input type="text" id="homeAddress" placeholder="z.B. Musterstraße 1, 12345 Musterstadt" class="flex-grow px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="homeAddress" placeholder="z.B. Musterstraße 1, 12345 Musterstadt" class="flex-grow px-3 py-2 form-input-dark">
                         <button id="saveHomeAddress" class="px-5 py-2 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Speichern</button>
                     </div>
                 </div>
                 <!-- Fahrzeuge verwalten -->
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-3">Fahrzeuge Verwalten</h2>
+                    <h2 class="text-xl font-semibold text-gray-100 mb-3">Fahrzeuge Verwalten</h2>
                     <div class="flex gap-4 mb-4">
-                        <input type="text" id="newVehicleName" placeholder="z.B. LH 19-1" class="flex-grow px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="newVehicleName" placeholder="z.B. LH 19-1" class="flex-grow px-3 py-2 form-input-dark">
                         <button id="addVehicle" class="px-5 py-2 font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow transition duration-150">Hinzufügen</button>
                     </div>
-                    <div id="vehicleList" class="p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-80 overflow-y-auto space-y-2">
-                        <!-- Fahrzeug-Liste wird hier von JS eingefügt -->
+                    <div id="vehicleList" class="p-4 bg-gray-900 rounded-lg border border-gray-700 max-h-80 overflow-y-auto space-y-2">
+                        <!-- Fahrzeug-Liste -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- NEU: Einsatz-Führungs-Modal (ersetzt Edit-Modal und Log-Modal) -->
-    <div id="commandModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <h2 id="commandModalTitle" class="text-2xl font-bold text-gray-900">Einsatz Führen & Bearbeiten</h2>
-                <button id="commandModalClose" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+    <!-- Einsatz-Führungs-Modal -->
+    <div id="commandModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4">
+        <div class="bg-gray-800 text-gray-300 w-full max-w-4xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col border border-gray-700">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                <h2 id="commandModalTitle" class="text-2xl font-bold text-gray-100">Einsatz Führen & Bearbeiten</h2>
+                <button id="commandModalClose" class="text-gray-500 hover:text-gray-300 text-3xl font-bold">&times;</button>
             </div>
             
-            <!-- Modal-Inhalt (scrollbar) -->
             <div class="flex-1 overflow-y-auto p-6 space-y-8">
                 
-                <!-- 1. Sektion: Bearbeiten -->
                 <section>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Einsatzdaten</h3>
+                    <h3 class="text-xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">Einsatzdaten</h3>
                     <input type="hidden" id="commandOperationId">
                     <div class="space-y-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label for="commandStichwort" class="block text-sm font-medium text-gray-700 mb-1">Stichwort</label>
-                                <input type="text" id="commandStichwort" list="stichwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                                <label for="commandStichwort" class="block text-sm font-medium text-gray-300 mb-1">Stichwort</label>
+                                <!-- NEU: von input zu select -->
+                                <select id="commandStichwort" class="w-full px-3 py-2 form-input-dark form-select-dark">
+                                    <!-- Optionen werden von JS gefüllt -->
+                                </select>
                             </div>
                             <div>
-                                <label for="commandSchlagwort" class="block text-sm font-medium text-gray-700 mb-1">Schlagwort</label>
-                                <input type="text" id="commandSchlagwort" list="schlagwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                                <label for="commandSchlagwort" class="block text-sm font-medium text-gray-300 mb-1">Schlagwort</label>
+                                <!-- NEU: von input zu select -->
+                                <select id="commandSchlagwort" class="w-full px-3 py-2 form-input-dark form-select-dark">
+                                    <!-- Optionen werden von JS gefüllt -->
+                                </select>
                             </div>
                         </div>
                         <div>
-                            <label for="commandAdresse" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                            <input type="text" id="commandAdresse" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label for="commandAdresse" class="block text-sm font-medium text-gray-300 mb-1">Adresse</label>
+                            <input type="text" id="commandAdresse" class="w-full px-3 py-2 form-input-dark">
                         </div>
                         <div>
-                            <span class="block text-sm font-medium text-gray-700 mb-2">Alarmierte Fahrzeuge (Bearbeiten)</span>
-                            <div id="fahrzeug-checkboxes-command" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
-                                <!-- Checkboxen für Edit-Modal -->
+                            <span class="block text-sm font-medium text-gray-300 mb-2">Alarmierte Fahrzeuge (Bearbeiten)</span>
+                            <div id="fahrzeug-checkboxes-command" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-900 rounded-lg border border-gray-700 max-h-60 overflow-y-auto">
+                                <!-- Checkboxen -->
                             </div>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="block text-sm font-medium text-gray-700">Sonderechte freigegeben?</span>
+                            <span class="block text-sm font-medium text-gray-300">Sonderechte freigegeben?</span>
                             <div class="flex items-center space-x-6">
                                 <label class="flex items-center">
-                                    <input type="radio" name="commandSonderechte" value="ja" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                    <span class="ml-2 text-gray-700">Ja</span>
+                                    <input type="radio" name="commandSonderechte" value="ja" class="h-4 w-4 text-blue-500 border-gray-600 bg-gray-700 focus:ring-blue-500">
+                                    <span class="ml-2 text-gray-300">Ja</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="radio" name="commandSonderechte" value="nein" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                    <span class="ml-2 text-gray-700">Nein</span>
+                                    <input type="radio" name="commandSonderechte" value="nein" class="h-4 w-4 text-blue-500 border-gray-600 bg-gray-700 focus:ring-blue-500">
+                                    <span class="ml-2 text-gray-300">Nein</span>
                                 </label>
                             </div>
                         </div>
                         <div>
-                            <label for="commandFreitext" class="block text-sm font-medium text-gray-700 mb-1">Freitext / Zusatz-Infos</label>
-                            <textarea id="commandFreitext" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                            <label for="commandFreitext" class="block text-sm font-medium text-gray-300 mb-1">Freitext / Zusatz-Infos</label>
+                            <textarea id="commandFreitext" rows="3" class="w-full px-3 py-2 form-input-dark"></textarea>
                         </div>
                     </div>
                 </section>
                 
-                <!-- 2. Sektion: Live-Status & Aktionen -->
                 <section>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Live-Fahrzeugstatus</h3>
+                    <h3 class="text-xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">Live-Fahrzeugstatus</h3>
                     <div id="commandLiveStatusContainer" class="space-y-3">
-                        <p class="text-gray-500 italic">Lade Live-Status...</p>
-                        <!-- Live-Status wird hier eingefügt -->
-                        <!-- 
-                        Template:
-                        <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
-                            <span class="flex items-center font-semibold text-lg">
-                                <span class="status-dot status-bg-3"></span>
-                                LH 19-1 (Status 3: Einsatzübernahme)
-                            </span>
-                            <button class="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md">"J" Senden</button>
-                        </div>
-                        -->
+                        <p class="text-gray-400 italic">Lade Live-Status...</p>
+                        <!-- Live-Status -->
                     </div>
                 </section>
                 
-                <!-- 3. Sektion: Einsatz-Protokoll -->
                 <section>
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Einsatz-Protokoll</h3>
-                    <div id="commandLogContainer" class="space-y-3 max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg border">
-                        <p class="text-gray-500 italic">Lade Protokoll...</p>
-                        <!-- Protokoll wird hier eingefügt -->
-                        <!-- 
-                        Template:
-                        <p class="text-sm">
-                            <span class="font-bold status-text-3">[10:05:12] LH 19-1:</span>
-                            Status 3 (Einsatzübernahme)
-                        </p>
-                        -->
+                    <h3 class="text-xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">Einsatz-Protokoll</h3>
+                    <div id="commandLogContainer" class="space-y-3 max-h-64 overflow-y-auto bg-gray-900 p-4 rounded-lg border border-gray-700">
+                        <p class="text-gray-400 italic">Lade Protokoll...</p>
+                        <!-- Protokoll -->
                     </div>
                 </section>
             </div>
             
-            <!-- Modal-Footer -->
-            <div class="flex justify-end p-6 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
+            <div class="flex justify-end p-6 bg-gray-800 border-t border-gray-700 rounded-b-2xl">
                 <button id="saveOperationChanges" class="px-6 py-3 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150">
                     Änderungen Speichern
                 </button>
@@ -298,21 +315,21 @@
         </div>
     </div>
     
-    <!-- Sprechwunsch-Popup (unverändert) -->
+    <!-- Sprechwunsch-Popup -->
     <div id="sprechwunschModal" class="modal-hidden fixed bottom-6 right-6 z-50 w-full max-w-sm">
         <div class="sprechwunsch-popup rounded-lg p-5">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15c-1.12 0-2.163-.306-3.072-.828M12 15c1.12 0 2.163-.306 3.072-.828m-3.072.828l.14.091m-3.212-.919A9.75 9.75 0 015.25 6.75m13.5 0A9.75 9.75 0 0012 3.75m0 0A9.75 9.75 0 005.25 6.75M12 3.75c1.12 0 2.163.306 3.072.828" /></svg>
+                    <svg class="h-8 w-8 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15c-1.12 0-2.163-.306-3.072-.828M12 15c1.12 0 2.163-.306-3.072-.828m-3.072.828l.14.091m-3.212-.919A9.75 9.75 0 015.25 6.75m13.5 0A9.75 9.75 0 0012 3.75m0 0A9.75 9.75 0 005.25 6.75M12 3.75c1.12 0 2.163.306 3.072.828" /></svg>
                 </div>
                 <div class="ml-4 flex-1">
-                    <h3 class="text-lg font-bold text-red-800">SPRECHWUNSCH!</h3>
-                    <p id="sprechwunschVehicleName" class="text-gray-700 mt-1">Fahrzeug [Name] wünscht Sprechkontakt.</p>
+                    <h3 class="text-lg font-bold text-red-300">SPRECHWUNSCH!</h3>
+                    <p id="sprechwunschVehicleName" class="text-gray-300 mt-1">Fahrzeug [Name] wünscht Sprechkontakt.</p>
                     <div class="mt-4 flex gap-4">
                         <button id="sprechwunschButtonJ" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow transition duration-150">
                             "J" Senden (Kommen)
                         </button>
-                        <button id="sprechwunschModalClose" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 transition duration-150">
+                        <button id="sprechwunschModalClose" class="flex-1 px-4 py-2 text-sm font-medium text-gray-800 bg-gray-200 hover:bg-gray-300 rounded-lg border border-gray-300 transition duration-150">
                             Schließen
                         </button>
                     </div>
@@ -343,70 +360,102 @@
             "3": "Einsatzübernahme", "4": "Am Einsatzort eingetroffen", "5": "Sprechwunsch", "6": "Nicht Einsatzbereit",
         };
         
-        // Stichwort-Schlagwort-Map (gekürzt)
         const stichwortMap = {
-            "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer"],
-            "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz"],
-            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Wohnung", "B - Zimmer"],
-            "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage"],
-            "TH 1": ["TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen"],
+            "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
+            "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz", "B - Explosion im Freien", "B - Fahrzeug sonstiges", "B - Garage / Carport / Gartenhaus", "B - Gasaustritt im Freien klein", "B - Lagerplatz klein", "B - Land- / Forst- / Baumaschine", "B - LKW / Kleintransporter", "B - Maschine", "B - mehrere PKW / Kleinbusse", "B - Person im Freien", "B - PKW / Kleinbus außerorts", "B - Spielplatz", "B - Wald klein (< 10m x 10m)", "B - Wohnmobil / Wohnanhänger"],
+            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sontiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B - Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
+            "B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
+            "B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
+            "B 6": ["B - Alarmstufenerhöhung auf B 6"],
+            "B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
+            "B - Bio": ["B - Bio"],
+            "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage","B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
+            "B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
+            "B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
+            "B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
+            "B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
+            "B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
+            "B - Metall": ["B - Metall"],
+            "B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
+            "B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
+            "B - Straßentunnel": ["B - Tunnel / Unterführung"],
+            "B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
+            "B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
+            "S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
+            "S - First Responder": ["S - First Responder"],
+            "S - Sonstiges": ["S - Ausfall Notruf / Alarmierung", "S - Bedrohungslage", "S - Bereitstellungsraum besetzen", "S - Bombendrohung", "S - Drohendes Attentat", "S - Einsatzalarm überörtlich (ca. 12h)", "S - Einsatzalarm überregional (ca. 24h)", "S - Einsatzbereitschaft herstellen", "S - Führungshaus besetzen", "S - Große Polizeilage (Amok / Terror)", "S - Grundschutz sicherstellen", "S - Maßnahmenstufe 1", "S - Maßnahmenstufe 2", "S - Maßnahmenstufe 3", "S - Stabseinsatz", "S - Vorabinformation / Einsatzanfrage", "S - Voralarm überörtlich (ca. 12h)", "S - Voralarm überregional (ca. 24h)", "S - Wachbesetzung", "S - Überlandhilfe Feuerwehr (außerhalb SK & LK KA)"],
+            "TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
+            "TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
             "TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
+            "TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
+            "TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
+            "TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
+            "TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
+            "TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
+            "TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
+            "TH - Person im Rhein": ["TH - Person im Rhein"],
+            "TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
+            "TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
+            "TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
+            "TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
+            "TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
+            "TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
+            "TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
+            "TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
+            "TH U - Bio": ["TH U - Bio"],
+            "TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
+            "TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
+            "TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
+            "TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
+            "TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
+            "TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
+            "TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
         };
         const allStichworte = Object.keys(stichwortMap);
         
         let app, auth, db, userId;
         let settingsDocRef, operationsCollectionRef, vehicleStatusCollectionRef;
         let globalVehicleList = []; 
-        let globalVehicleStatusMap = new Map(); // NEU: Globale Status-Map
+        let globalVehicleStatusMap = new Map();
         
         let activeSprechwunschVehicleId = null;
         let handledSprechwunschIds = new Set();
         
-        // NEU: Listener für das Command-Modal
-        let commandModalVehicleListeners = () => {}; // Unsubscribe-Funktion
-        let commandModalLogListener = () => {};     // Unsubscribe-Funktion
+        let commandModalVehicleListeners = () => {}; 
+        let commandModalLogListener = () => {};     
 
         // DOM-Elemente
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
-        
-        // Settings
         const homeAddressInput = document.getElementById('homeAddress');
         const saveHomeAddressBtn = document.getElementById('saveHomeAddress');
         const newVehicleNameInput = document.getElementById('newVehicleName');
         const addVehicleBtn = document.getElementById('addVehicle');
         const vehicleListDiv = document.getElementById('vehicleList');
-
-        // Create
         const createForm = document.getElementById('createOperationForm');
-        const stichwortInput = document.getElementById('stichwort');
-        const schlagwortInput = document.getElementById('schlagwort');
-        const stichwortList = document.getElementById('stichwort-list');
-        const schlagwortList = document.getElementById('schlagwort-list');
+        // NEU: Referenzen zu Select-Elementen (IDs bleiben gleich)
+        const stichwortSelect = document.getElementById('stichwort');
+        const schlagwortSelect = document.getElementById('schlagwort');
         const fahrzeugCheckboxesCreate = document.getElementById('fahrzeug-checkboxes-create');
-
-        // Manage
         const activeOperationsContainer = document.getElementById('activeOperationsContainer');
         const preppedOperationsContainer = document.getElementById('preppedOperationsContainer');
-        
-        // NEU: Global Status
         const globalVehicleStatusContainer = document.getElementById('globalVehicleStatusContainer');
         
-        // NEU: Command Modal (ersetzt Edit Modal)
         const commandModal = document.getElementById('commandModal');
         const commandModalTitle = document.getElementById('commandModalTitle');
         const commandModalClose = document.getElementById('commandModalClose');
         const saveOperationChangesBtn = document.getElementById('saveOperationChanges');
         const fahrzeugCheckboxesCommand = document.getElementById('fahrzeug-checkboxes-command');
+        // NEU: Referenzen zu Modal-Select-Elementen
+        const commandStichwortSelect = document.getElementById('commandStichwort');
+        const commandSchlagwortSelect = document.getElementById('commandSchlagwort');
         const commandLiveStatusContainer = document.getElementById('commandLiveStatusContainer');
         const commandLogContainer = document.getElementById('commandLogContainer');
         
-        // Sprechwunsch Modal
         const sprechwunschModal = document.getElementById('sprechwunschModal');
         const sprechwunschVehicleName = document.getElementById('sprechwunschVehicleName');
         const sprechwunschButtonJ = document.getElementById('sprechwunschButtonJ');
         const sprechwunschModalClose = document.getElementById('sprechwunschModalClose');
-
 
         // ----- UTILITY FUNKTIONEN -----
         
@@ -414,7 +463,7 @@
             if (!timestamp || !timestamp.seconds) return 'N/A';
             return new Date(timestamp.seconds * 1000).toLocaleString('de-DE', {
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
-            }); // Nur Uhrzeit für Protokoll
+            });
         }
         
         function formatFirebaseTimestampFull(timestamp) {
@@ -433,35 +482,52 @@
             document.querySelector(`.tab-button[data-tab="${targetTabId}"]`).classList.add('active');
         }
 
+        // NEU: Füllt beide Stichwort-Selects
         function populateStichwortList() {
-            stichwortList.innerHTML = '';
+            let optionsHTML = '<option value="" disabled selected>-- Stichwort wählen --</option>';
             allStichworte.forEach(stichwort => {
-                stichwortList.innerHTML += `<option value="${stichwort}">`;
+                optionsHTML += `<option value="${stichwort}">${stichwort}</option>`;
             });
+            
+            stichwortSelect.innerHTML = optionsHTML;
+            commandStichwortSelect.innerHTML = optionsHTML;
         }
 
+        // NEU: Füllt das abhängige Schlagwort-Select
         function updateSchlagwortList(e) {
             const selectedStichwort = e.target.value;
-            schlagwortList.innerHTML = '';
+            let targetSchlagwortSelect;
+            
+            // Herausfinden, welches Schlagwort-Select (Create oder Modal) aktualisiert werden soll
+            if (e.target.id === 'stichwort') {
+                targetSchlagwortSelect = schlagwortSelect;
+            } else if (e.target.id === 'commandStichwort') {
+                targetSchlagwortSelect = commandSchlagwortSelect;
+            } else {
+                return;
+            }
+
+            let optionsHTML = '<option value="" disabled selected>-- Schlagwort wählen --</option>';
             if (stichwortMap[selectedStichwort]) {
                 stichwortMap[selectedStichwort].forEach(schlagwort => {
-                    schlagwortList.innerHTML += `<option value="${schlagwort}">`;
+                    optionsHTML += `<option value="${schlagwort}">${schlagwort}</option>`;
                 });
             }
+            targetSchlagwortSelect.innerHTML = optionsHTML;
         }
         
         function renderVehicleCheckboxes(containerElement, selectedVehicles = []) {
             containerElement.innerHTML = '';
             if (globalVehicleList.length === 0) {
-                containerElement.innerHTML = '<p class="text-gray-500 col-span-full">Keine Fahrzeuge in den Einstellungen definiert.</p>';
+                containerElement.innerHTML = '<p class="text-gray-400 col-span-full">Keine Fahrzeuge in den Einstellungen definiert.</p>';
                 return;
             }
             globalVehicleList.forEach(vehicle => {
                 const isChecked = selectedVehicles.includes(vehicle);
                 containerElement.innerHTML += `
-                    <label class="flex items-center space-x-2 p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-150 cursor-pointer">
-                        <input type="checkbox" value="${vehicle}" ${isChecked ? 'checked' : ''} class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <span class="text-sm font-medium text-gray-800">${vehicle}</span>
+                    <label class="flex items-center space-x-2 p-2 rounded-md bg-gray-700 hover:bg-gray-600 transition duration-150 cursor-pointer">
+                        <input type="checkbox" value="${vehicle}" ${isChecked ? 'checked' : ''} class="h-5 w-5 text-blue-500 border-gray-600 rounded bg-gray-800 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-200">${vehicle}</span>
                     </label>
                 `;
             });
@@ -488,7 +554,7 @@
 
                     loadSettings(); 
                     listenForOperations();
-                    listenToAllVehicleStatuses(); // NEU: Globaler Listener
+                    listenToAllVehicleStatuses();
                 } else {
                     await signInAnonymously(auth);
                 }
@@ -501,35 +567,33 @@
                     const data = docSnap.data();
                     homeAddressInput.value = data.address || '';
                     globalVehicleList = data.vehicles || [];
-                    globalVehicleList.sort(); // Immer sortieren
+                    globalVehicleList.sort();
                     
                     vehicleListDiv.innerHTML = '';
                     if (globalVehicleList.length > 0) {
                         globalVehicleList.forEach(vehicle => {
                             vehicleListDiv.innerHTML += `
-                                <div class="flex justify-between items-center p-2 bg-white rounded shadow-sm border border-gray-200">
-                                    <span class="font-medium text-gray-700">${vehicle}</span>
-                                    <button data-vehicle="${vehicle}" class="delete-vehicle-btn text-red-500 hover:text-red-700 font-bold text-xl">&times;</button>
+                                <div class="flex justify-between items-center p-2 bg-gray-700 rounded shadow-sm border border-gray-600">
+                                    <span class="font-medium text-gray-200">${vehicle}</span>
+                                    <button data-vehicle="${vehicle}" class="delete-vehicle-btn text-red-500 hover:text-red-400 font-bold text-xl px-2">&times;</button>
                                 </div>
                             `;
                         });
                     } else {
-                        vehicleListDiv.innerHTML = '<p class="text-gray-500 italic">Noch keine Fahrzeuge hinzugefügt.</p>';
+                        vehicleListDiv.innerHTML = '<p class="text-gray-400 italic">Noch keine Fahrzeuge hinzugefügt.</p>';
                     }
                     
                     renderVehicleCheckboxes(fahrzeugCheckboxesCreate);
                     renderVehicleCheckboxes(fahrzeugCheckboxesCommand);
-                    
-                    // NEU: Globalen Status-Container initialisieren
                     renderGlobalVehicleStatus();
                 }
             }, (error) => console.error("Fehler beim Laden der Einstellungen: ", error));
         }
         
-        async function saveHomeAddress() { /* (unverändert) */ 
+        async function saveHomeAddress() { 
             await setDoc(settingsDocRef, { address: homeAddressInput.value }, { merge: true });
         }
-        async function addVehicle() { /* (unverändert) */
+        async function addVehicle() { 
             const newVehicle = newVehicleNameInput.value.trim();
             if (newVehicle && !globalVehicleList.includes(newVehicle)) {
                 const updatedList = [...globalVehicleList, newVehicle].sort();
@@ -537,7 +601,7 @@
                 newVehicleNameInput.value = '';
             }
         }
-        async function deleteVehicle(e) { /* (unverändert) */
+        async function deleteVehicle(e) { 
             if (!e.target.classList.contains('delete-vehicle-btn')) return;
             const vehicleToDelete = e.target.dataset.vehicle;
             const updatedList = globalVehicleList.filter(v => v !== vehicleToDelete);
@@ -549,8 +613,9 @@
             const action = e.submitter.dataset.action; 
             
             const operationData = {
-                stichwort: document.getElementById('stichwort').value,
-                schlagwort: document.getElementById('schlagwort').value,
+                // NEU: Wert von Selects lesen
+                stichwort: stichwortSelect.value,
+                schlagwort: schlagwortSelect.value,
                 adresse: document.getElementById('adresse').value,
                 fahrzeuge: getSelectedVehicles(fahrzeugCheckboxesCreate),
                 sonderechte: document.querySelector('input[name="sonderechte"]:checked').value === 'ja',
@@ -574,6 +639,10 @@
                 }
                 
                 createForm.reset(); 
+                // NEU: Selects manuell zurücksetzen
+                schlagwortSelect.innerHTML = '<option value="" disabled selected>-- Erst Stichwort wählen --</option>';
+                stichwortSelect.value = ""; // Setzt auf "Stichwort wählen" zurück
+
                 renderVehicleCheckboxes(fahrzeugCheckboxesCreate);
                 switchTab('tab-manage'); 
             } catch (error) {
@@ -599,17 +668,15 @@
                     if (operation.isActive) {
                         activeCount++;
                         activeOperationsContainer.innerHTML += `
-                            <div class="border border-red-300 bg-red-50 rounded-lg p-4 shadow-sm">
+                            <div class="border border-red-700 bg-gray-800 rounded-lg p-4 shadow-sm" style="background-color: #450a0a;">
                                 <div class="flex flex-wrap justify-between items-center mb-3">
-                                    <h3 class="text-xl font-bold text-red-700">${operation.stichwort} - ${operation.schlagwort}</h3>
-                                    <span class="text-sm font-medium text-red-600">${time}</span>
+                                    <h3 class="text-xl font-bold text-red-300">${operation.stichwort} - ${operation.schlagwort}</h3>
+                                    <span class="text-sm font-medium text-red-400">${time}</span>
                                 </div>
-                                <p class="text-gray-700 mb-1"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
-                                <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
+                                <p class="text-gray-300 mb-1"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
+                                <p class="text-gray-300 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
                                 <div class="flex flex-wrap gap-3">
-                                    <!-- NEU: Button-Text und Klasse geändert -->
                                     <button data-id="${id}" class="command-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Führen / Bearbeiten</button>
-                                    <!-- "Protokoll"-Button entfernt -->
                                     <button data-id="${id}" class="end-op-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">Beenden</button>
                                 </div>
                             </div>
@@ -617,23 +684,22 @@
                     } else if (operation.isPrepped) {
                         preppedCount++;
                         preppedOperationsContainer.innerHTML += `
-                            <div class="border border-blue-300 bg-blue-50 rounded-lg p-4 shadow-sm">
-                                <h3 class="text-xl font-bold text-blue-700">${operation.stichwort} - ${operation.schlagwort}</h3>
-                                <p class="text-gray-700 mb-1 mt-2"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
-                                <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
+                            <div class="border border-blue-700 bg-gray-800 rounded-lg p-4 shadow-sm" style="background-color: #1e3a8a;">
+                                <h3 class="text-xl font-bold text-blue-300">${operation.stichwort} - ${operation.schlagwort}</h3>
+                                <p class="text-gray-300 mb-1 mt-2"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
+                                <p class="text-gray-300 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
                                 <div class="flex flex-wrap gap-3">
                                     <button data-id="${id}" class="trigger-op-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">JETZT ALARMIEREN</button>
-                                    <!-- NEU: Klasse geändert -->
                                     <button data-id="${id}" class="command-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
-                                    <button data-id="${id}" class="delete-op-btn px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg shadow transition duration-150">Löschen</button>
+                                    <button data-id="${id}" class="delete-op-btn px-4 py-2 text-sm font-medium text-gray-800 bg-gray-300 hover:bg-gray-400 rounded-lg shadow transition duration-150">Löschen</button>
                                 </div>
                             </div>
                         `;
                     }
                 });
 
-                if (activeCount === 0) activeOperationsContainer.innerHTML = '<p class="text-gray-500">Keine aktiven Einsätze.</p>';
-                if (preppedCount === 0) preppedOperationsContainer.innerHTML = '<p class="text-gray-500">Keine vorbereiteten Einsätze.</p>';
+                if (activeCount === 0) activeOperationsContainer.innerHTML = '<p class="text-gray-400">Keine aktiven Einsätze.</p>';
+                if (preppedCount === 0) preppedOperationsContainer.innerHTML = '<p class="text-gray-400">Keine vorbereiteten Einsätze.</p>';
             });
         }
         
@@ -647,13 +713,11 @@
             try {
                 if (target.classList.contains('end-op-btn')) {
                     await updateDoc(opDocRef, { isActive: false, isPrepped: false, isFinished: true });
-                    // NEU: Protokoll löschen
                     await deleteOperationLog(id);
                 }
                 else if (target.classList.contains('delete-op-btn')) {
                     await deleteDoc(opDocRef);
                 }
-                // NEU: Einsatz-Führungs-Modal öffnen
                 else if (target.classList.contains('command-op-btn')) {
                     const docSnap = await getDoc(opDocRef);
                     if (docSnap.exists()) {
@@ -678,14 +742,29 @@
             }
         }
         
-        // ----- NEU: Command-Modal (Führung & Bearbeiten) -----
+        // ----- Command-Modal (Führung & Bearbeiten) -----
         
         function openCommandModal(id, data) {
-            // 1. Bearbeiten-Felder füllen
             document.getElementById('commandOperationId').value = id;
             commandModalTitle.textContent = `Führung: ${data.stichwort}`;
-            document.getElementById('commandStichwort').value = data.stichwort;
-            document.getElementById('commandSchlagwort').value = data.schlagwort;
+            
+            // NEU: Selects im Modal füllen
+            // 1. Stichwort setzen
+            commandStichwortSelect.value = data.stichwort;
+            
+            // 2. Schlagwort-Liste basierend auf Stichwort füllen
+            let schlagwortOptionsHTML = '<option value="" disabled>-- Schlagwort wählen --</option>';
+            if (stichwortMap[data.stichwort]) {
+                stichwortMap[data.stichwort].forEach(schlagwort => {
+                    schlagwortOptionsHTML += `<option value="${schlagwort}">${schlagwort}</option>`;
+                });
+            }
+            commandSchlagwortSelect.innerHTML = schlagwortOptionsHTML;
+            
+            // 3. Schlagwort setzen
+            commandSchlagwortSelect.value = data.schlagwort;
+
+            // Restliche Felder füllen
             document.getElementById('commandAdresse').value = data.adresse;
             document.getElementById('commandFreitext').value = data.freitext || '';
             
@@ -694,30 +773,28 @@
             
             renderVehicleCheckboxes(fahrzeugCheckboxesCommand, data.fahrzeuge);
             
-            // 2. Live-Listener für Status und Protokoll anhängen
-            commandLiveStatusContainer.innerHTML = '<p class="text-gray-500 italic">Lade Live-Status...</p>';
-            commandLogContainer.innerHTML = '<p class="text-gray-500 italic">Lade Protokoll...</p>';
+            commandLiveStatusContainer.innerHTML = '<p class="text-gray-400 italic">Lade Live-Status...</p>';
+            commandLogContainer.innerHTML = '<p class="text-gray-400 italic">Lade Protokoll...</p>';
 
-            // Listener 1: Live-Status der alarmierten Fahrzeuge
+            // Listener 1: Live-Status
             const vehicleQuery = query(vehicleStatusCollectionRef, where('vehicleId', 'in', data.fahrzeuge));
             commandModalVehicleListeners = onSnapshot(vehicleQuery, (snapshot) => {
-                commandLiveStatusContainer.innerHTML = ''; // Container leeren
+                commandLiveStatusContainer.innerHTML = '';
                 let statusMapForIncident = new Map();
                 snapshot.docs.forEach(doc => {
                     statusMapForIncident.set(doc.id, doc.data());
                 });
 
-                // Stelle sicher, dass ALLE alarmierten Fahrzeuge angezeigt werden, auch wenn sie noch keinen Status gesendet haben
                 data.fahrzeuge.forEach(vehicleName => {
                     const statusData = statusMapForIncident.get(vehicleName);
                     const statusNum = statusData ? statusData.currentStatus : 0;
                     const statusText = statusData ? statusData.statusText : "Unbekannt";
                     
-                    const isSprechwunsch = statusNum === 5 && statusData.sprechwunschAck === false;
+                    const isSprechwunsch = statusNum === 5 && (statusData ? statusData.sprechwunschAck === false : false);
 
                     commandLiveStatusContainer.innerHTML += `
-                        <div class="flex justify-between items-center p-3 ${isSprechwunsch ? 'bg-red-100 border-red-400 border' : 'bg-gray-100'} rounded-lg">
-                            <span class="flex items-center font-semibold text-lg text-gray-800">
+                        <div class="flex justify-between items-center p-3 ${isSprechwunsch ? 'bg-red-900/50 border-red-600 border' : 'bg-gray-700'} rounded-lg">
+                            <span class="flex items-center font-semibold text-lg text-gray-200">
                                 <span class="status-dot status-bg-${statusNum}"></span>
                                 ${vehicleName} (Status ${statusNum}: ${statusText})
                             </span>
@@ -730,24 +807,23 @@
                 });
             });
 
-            // Listener 2: Einsatz-Protokoll (NEUE Sub-Kollektion)
+            // Listener 2: Einsatz-Protokoll
             const logQuery = query(collection(db, "operations", id, "operationLog"), orderBy("timestamp", "asc"));
             commandModalLogListener = onSnapshot(logQuery, (snapshot) => {
                 commandLogContainer.innerHTML = '';
                 if (snapshot.empty) {
-                    commandLogContainer.innerHTML = '<p class="text-gray-500 italic">Noch keine Protokoll-Einträge.</p>';
+                    commandLogContainer.innerHTML = '<p class="text-gray-400 italic">Noch keine Protokoll-Einträge.</p>';
                     return;
                 }
                 snapshot.docs.forEach(doc => {
                     const log = doc.data();
                     commandLogContainer.innerHTML += `
-                        <p class="text-sm font-mono">
+                        <p class="text-sm font-mono text-gray-300">
                             <span class="font-bold status-text-${log.status}">[${formatFirebaseTimestamp(log.timestamp)}] ${log.vehicleId}:</span>
                             ${log.text} (Status ${log.status})
                         </p>
                     `;
                 });
-                // Auto-Scroll nach unten
                 commandLogContainer.scrollTop = commandLogContainer.scrollHeight;
             });
             
@@ -756,10 +832,8 @@
         }
 
         function closeCommandModal() {
-            // WICHTIG: Listener abmelden, um Memory-Leaks zu vermeiden
             commandModalVehicleListeners();
             commandModalLogListener();
-            
             commandModal.classList.add('modal-hidden');
             commandModal.classList.remove('modal-visible');
         }
@@ -769,8 +843,9 @@
             if (!id) return;
             
             const updatedData = {
-                stichwort: document.getElementById('commandStichwort').value,
-                schlagwort: document.getElementById('commandSchlagwort').value,
+                // NEU: Von Selects lesen
+                stichwort: commandStichwortSelect.value,
+                schlagwort: commandSchlagwortSelect.value,
                 adresse: document.getElementById('commandAdresse').value,
                 freitext: document.getElementById('commandFreitext').value,
                 sonderechte: document.querySelector('input[name="commandSonderechte"]:checked').value === 'ja',
@@ -778,44 +853,34 @@
             };
             
             await updateDoc(doc(db, "operations", id), updatedData);
-            // Modal bleibt offen, Änderungen sind aber gespeichert.
-            // (Oder schließen? Vorerst offen lassen, ist bei "Führen" sinnvoller)
-            // closeCommandModal(); // Vorerst nicht schließen
+            // Modal bleibt offen
         }
         
-        // ----- NEU: Globaler Status-Tab & Sprechwunsch -----
+        // ----- Globaler Status-Tab & Sprechwunsch -----
 
-        // Hört auf ALLE Status-Dokumente
         function listenToAllVehicleStatuses() {
             onSnapshot(vehicleStatusCollectionRef, (snapshot) => {
-                let activeSprechwunschFound = false;
-                
                 snapshot.docs.forEach(doc => {
+                    globalVehicleStatusMap.set(doc.id, doc.data());
+                    
                     const data = doc.data();
                     const vehicleId = doc.id;
-                    globalVehicleStatusMap.set(vehicleId, data); // Ganze Daten speichern
-                    
-                    // Sprechwunsch-Logik (globales Pop-up)
                     if (data.currentStatus === 5 && data.sprechwunschAck === false && !handledSprechwunschIds.has(vehicleId)) {
                         activeSprechwunschVehicleId = vehicleId;
                         sprechwunschVehicleName.textContent = `${vehicleId} wünscht Sprechkontakt.`;
                         sprechwunschModal.classList.remove('modal-hidden');
                         sprechwunschModal.classList.add('modal-visible');
                         handledSprechwunschIds.add(vehicleId);
-                        activeSprechwunschFound = true;
                     }
                 });
-                
-                // Globalen Status-Tab neu rendern
                 renderGlobalVehicleStatus();
             });
         }
         
-        // Rendert den Inhalt des "Fahrzeugstatus"-Tabs
         function renderGlobalVehicleStatus() {
             globalVehicleStatusContainer.innerHTML = '';
             if (globalVehicleList.length === 0) {
-                globalVehicleStatusContainer.innerHTML = '<p class="text-gray-500 italic">Keine Fahrzeuge in Einstellungen definiert.</p>';
+                globalVehicleStatusContainer.innerHTML = '<p class="text-gray-400 italic">Keine Fahrzeuge in Einstellungen definiert.</p>';
                 return;
             }
             
@@ -825,20 +890,51 @@
                 const statusText = data ? data.statusText : "Unbekannt";
                 const lastUpdate = data ? formatFirebaseTimestampFull(data.lastUpdated) : "N/A";
                 
+                let selectOptions = '';
+                for (const key in statusMap) {
+                    selectOptions += `<option value="${key}" ${key == statusNum ? 'selected' : ''}>${key}: ${statusMap[key]}</option>`;
+                }
+
                 globalVehicleStatusContainer.innerHTML += `
-                    <div class="p-4 bg-white rounded-lg shadow border border-gray-200">
+                    <div class="p-4 bg-gray-700 rounded-lg shadow border border-gray-600 space-y-3">
                         <div class="flex items-center mb-2">
                             <span class="status-dot status-bg-${statusNum}"></span>
-                            <h4 class="text-lg font-bold text-gray-800">${vehicleName}</h4>
+                            <h4 class="text-lg font-bold text-gray-100">${vehicleName}</h4>
                         </div>
-                        <p class="text-gray-700 font-semibold status-text-${statusNum}">Status ${statusNum}: ${statusText}</p>
-                        <p class="text-sm text-gray-500 mt-1">Letztes Update: ${lastUpdate}</p>
+                        <p class="text-gray-200 font-semibold status-text-${statusNum}">Status ${statusNum}: ${statusText}</p>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-400">Status manuell setzen:</label>
+                            <select data-vehicleid="${vehicleName}" class="force-status-select w-full mt-1 px-3 py-2 form-input-dark form-select-dark">
+                                ${selectOptions}
+                            </select>
+                        </div>
+                        
+                        <p class="text-sm text-gray-400 mt-1">Letztes Update: ${lastUpdate}</p>
                     </div>
                 `;
             });
         }
         
-        // Schickt "J" (Kommen) an das Fahrzeug
+        async function forceSendStatus(vehicleId, statusId) {
+            const statusNum = +statusId;
+            const statusText = statusMap[statusId];
+            if (!statusText) return;
+
+            console.log(`Setze Status für ${vehicleId} manuell auf: ${statusId}`);
+
+            const vehicleRef = doc(db, "vehicleStatus", vehicleId);
+            const statusData = {
+                vehicleId: vehicleId,
+                currentStatus: statusNum,
+                statusText: statusText,
+                lastUpdated: serverTimestamp(),
+                sprechwunschAck: (statusNum !== 5) 
+            };
+            
+            await setDoc(vehicleRef, statusData, { merge: true });
+        }
+
         async function sendJ(vehicleId) {
             if (!vehicleId) return;
             
@@ -854,7 +950,7 @@
                     lastCommandTimestamp: serverTimestamp()
                 }, { merge: true });
                 
-                closeSprechwunschModal(); // Schließt das globale Pop-up, falls es offen war
+                closeSprechwunschModal(); 
             } catch (error) {
                 console.error("Fehler beim Senden von 'J':", error);
             }
@@ -869,13 +965,12 @@
             activeSprechwunschVehicleId = null;
         }
 
-        // Sendet Befehle an Fahrzeuge
         async function sendCommandToVehicles(vehicleList, commandCode, message, operationId) {
             const command = {
                 type: "ALARM",
                 code: commandCode,
                 message: message,
-                operationId: operationId // NEU: OperationId mitsenden
+                operationId: operationId 
             };
             
             for (const vehicleName of vehicleList) {
@@ -892,7 +987,6 @@
             console.log(`Befehl '${commandCode}' an ${vehicleList.length} Fahrzeuge gesendet.`);
         }
         
-        // NEU: Löscht die Sub-Kollektion "operationLog"
         async function deleteOperationLog(operationId) {
             console.log(`Lösche Protokoll für Einsatz ${operationId}...`);
             const logCollectionRef = collection(db, "operations", operationId, "operationLog");
@@ -903,7 +997,6 @@
                 return;
             }
 
-            // Batch-Delete für Effizienz
             const batch = writeBatch(db);
             snapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
@@ -922,29 +1015,45 @@
             db = getFirestore(app);
             
             authInit();
+            
+            // NEU: Selects initialisieren
             populateStichwortList();
+            schlagwortSelect.innerHTML = '<option value="" disabled selected>-- Erst Stichwort wählen --</option>';
+            commandSchlagwortSelect.innerHTML = '<option value="" disabled selected>-- Erst Stichwort wählen --</option>';
+
 
             // Tab-Navigation
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => switchTab(button.dataset.tab));
             });
             
-            stichwortInput.addEventListener('input', updateSchlagwortList);
-            document.getElementById('commandStichwort').addEventListener('input', updateSchlagwortList);
+            // NEU: Event Listener von 'input' auf 'change' geändert
+            stichwortSelect.addEventListener('change', updateSchlagwortList);
+            commandStichwortSelect.addEventListener('change', updateSchlagwortList);
 
             // Settings-Tab
             saveHomeAddressBtn.addEventListener('click', saveHomeAddress);
             addVehicleBtn.addEventListener('click', addVehicle);
             vehicleListDiv.addEventListener('click', deleteVehicle);
             
+            // Create-Tab
             createForm.addEventListener('submit', handleFormSubmit);
             
+            // Manage-Tab
             document.getElementById('tab-manage').addEventListener('click', handleManageClick);
             
+            // Global Status-Tab
+            globalVehicleStatusContainer.addEventListener('change', (e) => {
+                if (e.target.classList.contains('force-status-select')) {
+                    const vehicleId = e.target.dataset.vehicleid;
+                    const newStatus = e.target.value;
+                    forceSendStatus(vehicleId, newStatus);
+                }
+            });
+
             // Command-Modal
             commandModalClose.addEventListener('click', closeCommandModal);
             saveOperationChangesBtn.addEventListener('click', saveChanges);
-            // NEU: Event-Delegation für "J Senden" im Modal
             commandLiveStatusContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('send-j-btn')) {
                     sendJ(e.target.dataset.vehicleid);
