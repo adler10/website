@@ -15,7 +15,6 @@
             color: #3b82f6;
             font-weight: 600;
         }
-        /* Style für ein sanftes Einblenden von Modals */
         .modal-hidden {
             opacity: 0;
             pointer-events: none;
@@ -25,13 +24,37 @@
             opacity: 1;
             pointer-events: auto;
         }
-        
-        /* NEU: Styling für das Sprechwunsch-Popup */
         .sprechwunsch-popup {
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             border: 1px solid #f87171; /* red-400 */
             background-color: #fef2f2; /* red-50 */
         }
+        
+        /* NEU: Status-Farben-Klassen */
+        .status-dot {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            margin-right: 0.75rem;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .status-bg-0 { background-color: #4b5563; } /* gray-600 */
+        .status-bg-1 { background-color: #16a34a; } /* green-600 */
+        .status-bg-2 { background-color: #15803d; } /* green-700 */
+        .status-bg-3 { background-color: #f97116; } /* orange-500 */
+        .status-bg-4 { background-color: #dc2626; } /* red-600 */
+        .status-bg-5 { background-color: #2563eb; } /* blue-600 */
+        .status-bg-6 { background-color: #6b7280; } /* gray-500 */
+        
+        .status-text-0 { color: #4b5563; }
+        .status-text-1 { color: #16a34a; }
+        .status-text-2 { color: #15803d; }
+        .status-text-3 { color: #f97116; }
+        .status-text-4 { color: #dc2626; }
+        .status-text-5 { color: #2563eb; }
+        .status-text-6 { color: #6b7280; }
+
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -48,6 +71,10 @@
                 <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-create">
                     Einsatz Erstellen
                 </button>
+                <!-- NEU: Tab Fahrzeugstatus -->
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-status">
+                    Fahrzeugstatus
+                </button>
                 <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-settings">
                     Einstellungen
                 </button>
@@ -60,32 +87,13 @@
             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                 <h2 class="text-2xl font-semibold text-gray-900 mb-2 border-b-2 border-red-500 pb-2 inline-block">Aktive Einsätze</h2>
                 <div id="activeOperationsContainer" class="space-y-4 mt-4">
-                    <p class="text-gray-500">Keine aktiven Einsätze.</p>
                     <!-- Aktive Einsätze werden hier von JS eingefügt -->
-                    <!-- 
-                    Template (wird von JS genutzt):
-                    <div class="border border-gray-300 bg-gray-50 rounded-lg p-4 shadow-sm">
-                        <div class="flex flex-wrap justify-between items-center mb-3">
-                            <h3 class="text-xl font-bold text-red-700">[B 3] Brand Wohnung</h3>
-                            <span class="text-sm font-medium text-gray-600">[Uhrzeit]</span>
-                        </div>
-                        <p class="text-gray-700 mb-1"><span class="font-semibold">Ort:</span> [Adresse]</p>
-                        <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> [Fahrzeugliste]</p>
-                        <div class="flex flex-wrap gap-3">
-                            <button class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
-                            <button class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow transition duration-150">Protokoll</button>
-                            <button class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">Beenden</button>
-                        </div>
-                    </div>
-                    -->
                 </div>
             </div>
-
             <!-- Vorbereitete Einsätze -->
             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                 <h2 class="text-2xl font-semibold text-gray-900 mb-2 border-b-2 border-blue-500 pb-2 inline-block">Vorbereitete Einsätze</h2>
                 <div id="preppedOperationsContainer" class="space-y-4 mt-4">
-                    <p class="text-gray-500">Keine vorbereiteten Einsätze.</p>
                     <!-- Vorbereitete Einsätze werden hier von JS eingefügt -->
                 </div>
             </div>
@@ -93,6 +101,7 @@
 
         <!-- Tab 2: Einsatz Erstellen -->
         <div id="tab-create" class="tab-content">
+            <!-- Inhalt von Tab 2 (unverändert) -->
             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                 <form id="createOperationForm" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -149,9 +158,21 @@
                 </form>
             </div>
         </div>
+        
+        <!-- NEU: Tab 3: Fahrzeugstatus -->
+        <div id="tab-status" class="tab-content">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-4">Globaler Fahrzeugstatus</h2>
+                <div id="globalVehicleStatusContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p class="text-gray-500 italic">Statusübersicht wird geladen...</p>
+                    <!-- Status wird hier von JS eingefügt -->
+                </div>
+            </div>
+        </div>
 
-        <!-- Tab 3: Einstellungen -->
+        <!-- Tab 4: Einstellungen -->
         <div id="tab-settings" class="tab-content">
+            <!-- Inhalt von Tab 4 (unverändert) -->
             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-8">
                 <!-- Adresse FW-Haus -->
                 <div>
@@ -161,7 +182,6 @@
                         <button id="saveHomeAddress" class="px-5 py-2 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Speichern</button>
                     </div>
                 </div>
-
                 <!-- Fahrzeuge verwalten -->
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900 mb-3">Fahrzeuge Verwalten</h2>
@@ -177,54 +197,100 @@
         </div>
     </div>
 
-    <!-- Edit-Modal (wird wiederverwendet) -->
-    <div id="editModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
+    <!-- NEU: Einsatz-Führungs-Modal (ersetzt Edit-Modal und Log-Modal) -->
+    <div id="commandModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-900">Einsatz Bearbeiten</h2>
-                <button id="editModalClose" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+                <h2 id="commandModalTitle" class="text-2xl font-bold text-gray-900">Einsatz Führen & Bearbeiten</h2>
+                <button id="commandModalClose" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
             </div>
-            <div class="p-6 space-y-6 overflow-y-auto">
-                <input type="hidden" id="editOperationId">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="editStichwort" class="block text-sm font-medium text-gray-700 mb-1">Stichwort</label>
-                        <input type="text" id="editStichwort" list="stichwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+            
+            <!-- Modal-Inhalt (scrollbar) -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                
+                <!-- 1. Sektion: Bearbeiten -->
+                <section>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Einsatzdaten</h3>
+                    <input type="hidden" id="commandOperationId">
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="commandStichwort" class="block text-sm font-medium text-gray-700 mb-1">Stichwort</label>
+                                <input type="text" id="commandStichwort" list="stichwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                            </div>
+                            <div>
+                                <label for="commandSchlagwort" class="block text-sm font-medium text-gray-700 mb-1">Schlagwort</label>
+                                <input type="text" id="commandSchlagwort" list="schlagwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="commandAdresse" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                            <input type="text" id="commandAdresse" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <span class="block text-sm font-medium text-gray-700 mb-2">Alarmierte Fahrzeuge (Bearbeiten)</span>
+                            <div id="fahrzeug-checkboxes-command" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
+                                <!-- Checkboxen für Edit-Modal -->
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="block text-sm font-medium text-gray-700">Sonderechte freigegeben?</span>
+                            <div class="flex items-center space-x-6">
+                                <label class="flex items-center">
+                                    <input type="radio" name="commandSonderechte" value="ja" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                    <span class="ml-2 text-gray-700">Ja</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="commandSonderechte" value="nein" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                    <span class="ml-2 text-gray-700">Nein</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="commandFreitext" class="block text-sm font-medium text-gray-700 mb-1">Freitext / Zusatz-Infos</label>
+                            <textarea id="commandFreitext" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label for="editSchlagwort" class="block text-sm font-medium text-gray-700 mb-1">Schlagwort</label>
-                        <input type="text" id="editSchlagwort" list="schlagwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                </section>
+                
+                <!-- 2. Sektion: Live-Status & Aktionen -->
+                <section>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Live-Fahrzeugstatus</h3>
+                    <div id="commandLiveStatusContainer" class="space-y-3">
+                        <p class="text-gray-500 italic">Lade Live-Status...</p>
+                        <!-- Live-Status wird hier eingefügt -->
+                        <!-- 
+                        Template:
+                        <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                            <span class="flex items-center font-semibold text-lg">
+                                <span class="status-dot status-bg-3"></span>
+                                LH 19-1 (Status 3: Einsatzübernahme)
+                            </span>
+                            <button class="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md">"J" Senden</button>
+                        </div>
+                        -->
                     </div>
-                </div>
-                <div>
-                    <label for="editAdresse" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                    <input type="text" id="editAdresse" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <span class="block text-sm font-medium text-gray-700 mb-2">Alarmierte Fahrzeuge</span>
-                    <div id="fahrzeug-checkboxes-edit" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
-                        <!-- Checkboxen für Edit-Modal -->
+                </section>
+                
+                <!-- 3. Sektion: Einsatz-Protokoll -->
+                <section>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Einsatz-Protokoll</h3>
+                    <div id="commandLogContainer" class="space-y-3 max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg border">
+                        <p class="text-gray-500 italic">Lade Protokoll...</p>
+                        <!-- Protokoll wird hier eingefügt -->
+                        <!-- 
+                        Template:
+                        <p class="text-sm">
+                            <span class="font-bold status-text-3">[10:05:12] LH 19-1:</span>
+                            Status 3 (Einsatzübernahme)
+                        </p>
+                        -->
                     </div>
-                </div>
-                <div>
-                    <span class="block text-sm font-medium text-gray-700">Sonderechte freigegeben?</span>
-                    <div class="mt-2 flex items-center space-x-6">
-                        <label class="flex items-center">
-                            <input type="radio" name="editSonderechte" value="ja" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                            <span class="ml-2 text-gray-700">Ja</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="radio" name="editSonderechte" value="nein" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                            <span class="ml-2 text-gray-700">Nein</span>
-                        </label>
-                    </div>
-                </div>
-                <div>
-                    <label for="editFreitext" class="block text-sm font-medium text-gray-700 mb-1">Freitext / Zusatz-Infos</label>
-                    <textarea id="editFreitext" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
-                </div>
+                </section>
             </div>
-            <div class="flex justify-end p-6 bg-gray-50 border-t border-gray-200 rounded-b-2xl space-x-4">
+            
+            <!-- Modal-Footer -->
+            <div class="flex justify-end p-6 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
                 <button id="saveOperationChanges" class="px-6 py-3 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150">
                     Änderungen Speichern
                 </button>
@@ -232,29 +298,12 @@
         </div>
     </div>
     
-    <!-- NEU: Protokoll-Modal -->
-    <div id="logModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <h2 id="logModalTitle" class="text-2xl font-bold text-gray-900">Einsatz-Protokoll</h2>
-                <button id="logModalClose" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
-            </div>
-            <div id="logContent" class="p-6 space-y-4 overflow-y-auto">
-                <!-- Protokoll-Einträge werden hier von JS eingefügt -->
-                <p class="text-gray-500">Protokoll wird geladen...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- NEU: Sprechwunsch-Popup (klein, unten rechts) -->
+    <!-- Sprechwunsch-Popup (unverändert) -->
     <div id="sprechwunschModal" class="modal-hidden fixed bottom-6 right-6 z-50 w-full max-w-sm">
         <div class="sprechwunsch-popup rounded-lg p-5">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <!-- Rotes Funk-Icon -->
-                    <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15c-1.12 0-2.163-.306-3.072-.828M12 15c1.12 0 2.163-.306 3.072-.828m-3.072.828l.14.091m-3.212-.919A9.75 9.75 0 015.25 6.75m13.5 0A9.75 9.75 0 0012 3.75m0 0A9.75 9.75 0 005.25 6.75M12 3.75c1.12 0 2.163.306 3.072.828" />
-                    </svg>
+                    <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15c-1.12 0-2.163-.306-3.072-.828M12 15c1.12 0 2.163-.306 3.072-.828m-3.072.828l.14.091m-3.212-.919A9.75 9.75 0 015.25 6.75m13.5 0A9.75 9.75 0 0012 3.75m0 0A9.75 9.75 0 005.25 6.75M12 3.75c1.12 0 2.163.306 3.072.828" /></svg>
                 </div>
                 <div class="ml-4 flex-1">
                     <h3 class="text-lg font-bold text-red-800">SPRECHWUNSCH!</h3>
@@ -276,7 +325,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, onSnapshot, query, where, serverTimestamp, setLogLevel, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, onSnapshot, query, where, serverTimestamp, setLogLevel, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ----- KONFIGURATION -----
         const firebaseConfig = {
@@ -289,25 +338,33 @@
           measurementId: "G-3BX1HB9RXZ"
         };
         
-        // Stichwort-Schlagwort-Map (gekürzt zur Übersicht)
+        const statusMap = {
+            "0": "Status Unbekannt", "1": "Einsatzbereit über Funk", "2": "Einsatzbereit auf Wache",
+            "3": "Einsatzübernahme", "4": "Am Einsatzort eingetroffen", "5": "Sprechwunsch", "6": "Nicht Einsatzbereit",
+        };
+        
+        // Stichwort-Schlagwort-Map (gekürzt)
         const stichwortMap = {
             "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer"],
             "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz"],
-            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Wohnung", "B - Zimmer"],
+            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Wohnung", "B - Zimmer"],
             "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage"],
             "TH 1": ["TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen"],
             "TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
-            // ... (Rest deiner Liste)
         };
         const allStichworte = Object.keys(stichwortMap);
         
         let app, auth, db, userId;
         let settingsDocRef, operationsCollectionRef, vehicleStatusCollectionRef;
-        let globalVehicleList = []; // Globale Liste aller Fahrzeuge
+        let globalVehicleList = []; 
+        let globalVehicleStatusMap = new Map(); // NEU: Globale Status-Map
         
-        // NEU: Für Sprechwunsch-Logik
         let activeSprechwunschVehicleId = null;
-        let handledSprechwunschIds = new Set(); // Verhindert Pop-up-Spam
+        let handledSprechwunschIds = new Set();
+        
+        // NEU: Listener für das Command-Modal
+        let commandModalVehicleListeners = () => {}; // Unsubscribe-Funktion
+        let commandModalLogListener = () => {};     // Unsubscribe-Funktion
 
         // DOM-Elemente
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -332,19 +389,19 @@
         const activeOperationsContainer = document.getElementById('activeOperationsContainer');
         const preppedOperationsContainer = document.getElementById('preppedOperationsContainer');
         
-        // Edit Modal
-        const editModal = document.getElementById('editModal');
-        const editModalClose = document.getElementById('editModalClose');
+        // NEU: Global Status
+        const globalVehicleStatusContainer = document.getElementById('globalVehicleStatusContainer');
+        
+        // NEU: Command Modal (ersetzt Edit Modal)
+        const commandModal = document.getElementById('commandModal');
+        const commandModalTitle = document.getElementById('commandModalTitle');
+        const commandModalClose = document.getElementById('commandModalClose');
         const saveOperationChangesBtn = document.getElementById('saveOperationChanges');
-        const fahrzeugCheckboxesEdit = document.getElementById('fahrzeug-checkboxes-edit');
+        const fahrzeugCheckboxesCommand = document.getElementById('fahrzeug-checkboxes-command');
+        const commandLiveStatusContainer = document.getElementById('commandLiveStatusContainer');
+        const commandLogContainer = document.getElementById('commandLogContainer');
         
-        // NEU: Log Modal
-        const logModal = document.getElementById('logModal');
-        const logModalTitle = document.getElementById('logModalTitle');
-        const logModalClose = document.getElementById('logModalClose');
-        const logContent = document.getElementById('logContent');
-        
-        // NEU: Sprechwunsch Modal
+        // Sprechwunsch Modal
         const sprechwunschModal = document.getElementById('sprechwunschModal');
         const sprechwunschVehicleName = document.getElementById('sprechwunschVehicleName');
         const sprechwunschButtonJ = document.getElementById('sprechwunschButtonJ');
@@ -353,16 +410,21 @@
 
         // ----- UTILITY FUNKTIONEN -----
         
-        // Formatiert Datum/Zeit
         function formatFirebaseTimestamp(timestamp) {
             if (!timestamp || !timestamp.seconds) return 'N/A';
             return new Date(timestamp.seconds * 1000).toLocaleString('de-DE', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
+            }); // Nur Uhrzeit für Protokoll
+        }
+        
+        function formatFirebaseTimestampFull(timestamp) {
+            if (!timestamp || !timestamp.seconds) return 'N/A';
+            return new Date(timestamp.seconds * 1000).toLocaleString('de-DE', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
             });
         }
         
-        // Schaltet Tabs um
         function switchTab(targetTabId) {
             tabContents.forEach(content => content.classList.remove('active'));
             tabButtons.forEach(button => button.classList.remove('active'));
@@ -371,7 +433,6 @@
             document.querySelector(`.tab-button[data-tab="${targetTabId}"]`).classList.add('active');
         }
 
-        // Füllt die Stichwort-Vorschläge
         function populateStichwortList() {
             stichwortList.innerHTML = '';
             allStichworte.forEach(stichwort => {
@@ -379,7 +440,6 @@
             });
         }
 
-        // Aktualisiert Schlagwort-Vorschläge basierend auf Stichwort
         function updateSchlagwortList(e) {
             const selectedStichwort = e.target.value;
             schlagwortList.innerHTML = '';
@@ -390,7 +450,6 @@
             }
         }
         
-        // Rendert die Checkboxen für die Fahrzeugauswahl
         function renderVehicleCheckboxes(containerElement, selectedVehicles = []) {
             containerElement.innerHTML = '';
             if (globalVehicleList.length === 0) {
@@ -408,7 +467,6 @@
             });
         }
         
-        // Holt die ausgewählten Fahrzeuge aus einem Checkbox-Container
         function getSelectedVehicles(containerElement) {
             const vehicles = [];
             containerElement.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
@@ -420,35 +478,31 @@
 
         // ----- CORE APP-LOGIK (Firebase) -----
 
-        // 1. App-Initialisierung & Auth
         async function authInit() {
             onAuthStateChanged(auth, async user => {
                 if (user) {
                     userId = user.uid;
-                    // Referenzen setzen
                     settingsDocRef = doc(db, "settings", "mainSettings");
                     operationsCollectionRef = collection(db, "operations");
                     vehicleStatusCollectionRef = collection(db, "vehicleStatus");
 
-                    // Listener starten
-                    loadSettings(); // Lädt Adresse und Fahrzeugliste (startet auch Listener)
+                    loadSettings(); 
                     listenForOperations();
-                    listenForSprechwunsch(); // NEUER LISTENER
+                    listenToAllVehicleStatuses(); // NEU: Globaler Listener
                 } else {
                     await signInAnonymously(auth);
                 }
             });
         }
 
-        // 2. Einstellungen (Adresse & Fahrzeuge)
         async function loadSettings() {
             onSnapshot(settingsDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     homeAddressInput.value = data.address || '';
                     globalVehicleList = data.vehicles || [];
+                    globalVehicleList.sort(); // Immer sortieren
                     
-                    // Fahrzeugliste im Einstellungs-Tab rendern
                     vehicleListDiv.innerHTML = '';
                     if (globalVehicleList.length > 0) {
                         globalVehicleList.forEach(vehicle => {
@@ -463,18 +517,19 @@
                         vehicleListDiv.innerHTML = '<p class="text-gray-500 italic">Noch keine Fahrzeuge hinzugefügt.</p>';
                     }
                     
-                    // Checkboxen in Erstellen- und Edit-Modal neu rendern
                     renderVehicleCheckboxes(fahrzeugCheckboxesCreate);
-                    renderVehicleCheckboxes(fahrzeugCheckboxesEdit);
+                    renderVehicleCheckboxes(fahrzeugCheckboxesCommand);
+                    
+                    // NEU: Globalen Status-Container initialisieren
+                    renderGlobalVehicleStatus();
                 }
             }, (error) => console.error("Fehler beim Laden der Einstellungen: ", error));
         }
-
-        async function saveHomeAddress() {
+        
+        async function saveHomeAddress() { /* (unverändert) */ 
             await setDoc(settingsDocRef, { address: homeAddressInput.value }, { merge: true });
         }
-
-        async function addVehicle() {
+        async function addVehicle() { /* (unverändert) */
             const newVehicle = newVehicleNameInput.value.trim();
             if (newVehicle && !globalVehicleList.includes(newVehicle)) {
                 const updatedList = [...globalVehicleList, newVehicle].sort();
@@ -482,18 +537,16 @@
                 newVehicleNameInput.value = '';
             }
         }
-
-        async function deleteVehicle(e) {
+        async function deleteVehicle(e) { /* (unverändert) */
             if (!e.target.classList.contains('delete-vehicle-btn')) return;
             const vehicleToDelete = e.target.dataset.vehicle;
             const updatedList = globalVehicleList.filter(v => v !== vehicleToDelete);
             await setDoc(settingsDocRef, { vehicles: updatedList }, { merge: true });
         }
 
-        // 3. Einsätze Erstellen & Senden
         async function handleFormSubmit(e) {
             e.preventDefault();
-            const action = e.submitter.dataset.action; // 'alarm' or 'prepare'
+            const action = e.submitter.dataset.action; 
             
             const operationData = {
                 stichwort: document.getElementById('stichwort').value,
@@ -504,12 +557,11 @@
                 freitext: document.getElementById('freitext').value,
                 isPrepped: action === 'prepare',
                 isActive: action === 'alarm',
-                timestamp: serverTimestamp() // Setzt Zeitstempel
+                timestamp: serverTimestamp() 
             };
 
-            // Validierung (einfach)
             if (!operationData.stichwort || !operationData.schlagwort || !operationData.adresse) {
-                console.error("Bitte alle Felder ausfüllen."); // Später durch UI-Feedback ersetzen
+                console.error("Bitte alle Felder ausfüllen.");
                 return;
             }
 
@@ -517,20 +569,18 @@
                 const docRef = await addDoc(operationsCollectionRef, operationData);
                 console.log("Einsatz erstellt mit ID: ", docRef.id);
                 
-                // NEU: Wenn sofort alarmiert wird, "C" senden
                 if (operationData.isActive) {
-                    await sendCommandToVehicles(operationData.fahrzeuge, "C", "Neuer Alarm");
+                    await sendCommandToVehicles(operationData.fahrzeuge, "C", "Neuer Alarm", docRef.id);
                 }
                 
-                createForm.reset(); // Formular zurücksetzen
-                renderVehicleCheckboxes(fahrzeugCheckboxesCreate); // Checkboxen zurücksetzen
-                switchTab('tab-manage'); // Zum Verwalten-Tab wechseln
+                createForm.reset(); 
+                renderVehicleCheckboxes(fahrzeugCheckboxesCreate);
+                switchTab('tab-manage'); 
             } catch (error) {
                 console.error("Fehler beim Erstellen des Einsatzes: ", error);
             }
         }
 
-        // 4. Einsätze Verwalten (Anzeigen)
         function listenForOperations() {
             const q = query(operationsCollectionRef, orderBy("timestamp", "desc"));
             
@@ -543,14 +593,10 @@
                 snapshot.docs.forEach(doc => {
                     const operation = doc.data();
                     const id = doc.id;
-                    const time = operation.timestamp ? formatFirebaseTimestamp(operation.timestamp) : 'N/A';
-                    
-                    const fahrzeugeListe = operation.fahrzeuge.length > 0 
-                        ? operation.fahrzeuge.join(', ') 
-                        : 'Keine';
+                    const time = operation.timestamp ? formatFirebaseTimestampFull(operation.timestamp) : 'N/A';
+                    const fahrzeugeListe = operation.fahrzeuge.length > 0 ? operation.fahrzeuge.join(', ') : 'Keine';
 
                     if (operation.isActive) {
-                        // Aktive Einsätze
                         activeCount++;
                         activeOperationsContainer.innerHTML += `
                             <div class="border border-red-300 bg-red-50 rounded-lg p-4 shadow-sm">
@@ -561,14 +607,14 @@
                                 <p class="text-gray-700 mb-1"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
                                 <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
                                 <div class="flex flex-wrap gap-3">
-                                    <button data-id="${id}" class="edit-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
-                                    <button data-id="${id}" class="log-op-btn px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-lg shadow transition duration-150">Protokoll</button>
+                                    <!-- NEU: Button-Text und Klasse geändert -->
+                                    <button data-id="${id}" class="command-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Führen / Bearbeiten</button>
+                                    <!-- "Protokoll"-Button entfernt -->
                                     <button data-id="${id}" class="end-op-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">Beenden</button>
                                 </div>
                             </div>
                         `;
                     } else if (operation.isPrepped) {
-                        // Vorbereitete Einsätze
                         preppedCount++;
                         preppedOperationsContainer.innerHTML += `
                             <div class="border border-blue-300 bg-blue-50 rounded-lg p-4 shadow-sm">
@@ -577,7 +623,8 @@
                                 <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
                                 <div class="flex flex-wrap gap-3">
                                     <button data-id="${id}" class="trigger-op-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">JETZT ALARMIEREN</button>
-                                    <button data-id="${id}" class="edit-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
+                                    <!-- NEU: Klasse geändert -->
+                                    <button data-id="${id}" class="command-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
                                     <button data-id="${id}" class="delete-op-btn px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg shadow transition duration-150">Löschen</button>
                                 </div>
                             </div>
@@ -590,7 +637,6 @@
             });
         }
         
-        // 5. Einsätze Verwalten (Aktionen)
         async function handleManageClick(e) {
             const target = e.target;
             const id = target.dataset.id;
@@ -599,41 +645,32 @@
             const opDocRef = doc(db, "operations", id);
 
             try {
-                // Einsatz Beenden
                 if (target.classList.contains('end-op-btn')) {
                     await updateDoc(opDocRef, { isActive: false, isPrepped: false, isFinished: true });
+                    // NEU: Protokoll löschen
+                    await deleteOperationLog(id);
                 }
-                // Einsatz Löschen (Vorbereitete)
                 else if (target.classList.contains('delete-op-btn')) {
                     await deleteDoc(opDocRef);
                 }
-                // Einsatz Bearbeiten (Modal öffnen)
-                else if (target.classList.contains('edit-op-btn')) {
+                // NEU: Einsatz-Führungs-Modal öffnen
+                else if (target.classList.contains('command-op-btn')) {
                     const docSnap = await getDoc(opDocRef);
                     if (docSnap.exists()) {
-                        openEditModal(id, docSnap.data());
+                        openCommandModal(id, docSnap.data());
                     }
                 }
-                // Einsatz Auslösen (Vorbereitete)
                 else if (target.classList.contains('trigger-op-btn')) {
                     const updateData = {
                         isActive: true,
                         isPrepped: false,
-                        timestamp: serverTimestamp() // Alarmzeit jetzt setzen
+                        timestamp: serverTimestamp()
                     };
                     await updateDoc(opDocRef, updateData);
                     
-                    // NEU: "C" senden, da jetzt alarmiert wird
                     const docSnap = await getDoc(opDocRef);
                     if(docSnap.exists()) {
-                        await sendCommandToVehicles(docSnap.data().fahrzeuge, "C", "Neuer Alarm");
-                    }
-                }
-                // NEU: Protokoll anzeigen
-                else if (target.classList.contains('log-op-btn')) {
-                    const docSnap = await getDoc(opDocRef);
-                    if (docSnap.exists()) {
-                        await showLog(docSnap.data());
+                        await sendCommandToVehicles(docSnap.data().fahrzeuge, "C", "Neuer Alarm", id);
                     }
                 }
             } catch (error) {
@@ -641,160 +678,174 @@
             }
         }
         
-        // 6. Edit-Modal Logik
-        function openEditModal(id, data) {
-            document.getElementById('editOperationId').value = id;
-            document.getElementById('editStichwort').value = data.stichwort;
-            document.getElementById('editSchlagwort').value = data.schlagwort;
-            document.getElementById('editAdresse').value = data.adresse;
-            document.getElementById('editFreitext').value = data.freitext || '';
+        // ----- NEU: Command-Modal (Führung & Bearbeiten) -----
+        
+        function openCommandModal(id, data) {
+            // 1. Bearbeiten-Felder füllen
+            document.getElementById('commandOperationId').value = id;
+            commandModalTitle.textContent = `Führung: ${data.stichwort}`;
+            document.getElementById('commandStichwort').value = data.stichwort;
+            document.getElementById('commandSchlagwort').value = data.schlagwort;
+            document.getElementById('commandAdresse').value = data.adresse;
+            document.getElementById('commandFreitext').value = data.freitext || '';
             
-            // Sonderechte Radio-Buttons
-            const sonderechteInputs = document.querySelectorAll('input[name="editSonderechte"]');
+            const sonderechteInputs = document.querySelectorAll('input[name="commandSonderechte"]');
             sonderechteInputs.forEach(input => input.checked = (input.value === 'ja') === data.sonderechte);
             
-            // Fahrzeug-Checkboxen
-            renderVehicleCheckboxes(fahrzeugCheckboxesEdit, data.fahrzeuge);
+            renderVehicleCheckboxes(fahrzeugCheckboxesCommand, data.fahrzeuge);
             
-            editModal.classList.remove('modal-hidden');
-            editModal.classList.add('modal-visible');
+            // 2. Live-Listener für Status und Protokoll anhängen
+            commandLiveStatusContainer.innerHTML = '<p class="text-gray-500 italic">Lade Live-Status...</p>';
+            commandLogContainer.innerHTML = '<p class="text-gray-500 italic">Lade Protokoll...</p>';
+
+            // Listener 1: Live-Status der alarmierten Fahrzeuge
+            const vehicleQuery = query(vehicleStatusCollectionRef, where('vehicleId', 'in', data.fahrzeuge));
+            commandModalVehicleListeners = onSnapshot(vehicleQuery, (snapshot) => {
+                commandLiveStatusContainer.innerHTML = ''; // Container leeren
+                let statusMapForIncident = new Map();
+                snapshot.docs.forEach(doc => {
+                    statusMapForIncident.set(doc.id, doc.data());
+                });
+
+                // Stelle sicher, dass ALLE alarmierten Fahrzeuge angezeigt werden, auch wenn sie noch keinen Status gesendet haben
+                data.fahrzeuge.forEach(vehicleName => {
+                    const statusData = statusMapForIncident.get(vehicleName);
+                    const statusNum = statusData ? statusData.currentStatus : 0;
+                    const statusText = statusData ? statusData.statusText : "Unbekannt";
+                    
+                    const isSprechwunsch = statusNum === 5 && statusData.sprechwunschAck === false;
+
+                    commandLiveStatusContainer.innerHTML += `
+                        <div class="flex justify-between items-center p-3 ${isSprechwunsch ? 'bg-red-100 border-red-400 border' : 'bg-gray-100'} rounded-lg">
+                            <span class="flex items-center font-semibold text-lg text-gray-800">
+                                <span class="status-dot status-bg-${statusNum}"></span>
+                                ${vehicleName} (Status ${statusNum}: ${statusText})
+                            </span>
+                            ${isSprechwunsch ? 
+                                `<button data-vehicleid="${vehicleName}" class="send-j-btn flex-shrink-0 ml-4 px-3 py-1 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md shadow">"J" Senden</button>` 
+                                : ''
+                            }
+                        </div>
+                    `;
+                });
+            });
+
+            // Listener 2: Einsatz-Protokoll (NEUE Sub-Kollektion)
+            const logQuery = query(collection(db, "operations", id, "operationLog"), orderBy("timestamp", "asc"));
+            commandModalLogListener = onSnapshot(logQuery, (snapshot) => {
+                commandLogContainer.innerHTML = '';
+                if (snapshot.empty) {
+                    commandLogContainer.innerHTML = '<p class="text-gray-500 italic">Noch keine Protokoll-Einträge.</p>';
+                    return;
+                }
+                snapshot.docs.forEach(doc => {
+                    const log = doc.data();
+                    commandLogContainer.innerHTML += `
+                        <p class="text-sm font-mono">
+                            <span class="font-bold status-text-${log.status}">[${formatFirebaseTimestamp(log.timestamp)}] ${log.vehicleId}:</span>
+                            ${log.text} (Status ${log.status})
+                        </p>
+                    `;
+                });
+                // Auto-Scroll nach unten
+                commandLogContainer.scrollTop = commandLogContainer.scrollHeight;
+            });
+            
+            commandModal.classList.remove('modal-hidden');
+            commandModal.classList.add('modal-visible');
         }
 
-        function closeEditModal() {
-            editModal.classList.add('modal-hidden');
-            editModal.classList.remove('modal-visible');
+        function closeCommandModal() {
+            // WICHTIG: Listener abmelden, um Memory-Leaks zu vermeiden
+            commandModalVehicleListeners();
+            commandModalLogListener();
+            
+            commandModal.classList.add('modal-hidden');
+            commandModal.classList.remove('modal-visible');
         }
         
         async function saveChanges() {
-            const id = document.getElementById('editOperationId').value;
+            const id = document.getElementById('commandOperationId').value;
             if (!id) return;
             
             const updatedData = {
-                stichwort: document.getElementById('editStichwort').value,
-                schlagwort: document.getElementById('editSchlagwort').value,
-                adresse: document.getElementById('editAdresse').value,
-                freitext: document.getElementById('editFreitext').value,
-                sonderechte: document.querySelector('input[name="editSonderechte"]:checked').value === 'ja',
-                fahrzeuge: getSelectedVehicles(fahrzeugCheckboxesEdit)
+                stichwort: document.getElementById('commandStichwort').value,
+                schlagwort: document.getElementById('commandSchlagwort').value,
+                adresse: document.getElementById('commandAdresse').value,
+                freitext: document.getElementById('commandFreitext').value,
+                sonderechte: document.querySelector('input[name="commandSonderechte"]:checked').value === 'ja',
+                fahrzeuge: getSelectedVehicles(fahrzeugCheckboxesCommand)
             };
             
             await updateDoc(doc(db, "operations", id), updatedData);
-            closeEditModal();
+            // Modal bleibt offen, Änderungen sind aber gespeichert.
+            // (Oder schließen? Vorerst offen lassen, ist bei "Führen" sinnvoller)
+            // closeCommandModal(); // Vorerst nicht schließen
         }
         
-        // 7. NEU: Protokoll-Modal Logik
-        function closeLogModal() {
-            logModal.classList.add('modal-hidden');
-            logModal.classList.remove('modal-visible');
-        }
+        // ----- NEU: Globaler Status-Tab & Sprechwunsch -----
 
-        async function showLog(operation) {
-            logModalTitle.textContent = `Protokoll: ${operation.stichwort}`;
-            logContent.innerHTML = '<div class="text-center"><p class="text-gray-600 animate-pulse">Lade Protokoll...</p></div>';
-            logModal.classList.remove('modal-hidden');
-            logModal.classList.add('modal-visible');
-            
-            let logHTML = '<ul class="space-y-3">';
-            
-            // 1. Alarmierungs-Eintrag
-            logHTML += `
-                <li class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full font-bold">!</span>
-                    <div>
-                        <p class="font-semibold text-red-800">ALARMIERUNG</p>
-                        <p class="text-sm text-gray-700">${formatFirebaseTimestamp(operation.timestamp)}</p>
-                    </div>
-                </li>
-            `;
-            
-            // 2. Status-Historie für jedes Fahrzeug abrufen
-            // (Erfordert, dass fahrzeug-display.html die Historie in /statusLog/ schreibt!)
-            for (const vehicleName of operation.fahrzeuge) {
-                logHTML += `<li class="pt-2"><h4 class="font-bold text-gray-800">${vehicleName}</h4><ul class="pl-4 border-l-2 border-gray-300 ml-5 py-2 space-y-2">`;
+        // Hört auf ALLE Status-Dokumente
+        function listenToAllVehicleStatuses() {
+            onSnapshot(vehicleStatusCollectionRef, (snapshot) => {
+                let activeSprechwunschFound = false;
                 
-                try {
-                    // Versuche, die Sub-Kollektion zu lesen
-                    const logQuery = query(
-                        collection(db, "vehicleStatus", vehicleName, "statusLog"), 
-                        orderBy("timestamp", "desc")
-                    );
-                    const logSnap = await getDocs(logQuery);
-                    
-                    if (logSnap.empty) {
-                        // Fallback: Nur aktuellen Status anzeigen
-                        const statusSnap = await getDoc(doc(db, "vehicleStatus", vehicleName));
-                        if (statusSnap.exists()) {
-                            const data = statusSnap.data();
-                            logHTML += `<li><span class="font-semibold">Status ${data.currentStatus}</span> (${data.statusText}) - ${formatFirebaseTimestamp(data.lastUpdated)}</li>`;
-                        } else {
-                            logHTML += `<li class="text-gray-500 italic">Keine Statusdaten gefunden.</li>`;
-                        }
-                    } else {
-                        // Log-Historie anzeigen
-                        logSnap.docs.forEach(doc => {
-                            const data = doc.data();
-                            logHTML += `<li><span class="font-semibold">Status ${data.status}</span> (${data.text}) - ${formatFirebaseTimestamp(data.timestamp)}</li>`;
-                        });
-                    }
-                } catch (error) {
-                    console.error(`Fehler beim Laden des Logs für ${vehicleName}:`, error);
-                    logHTML += `<li class="text-red-500 italic">Protokoll konnte nicht geladen werden. (Index?)</li>`;
-                }
-                logHTML += `</ul></li>`;
-            }
-            logHTML += '</ul>';
-            logContent.innerHTML = logHTML;
-        }
-
-        // 8. NEU: Sprechwunsch (Status 5) Logik
-        
-        /**
-         * Hört auf alle Fahrzeuge, die Status 5 setzen UND bei denen 'sprechwunschAck' auf false steht.
-         * Erfordert einen Composite-Index in Firestore!
-         */
-        function listenForSprechwunsch() {
-            try {
-                const q = query(
-                    vehicleStatusCollectionRef, 
-                    where("currentStatus", "==", 5),
-                    where("sprechwunschAck", "==", false)
-                );
-                
-                onSnapshot(q, (snapshot) => {
-                    if (snapshot.empty) return; // Kein aktiver Sprechwunsch
-                    
-                    // Nimm den ersten, der reinkommt
-                    const doc = snapshot.docs[0];
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data();
                     const vehicleId = doc.id;
+                    globalVehicleStatusMap.set(vehicleId, data); // Ganze Daten speichern
                     
-                    // Verhindern, dass derselbe Wunsch mehrmals angezeigt wird
-                    if (handledSprechwunschIds.has(vehicleId)) return;
-                    
-                    activeSprechwunschVehicleId = vehicleId;
-                    sprechwunschVehicleName.textContent = `${vehicleId} wünscht Sprechkontakt.`;
-                    
-                    sprechwunschModal.classList.remove('modal-hidden');
-                    sprechwunschModal.classList.add('modal-visible');
-                    
-                    handledSprechwunschIds.add(vehicleId); // Als "gesehen" markieren
+                    // Sprechwunsch-Logik (globales Pop-up)
+                    if (data.currentStatus === 5 && data.sprechwunschAck === false && !handledSprechwunschIds.has(vehicleId)) {
+                        activeSprechwunschVehicleId = vehicleId;
+                        sprechwunschVehicleName.textContent = `${vehicleId} wünscht Sprechkontakt.`;
+                        sprechwunschModal.classList.remove('modal-hidden');
+                        sprechwunschModal.classList.add('modal-visible');
+                        handledSprechwunschIds.add(vehicleId);
+                        activeSprechwunschFound = true;
+                    }
                 });
                 
-            } catch (error) {
-                console.error("Fehler beim Erstellen des Sprechwunsch-Listeners:", error);
-                console.warn("Stelle sicher, dass der Firestore-Index für vehicleStatus (currentStatus ASC, sprechwunschAck ASC) existiert.");
+                // Globalen Status-Tab neu rendern
+                renderGlobalVehicleStatus();
+            });
+        }
+        
+        // Rendert den Inhalt des "Fahrzeugstatus"-Tabs
+        function renderGlobalVehicleStatus() {
+            globalVehicleStatusContainer.innerHTML = '';
+            if (globalVehicleList.length === 0) {
+                globalVehicleStatusContainer.innerHTML = '<p class="text-gray-500 italic">Keine Fahrzeuge in Einstellungen definiert.</p>';
+                return;
             }
+            
+            globalVehicleList.forEach(vehicleName => {
+                const data = globalVehicleStatusMap.get(vehicleName);
+                const statusNum = data ? data.currentStatus : 0;
+                const statusText = data ? data.statusText : "Unbekannt";
+                const lastUpdate = data ? formatFirebaseTimestampFull(data.lastUpdated) : "N/A";
+                
+                globalVehicleStatusContainer.innerHTML += `
+                    <div class="p-4 bg-white rounded-lg shadow border border-gray-200">
+                        <div class="flex items-center mb-2">
+                            <span class="status-dot status-bg-${statusNum}"></span>
+                            <h4 class="text-lg font-bold text-gray-800">${vehicleName}</h4>
+                        </div>
+                        <p class="text-gray-700 font-semibold status-text-${statusNum}">Status ${statusNum}: ${statusText}</p>
+                        <p class="text-sm text-gray-500 mt-1">Letztes Update: ${lastUpdate}</p>
+                    </div>
+                `;
+            });
         }
         
         // Schickt "J" (Kommen) an das Fahrzeug
-        async function sendJ() {
-            if (!activeSprechwunschVehicleId) return;
+        async function sendJ(vehicleId) {
+            if (!vehicleId) return;
             
-            const vehicleRef = doc(db, "vehicleStatus", activeSprechwunschVehicleId);
+            const vehicleRef = doc(db, "vehicleStatus", vehicleId);
             try {
-                // Bestätigen (Ack) und Befehl "J" senden.
-                // Die Mobile-App wird dies sehen und ihren Status zurücksetzen.
                 await setDoc(vehicleRef, { 
-                    sprechwunschAck: true, // Verhindert, dass der Listener hier erneut auslöst
+                    sprechwunschAck: true, 
                     lastCommand: {
                         type: "ACK",
                         code: "J",
@@ -803,7 +854,7 @@
                     lastCommandTimestamp: serverTimestamp()
                 }, { merge: true });
                 
-                closeSprechwunschModal();
+                closeSprechwunschModal(); // Schließt das globale Pop-up, falls es offen war
             } catch (error) {
                 console.error("Fehler beim Senden von 'J':", error);
             }
@@ -812,19 +863,19 @@
         function closeSprechwunschModal() {
             sprechwunschModal.classList.add('modal-hidden');
             sprechwunschModal.classList.remove('modal-visible');
-            // Erlaube, dass dasselbe Fahrzeug nach dem Schließen erneut anfragen kann
             if(activeSprechwunschVehicleId) {
                 handledSprechwunschIds.delete(activeSprechwunschVehicleId);
             }
             activeSprechwunschVehicleId = null;
         }
 
-        // 9. NEU: Befehle an Fahrzeuge senden (z.B. "C")
-        async function sendCommandToVehicles(vehicleList, commandCode, message) {
+        // Sendet Befehle an Fahrzeuge
+        async function sendCommandToVehicles(vehicleList, commandCode, message, operationId) {
             const command = {
                 type: "ALARM",
                 code: commandCode,
-                message: message
+                message: message,
+                operationId: operationId // NEU: OperationId mitsenden
             };
             
             for (const vehicleName of vehicleList) {
@@ -840,9 +891,30 @@
             }
             console.log(`Befehl '${commandCode}' an ${vehicleList.length} Fahrzeuge gesendet.`);
         }
+        
+        // NEU: Löscht die Sub-Kollektion "operationLog"
+        async function deleteOperationLog(operationId) {
+            console.log(`Lösche Protokoll für Einsatz ${operationId}...`);
+            const logCollectionRef = collection(db, "operations", operationId, "operationLog");
+            const snapshot = await getDocs(logCollectionRef);
+            
+            if (snapshot.empty) {
+                console.log("Kein Protokoll zum Löschen gefunden.");
+                return;
+            }
+
+            // Batch-Delete für Effizienz
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            
+            await batch.commit();
+            console.log(`Protokoll (${snapshot.size} Einträge) für ${operationId} gelöscht.`);
+        }
 
 
-        // ----- EVENT LISTENERS -----
+        // ----- EVENT LISTENERS (DOM) -----
         window.addEventListener('DOMContentLoaded', () => {
             setLogLevel('Debug');
             app = initializeApp(firebaseConfig);
@@ -857,30 +929,30 @@
                 button.addEventListener('click', () => switchTab(button.dataset.tab));
             });
             
-            // Stichwort/Schlagwort Logik
             stichwortInput.addEventListener('input', updateSchlagwortList);
-            document.getElementById('editStichwort').addEventListener('input', updateSchlagwortList);
+            document.getElementById('commandStichwort').addEventListener('input', updateSchlagwortList);
 
             // Settings-Tab
             saveHomeAddressBtn.addEventListener('click', saveHomeAddress);
             addVehicleBtn.addEventListener('click', addVehicle);
             vehicleListDiv.addEventListener('click', deleteVehicle);
             
-            // Create-Tab
             createForm.addEventListener('submit', handleFormSubmit);
             
-            // Manage-Tab
             document.getElementById('tab-manage').addEventListener('click', handleManageClick);
             
-            // Edit-Modal
-            editModalClose.addEventListener('click', closeEditModal);
+            // Command-Modal
+            commandModalClose.addEventListener('click', closeCommandModal);
             saveOperationChangesBtn.addEventListener('click', saveChanges);
+            // NEU: Event-Delegation für "J Senden" im Modal
+            commandLiveStatusContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('send-j-btn')) {
+                    sendJ(e.target.dataset.vehicleid);
+                }
+            });
             
-            // NEU: Log-Modal
-            logModalClose.addEventListener('click', closeLogModal);
-            
-            // NEU: Sprechwunsch-Modal
-            sprechwunschButtonJ.addEventListener('click', sendJ);
+            // Sprechwunsch-Modal
+            sprechwunschButtonJ.addEventListener('click', () => sendJ(activeSprechwunschVehicleId));
             sprechwunschModalClose.addEventListener('click', closeSprechwunschModal);
         });
 
