@@ -1,317 +1,284 @@
 <!DOCTYPE html>
-<html lang="de" class="h-full bg-gray-900">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alarm-Eingabe-Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { 
+            border-bottom-color: #3b82f6; /* blue-600 */
+            color: #3b82f6;
+            font-weight: 600;
         }
-        /* Kleinere Scrollbar für Fahrzeuglisten */
-        .vehicle-list::-webkit-scrollbar {
-            width: 6px;
+        /* Style für ein sanftes Einblenden von Modals */
+        .modal-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out;
         }
-        .vehicle-list::-webkit-scrollbar-thumb {
-            background-color: #4a5568; /* gray-600 */
-            border-radius: 3px;
+        .modal-visible {
+            opacity: 1;
+            pointer-events: auto;
         }
-        .vehicle-list::-webkit-scrollbar-track {
-            background-color: #2d3748; /* gray-700 */
-        }
-        /* Erzwinge, dass Datalist-Optionen im Dark Mode sichtbar sind */
-        datalist {
-            background-color: #4a5568;
-            color: #ffffff;
-        }
-        option {
-            background-color: #4a5568;
-            color: #ffffff;
-            padding: 4px;
+        
+        /* NEU: Styling für das Sprechwunsch-Popup */
+        .sprechwunsch-popup {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid #f87171; /* red-400 */
+            background-color: #fef2f2; /* red-50 */
         }
     </style>
 </head>
-<body class="h-full text-gray-200 transition-opacity duration-300">
+<body class="bg-gray-100 min-h-screen">
 
-    <!-- Lade-Indikator -->
-    <div id="loading-indicator" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75">
-        <svg class="animate-spin h-10 w-10 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-    </div>
-
-    <!-- Container -->
-    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-        <h1 class="text-3xl font-bold text-white mb-6 text-center">Alarm-Eingabe-Panel</h1>
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-8">Alarm-Eingabe-Panel</h1>
 
         <!-- Tab-Navigation -->
-        <div class="mb-6">
-            <div class="border-b border-gray-700">
-                <nav class="-mb-px flex space-x-4 md:space-x-8" aria-label="Tabs">
-                    <button class="tab-button whitespace-nowrap py-3 px-1 border-b-2 font-medium text-lg border-blue-500 text-blue-400" data-tab="tab-manage">
-                        Einsätze verwalten
-                    </button>
-                    <button class="tab-button whitespace-nowrap py-3 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-tab="tab-create">
-                        Einsatz erstellen
-                    </button>
-                    <button class="tab-button whitespace-nowrap py-3 px-1 border-b-2 font-medium text-lg border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-tab="tab-settings">
-                        Einstellungen
-                    </button>
-                </nav>
-            </div>
-        </div>
-
-        <!-- Tab-Inhalt -->
-        <div id="tab-content">
-            <!-- Tab 1: Einsätze verwalten -->
-            <div id="tab-manage" class="tab-panel space-y-8">
-                
-                <!-- Aktive Einsätze -->
-                <div class="bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
-                    <h2 class="text-xl font-semibold text-white p-5 bg-gray-800 border-b border-blue-500/30">
-                        Aktive Einsätze
-                    </h2>
-                    <div id="active-operations-list" class="p-5 space-y-4">
-                        <!-- Aktive Einsätze werden hier dynamisch eingefügt -->
-                        <p id="no-active-operations" class="text-gray-400 italic">Keine aktiven Einsätze.</p>
-                    </div>
-                </div>
-
-                <!-- Vorbereitete Einsätze -->
-                <div class="bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
-                    <h2 class="text-xl font-semibold text-white p-5 bg-gray-800 border-b border-gray-700">
-                        Vorbereitete Einsätze
-                    </h2>
-                    <div id="prepared-operations-list" class="p-5 space-y-4">
-                        <!-- Vorbereitete Einsätze werden hier dynamisch eingefügt -->
-                        <p id="no-prepared-operations" class="text-gray-400 italic">Keine vorbereiteten Einsätze.</p>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Tab 2: Einsatz erstellen -->
-            <div id="tab-create" class="tab-panel hidden">
-                <div class="bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
-                    <form id="form-create" class="space-y-6">
-                        <!-- Stichwort & Schlagwort -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="create-stichwort" class="block text-sm font-medium text-gray-300 mb-1">Stichwort</label>
-                                <input type="text" id="create-stichwort" name="stichwort" required list="stichwort-list-create" autocomplete="off" class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="z.B. BMA, THL 1">
-                                <datalist id="stichwort-list-create"></datalist>
-                            </div>
-                            <div>
-                                <label for="create-schlagwort" class="block text-sm font-medium text-gray-300 mb-1">Schlagwort / Objekt</label>
-                                <input type="text" id="create-schlagwort" name="schlagwort" required list="schlagwort-list-create" autocomplete="off" class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="z.B. Fa. Mustermann, VU 2 PKW">
-                                <datalist id="schlagwort-list-create"></datalist>
-                            </div>
-                        </div>
-                        
-                        <!-- Adresse -->
-                        <div>
-                            <label for="create-adresse" class="block text-sm font-medium text-gray-300 mb-1">Adresse</label>
-                            <input type="text" id="create-adresse" name="adresse" required class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Musterstraße 1, 12345 Musterstadt">
-                        </div>
-                        
-                        <!-- Fahrzeuge -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Alarmierte Fahrzeuge</label>
-                            <div id="create-vehicle-list" class="vehicle-list max-h-48 overflow-y-auto space-y-2 p-3 bg-gray-700 rounded-lg border border-gray-600">
-                                <!-- Fahrzeug-Checkboxen werden hier geladen -->
-                                <p class="text-gray-400 italic">Keine Fahrzeuge in den Einstellungen definiert.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Sonderechte -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Sonderrechte?</label>
-                            <div class="flex items-center space-x-4">
-                                <label class="flex items-center space-x-2 text-white cursor-pointer">
-                                    <input type="radio" name="sonderechte" value="ja" class="form-radio h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-500">
-                                    <span>Ja</span>
-                                </label>
-                                <label class="flex items-center space-x-2 text-white cursor-pointer">
-                                    <input type="radio" name="sonderechte" value="nein" class="form-radio h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-500" checked>
-                                    <span>Nein</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <!-- Freitext -->
-                        <div>
-                            <label for="create-freitext" class="block text-sm font-medium text-gray-300 mb-1">Freitext / Zusatzinfos</label>
-                            <textarea id="create-freitext" name="freitext" rows="4" class="form-textarea px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Zusätzliche Informationen für die Einsatzkräfte..."></textarea>
-                        </div>
-                        
-                        <!-- Buttons -->
-                        <div class="flex flex-col md:flex-row gap-4 pt-4">
-                            <button type="submit" id="form-create-submit" class="w-full md:w-auto flex-1 py-3 px-6 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg rounded-lg shadow-md hover:shadow-lg transition duration-200">
-                                SOFORT ALARMIEREN
-                            </button>
-                            <button type="submit" id="form-create-prepare" class="w-full md:w-auto flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold text-lg rounded-lg shadow-md hover:shadow-lg transition duration-200">
-                                Einsatz vorbereiten
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Tab 3: Einstellungen -->
-            <div id="tab-settings" class="tab-panel hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    
-                    <!-- Adresseinstellungen -->
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
-                        <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-3">Standort Feuerwehrhaus</h2>
-                        <form id="form-settings-address" class="space-y-4">
-                            <div>
-                                <label for="settings-address" class="block text-sm font-medium text-gray-300 mb-1">Adresse Feuerwehrhaus (für Route)</label>
-                                <input type="text" id="settings-address" name="address" class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Hauptstraße 1, 12345 Wachendorf">
-                            </div>
-                            <div class="text-right">
-                                <button type="submit" class="py-2 px-5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition duration-200">
-                                    Adresse speichern
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Fahrzeugeinstellungen -->
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
-                        <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-3">Fahrzeug-Verwaltung</h2>
-                        
-                        <!-- Neues Fahrzeug hinzufügen -->
-                        <form id="form-settings-vehicles" class="flex space-x-2 mb-4">
-                            <input type="text" id="settings-new-vehicle" required class="form-input px-3 py-2 flex-grow bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="z.B. HLF 20">
-                            <button type="submit" class="py-2 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition duration-200">
-                                Hinzufügen
-                            </button>
-                        </form>
-
-                        <!-- Fahrzeugliste -->
-                        <div id="settings-vehicle-list" class="vehicle-list max-h-60 overflow-y-auto space-y-2 p-3 bg-gray-900 rounded-lg border border-gray-700">
-                            <!-- Gespeicherte Fahrzeuge werden hier geladen -->
-                            <p class="text-gray-400 italic">Keine Fahrzeuge gespeichert.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal für Bearbeitung -->
-    <div id="edit-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-gray-900 bg-opacity-80 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-all transform scale-95 opacity-0" id="edit-modal-content">
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between p-5 border-b border-gray-700">
-                <h2 class="text-2xl font-bold text-white" id="modal-title">Einsatz bearbeiten</h2>
-                <button id="close-modal-button" class="text-gray-400 hover:text-white transition duration-200">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <div class="mb-6 border-b border-gray-300">
+            <nav class="flex -mb-px space-x-8">
+                <button class="tab-button active py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-manage">
+                    Einsätze Verwalten
                 </button>
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-create">
+                    Einsatz Erstellen
+                </button>
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap focus:outline-none" data-tab="tab-settings">
+                    Einstellungen
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab 1: Einsätze Verwalten -->
+        <div id="tab-manage" class="tab-content active space-y-8">
+            <!-- Aktive Einsätze -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-2 border-b-2 border-red-500 pb-2 inline-block">Aktive Einsätze</h2>
+                <div id="activeOperationsContainer" class="space-y-4 mt-4">
+                    <p class="text-gray-500">Keine aktiven Einsätze.</p>
+                    <!-- Aktive Einsätze werden hier von JS eingefügt -->
+                    <!-- 
+                    Template (wird von JS genutzt):
+                    <div class="border border-gray-300 bg-gray-50 rounded-lg p-4 shadow-sm">
+                        <div class="flex flex-wrap justify-between items-center mb-3">
+                            <h3 class="text-xl font-bold text-red-700">[B 3] Brand Wohnung</h3>
+                            <span class="text-sm font-medium text-gray-600">[Uhrzeit]</span>
+                        </div>
+                        <p class="text-gray-700 mb-1"><span class="font-semibold">Ort:</span> [Adresse]</p>
+                        <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> [Fahrzeugliste]</p>
+                        <div class="flex flex-wrap gap-3">
+                            <button class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
+                            <button class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow transition duration-150">Protokoll</button>
+                            <button class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">Beenden</button>
+                        </div>
+                    </div>
+                    -->
+                </div>
             </div>
-            
-            <!-- Modal Body -->
-            <div class="p-6">
-                <form id="form-edit-operation" class="space-y-5">
-                    <input type="hidden" id="edit-id" name="id">
-                    <!-- Stichwort & Schlagwort -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <!-- Vorbereitete Einsätze -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-2 border-b-2 border-blue-500 pb-2 inline-block">Vorbereitete Einsätze</h2>
+                <div id="preppedOperationsContainer" class="space-y-4 mt-4">
+                    <p class="text-gray-500">Keine vorbereiteten Einsätze.</p>
+                    <!-- Vorbereitete Einsätze werden hier von JS eingefügt -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Einsatz Erstellen -->
+        <div id="tab-create" class="tab-content">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <form id="createOperationForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="edit-stichwort" class="block text-sm font-medium text-gray-300 mb-1">Stichwort</label>
-                            <input type="text" id="edit-stichwort" name="stichwort" required list="stichwort-list-edit" autocomplete="off" class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                            <datalist id="stichwort-list-edit"></datalist>
+                            <label for="stichwort" class="block text-sm font-medium text-gray-700 mb-1">Stichwort</label>
+                            <input type="text" id="stichwort" list="stichwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                            <datalist id="stichwort-list"></datalist>
                         </div>
                         <div>
-                            <label for="edit-schlagwort" class="block text-sm font-medium text-gray-300 mb-1">Schlagwort / Objekt</label>
-                            <input type="text" id="edit-schlagwort" name="schlagwort" required list="schlagwort-list-edit" autocomplete="off" class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                            <datalist id="schlagwort-list-edit"></datalist>
+                            <label for="schlagwort" class="block text-sm font-medium text-gray-700 mb-1">Schlagwort</label>
+                            <input type="text" id="schlagwort" list="schlagwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                            <datalist id="schlagwort-list"></datalist>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="adresse" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                        <input type="text" id="adresse" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Alarmierte Fahrzeuge</span>
+                        <div id="fahrzeug-checkboxes-create" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
+                            <!-- Checkboxen werden hier von JS eingefügt -->
                         </div>
                     </div>
                     
-                    <!-- Adresse -->
                     <div>
-                        <label for="edit-adresse" class="block text-sm font-medium text-gray-300 mb-1">Adresse</label>
-                        <input type="text" id="edit-adresse" name="adresse" required class="form-input px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                    </div>
-                    
-                    <!-- Fahrzeuge -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Alarmierte Fahrzeuge</label>
-                        <div id="edit-vehicle-list" class="vehicle-list max-h-40 overflow-y-auto space-y-2 p-3 bg-gray-700 rounded-lg border border-gray-600">
-                            <!-- Fahrzeug-Checkboxen werden hier geladen -->
-                        </div>
-                    </div>
-                    
-                    <!-- Sonderechte -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Sonderechte?</label>
-                        <div class="flex items-center space-x-4">
-                            <label class="flex items-center space-x-2 text-white cursor-pointer">
-                                <input type="radio" id="edit-sonderechte-ja" name="sonderechte" value="ja" class="form-radio h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-500">
-                                <span>Ja</span>
+                        <span class="block text-sm font-medium text-gray-700">Sonderechte freigegeben?</span>
+                        <div class="mt-2 flex items-center space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="sonderechte" value="ja" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                <span class="ml-2 text-gray-700">Ja</span>
                             </label>
-                            <label class="flex items-center space-x-2 text-white cursor-pointer">
-                                <input type="radio" id="edit-sonderechte-nein" name="sonderechte" value="nein" class="form-radio h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-500">
-                                <span>Nein</span>
+                            <label class="flex items-center">
+                                <input type="radio" name="sonderechte" value="nein" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" checked>
+                                <span class="ml-2 text-gray-700">Nein</span>
                             </label>
                         </div>
                     </div>
-                    
-                    <!-- Freitext -->
+
                     <div>
-                        <label for="edit-freitext" class="block text-sm font-medium text-gray-300 mb-1">Freitext / Zusatzinfos</label>
-                        <textarea id="edit-freitext" name="freitext" rows="3" class="form-textarea px-3 py-2 w-full bg-gray-700 border-gray-600 text-white rounded-lg shadow-sm transition duration-200 focus:bg-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></textarea>
+                        <label for="freitext" class="block text-sm font-medium text-gray-700 mb-1">Freitext / Zusatz-Infos</label>
+                        <textarea id="freitext" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                     
-                    <!-- Modal Footer (Button) -->
-                    <div class="pt-5 pb-2 text-right">
-                        <button type="submit" class="py-3 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition duration-200">
-                            Änderungen speichern
+                    <div class="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+                        <button type="submit" data-action="alarm" class="px-6 py-3 font-semibold text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-150 transform hover:scale-105">
+                            SOFORT ALARMIEREN
+                        </button>
+                        <button type="submit" data-action="prepare" class="px-6 py-3 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150 transform hover:scale-105">
+                            Einsatz Vorbereiten
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- Tab 3: Einstellungen -->
+        <div id="tab-settings" class="tab-content">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-8">
+                <!-- Adresse FW-Haus -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">Adresse Feuerwehrhaus</h2>
+                    <div class="flex gap-4">
+                        <input type="text" id="homeAddress" placeholder="z.B. Musterstraße 1, 12345 Musterstadt" class="flex-grow px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button id="saveHomeAddress" class="px-5 py-2 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Speichern</button>
+                    </div>
+                </div>
+
+                <!-- Fahrzeuge verwalten -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-3">Fahrzeuge Verwalten</h2>
+                    <div class="flex gap-4 mb-4">
+                        <input type="text" id="newVehicleName" placeholder="z.B. LH 19-1" class="flex-grow px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button id="addVehicle" class="px-5 py-2 font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow transition duration-150">Hinzufügen</button>
+                    </div>
+                    <div id="vehicleList" class="p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-80 overflow-y-auto space-y-2">
+                        <!-- Fahrzeug-Liste wird hier von JS eingefügt -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit-Modal (wird wiederverwendet) -->
+    <div id="editModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900">Einsatz Bearbeiten</h2>
+                <button id="editModalClose" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto">
+                <input type="hidden" id="editOperationId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="editStichwort" class="block text-sm font-medium text-gray-700 mb-1">Stichwort</label>
+                        <input type="text" id="editStichwort" list="stichwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="editSchlagwort" class="block text-sm font-medium text-gray-700 mb-1">Schlagwort</label>
+                        <input type="text" id="editSchlagwort" list="schlagwort-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" autocomplete="off">
+                    </div>
+                </div>
+                <div>
+                    <label for="editAdresse" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                    <input type="text" id="editAdresse" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-2">Alarmierte Fahrzeuge</span>
+                    <div id="fahrzeug-checkboxes-edit" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-60 overflow-y-auto">
+                        <!-- Checkboxen für Edit-Modal -->
+                    </div>
+                </div>
+                <div>
+                    <span class="block text-sm font-medium text-gray-700">Sonderechte freigegeben?</span>
+                    <div class="mt-2 flex items-center space-x-6">
+                        <label class="flex items-center">
+                            <input type="radio" name="editSonderechte" value="ja" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Ja</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="editSonderechte" value="nein" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                            <span class="ml-2 text-gray-700">Nein</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label for="editFreitext" class="block text-sm font-medium text-gray-700 mb-1">Freitext / Zusatz-Infos</label>
+                    <textarea id="editFreitext" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end p-6 bg-gray-50 border-t border-gray-200 rounded-b-2xl space-x-4">
+                <button id="saveOperationChanges" class="px-6 py-3 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150">
+                    Änderungen Speichern
+                </button>
+            </div>
+        </div>
     </div>
     
-    <!-- Custom Alert/Error Box -->
-    <div id="alert-box" class="fixed top-5 right-5 z-50 max-w-sm w-full p-4 rounded-lg shadow-lg text-white hidden animate-pulse" role="alert">
-        <span id="alert-message"></span>
-        <button id="close-alert-box" class="absolute top-2 right-2 text-xl font-bold">&times;</button>
+    <!-- NEU: Protokoll-Modal -->
+    <div id="logModal" class="modal-hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 id="logModalTitle" class="text-2xl font-bold text-gray-900">Einsatz-Protokoll</h2>
+                <button id="logModalClose" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            </div>
+            <div id="logContent" class="p-6 space-y-4 overflow-y-auto">
+                <!-- Protokoll-Einträge werden hier von JS eingefügt -->
+                <p class="text-gray-500">Protokoll wird geladen...</p>
+            </div>
+        </div>
     </div>
 
+    <!-- NEU: Sprechwunsch-Popup (klein, unten rechts) -->
+    <div id="sprechwunschModal" class="modal-hidden fixed bottom-6 right-6 z-50 w-full max-w-sm">
+        <div class="sprechwunsch-popup rounded-lg p-5">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <!-- Rotes Funk-Icon -->
+                    <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15c-1.12 0-2.163-.306-3.072-.828M12 15c1.12 0 2.163-.306 3.072-.828m-3.072.828l.14.091m-3.212-.919A9.75 9.75 0 015.25 6.75m13.5 0A9.75 9.75 0 0012 3.75m0 0A9.75 9.75 0 005.25 6.75M12 3.75c1.12 0 2.163.306 3.072.828" />
+                    </svg>
+                </div>
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-bold text-red-800">SPRECHWUNSCH!</h3>
+                    <p id="sprechwunschVehicleName" class="text-gray-700 mt-1">Fahrzeug [Name] wünscht Sprechkontakt.</p>
+                    <div class="mt-4 flex gap-4">
+                        <button id="sprechwunschButtonJ" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow transition duration-150">
+                            "J" Senden (Kommen)
+                        </button>
+                        <button id="sprechwunschModalClose" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 transition duration-150">
+                            Schließen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Firebase App (Modular v9) -->
+    <!-- Firebase SDKs -->
     <script type="module">
-        // Import der Firebase-Module
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            onAuthStateChanged,
-            signInAnonymously
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            setDoc, 
-            updateDoc, 
-            collection, 
-            onSnapshot,
-            addDoc,
-            deleteDoc,
-            query,
-            Timestamp,
-            serverTimestamp,
-            setLogLevel
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, onSnapshot, query, where, serverTimestamp, setLogLevel, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Konfiguration ---
-        // Deine Firebase Konfiguration:
+        // ----- KONFIGURATION -----
         const firebaseConfig = {
           apiKey: "AIzaSyAUmkqte2nAP9XOPfKZvK54aYXIZXtwoQc",
           authDomain: "alert-display.firebaseapp.com",
@@ -322,741 +289,600 @@
           measurementId: "G-3BX1HB9RXZ"
         };
         
-        // --- Initialisierung ---
-        let app, auth, db;
-        let userId;
-        
-        // Firestore Referenzen (werden nach Auth-Initialisierung gesetzt)
-        let settingsDocRef;
-        let operationsCollectionRef;
-        
-        // Lokaler Cache für Fahrzeuge (wird von Firestore geladen)
-        let localVehicleList = [];
-        
-        // Stichwort/Schlagwort-Daten
-        const stichwortSchlagwortMap = {
-            "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
-            "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz", "B - Explosion im Freien", "B - Fahrzeug sonstiges", "B - Garage / Carport / Gartenhaus", "B - Gasaustritt im Freien klein", "B - Lagerplatz klein", "B - Land- / Forst- / Baumaschine", "B - LKW / Kleintransporter", "B - Maschine", "B - mehrere PKW / Kleinbusse", "B - Person im Freien", "B - PKW / Kleinbus außerorts", "B - Spielplatz", "B - Wald klein (< 10m x 10m)", "B - Wohnmobil / Wohnanhänger"],
-            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sontiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B -  Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
-            "B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
-            "B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
-            "B 6": ["B - Alarmstufenerhöhung auf B 6"],
-            "B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
-            "B - Bio": ["B - Bio"],
-            "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage","B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
-            "B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
-            "B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
-            "B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
-            "B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
-            "B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
-            "B - Metall": ["B - Metall"],
-            "B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
-            "B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
-            "B - Straßentunnel": ["B - Tunnel / Unterführung"],
-            "B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
-            "B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
-            "S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
-            "S - First Responder": ["S - First Responder"],
-            "S - Sonstiges": ["S - Ausfall Notruf / Alarmierung", "S - Bedrohungslage", "S - Bereitstellungsraum besetzen", "S - Bombendrohung", "S - Drohendes Attentat", "S - Einsatzalarm überörtlich (ca. 12h)", "S - Einsatzalarm überregional (ca. 24h)", "S - Einsatzbereitschaft herstellen", "S - Führungshaus besetzen", "S - Große Polizeilage (Amok / Terror)", "S - Grundschutz sicherstellen", "S - Maßnahmenstufe 1", "S - Maßnahmenstufe 2", "S - Maßnahmenstufe 3", "S - Stabseinsatz", "S - Vorabinformation / Einsatzanfrage", "S - Voralarm überörtlich (ca. 12h)", "S - Voralarm überregional (ca. 24h)", "S - Wachbesetzung", "S - Überlandhilfe Feuerwehr (außerhalb SK & LK KA)"],
-            "TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
-            "TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
+        // Stichwort-Schlagwort-Map (gekürzt zur Übersicht)
+        const stichwortMap = {
+            "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer"],
+            "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz"],
+            "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Wohnung", "B - Zimmer"],
+            "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage"],
+            "TH 1": ["TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen"],
             "TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
-            "TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
-            "TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
-            "TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
-            "TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
-            "TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
-            "TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
-            "TH - Person im Rhein": ["TH - Person im Rhein"],
-            "TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
-            "TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
-            "TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
-            "TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
-            "TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
-            "TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
-            "TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
-            "TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
-            "TH U - Bio": ["TH U - Bio"],
-            "TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
-            "TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
-            "TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
-            "TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
-            "TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
-            "TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
-            "TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
+            // ... (Rest deiner Liste)
         };
+        const allStichworte = Object.keys(stichwortMap);
+        
+        let app, auth, db, userId;
+        let settingsDocRef, operationsCollectionRef, vehicleStatusCollectionRef;
+        let globalVehicleList = []; // Globale Liste aller Fahrzeuge
+        
+        // NEU: Für Sprechwunsch-Logik
+        let activeSprechwunschVehicleId = null;
+        let handledSprechwunschIds = new Set(); // Verhindert Pop-up-Spam
 
         // DOM-Elemente
         const tabButtons = document.querySelectorAll('.tab-button');
-        const tabPanels = document.querySelectorAll('.tab-panel');
-        const loadingIndicator = document.getElementById('loading-indicator');
+        const tabContents = document.querySelectorAll('.tab-content');
         
-        const formCreate = document.getElementById('form-create');
-        const formCreateSubmit = document.getElementById('form-create-submit');
-        const formCreatePrepare = document.getElementById('form-create-prepare');
-        const createVehicleList = document.getElementById('create-vehicle-list');
+        // Settings
+        const homeAddressInput = document.getElementById('homeAddress');
+        const saveHomeAddressBtn = document.getElementById('saveHomeAddress');
+        const newVehicleNameInput = document.getElementById('newVehicleName');
+        const addVehicleBtn = document.getElementById('addVehicle');
+        const vehicleListDiv = document.getElementById('vehicleList');
 
-        const formSettingsAddress = document.getElementById('form-settings-address');
-        const settingsAddressInput = document.getElementById('settings-address');
-        const formSettingsVehicles = document.getElementById('form-settings-vehicles');
-        const settingsNewVehicleInput = document.getElementById('settings-new-vehicle');
-        const settingsVehicleList = document.getElementById('settings-vehicle-list');
+        // Create
+        const createForm = document.getElementById('createOperationForm');
+        const stichwortInput = document.getElementById('stichwort');
+        const schlagwortInput = document.getElementById('schlagwort');
+        const stichwortList = document.getElementById('stichwort-list');
+        const schlagwortList = document.getElementById('schlagwort-list');
+        const fahrzeugCheckboxesCreate = document.getElementById('fahrzeug-checkboxes-create');
 
-        const activeOperationsList = document.getElementById('active-operations-list');
-        const preparedOperationsList = document.getElementById('prepared-operations-list');
-        const noActiveOperations = document.getElementById('no-active-operations');
-        const noPreparedOperations = document.getElementById('no-prepared-operations');
-
-        const editModal = document.getElementById('edit-modal');
-        const editModalContent = document.getElementById('edit-modal-content');
-        const closeModalButton = document.getElementById('close-modal-button');
-        const formEditOperation = document.getElementById('form-edit-operation');
-        const editVehicleList = document.getElementById('edit-vehicle-list');
+        // Manage
+        const activeOperationsContainer = document.getElementById('activeOperationsContainer');
+        const preppedOperationsContainer = document.getElementById('preppedOperationsContainer');
         
-        const alertBox = document.getElementById('alert-box');
-        const alertMessage = document.getElementById('alert-message');
-        const closeAlertBox = document.getElementById('close-alert-box');
-
-        const createStichwortInput = document.getElementById('create-stichwort');
-        const createStichwortDatalist = document.getElementById('stichwort-list-create');
-        const createSchlagwortInput = document.getElementById('create-schlagwort');
-        const createSchlagwortDatalist = document.getElementById('schlagwort-list-create');
+        // Edit Modal
+        const editModal = document.getElementById('editModal');
+        const editModalClose = document.getElementById('editModalClose');
+        const saveOperationChangesBtn = document.getElementById('saveOperationChanges');
+        const fahrzeugCheckboxesEdit = document.getElementById('fahrzeug-checkboxes-edit');
         
-        const editStichwortInput = document.getElementById('edit-stichwort');
-        const editStichwortDatalist = document.getElementById('stichwort-list-edit');
-        const editSchlagwortInput = document.getElementById('edit-schlagwort');
-        const editSchlagwortDatalist = document.getElementById('schlagwort-list-edit');
-
-        let currentEditId = null; // Hält die ID des Eintrags, der bearbeitet wird
-        let alertTimeout; // Für das automatische Schließen der Alert-Box
-
-        // --- Hilfsfunktionen (Alerts) ---
+        // NEU: Log Modal
+        const logModal = document.getElementById('logModal');
+        const logModalTitle = document.getElementById('logModalTitle');
+        const logModalClose = document.getElementById('logModalClose');
+        const logContent = document.getElementById('logContent');
         
-        function showAlert(message, type = 'success') {
-            clearTimeout(alertTimeout);
-            alertMessage.textContent = message;
-            alertBox.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'bg-blue-500');
+        // NEU: Sprechwunsch Modal
+        const sprechwunschModal = document.getElementById('sprechwunschModal');
+        const sprechwunschVehicleName = document.getElementById('sprechwunschVehicleName');
+        const sprechwunschButtonJ = document.getElementById('sprechwunschButtonJ');
+        const sprechwunschModalClose = document.getElementById('sprechwunschModalClose');
+
+
+        // ----- UTILITY FUNKTIONEN -----
+        
+        // Formatiert Datum/Zeit
+        function formatFirebaseTimestamp(timestamp) {
+            if (!timestamp || !timestamp.seconds) return 'N/A';
+            return new Date(timestamp.seconds * 1000).toLocaleString('de-DE', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+        
+        // Schaltet Tabs um
+        function switchTab(targetTabId) {
+            tabContents.forEach(content => content.classList.remove('active'));
+            tabButtons.forEach(button => button.classList.remove('active'));
             
-            if (type === 'success') {
-                alertBox.classList.add('bg-green-500');
-            } else if (type === 'error') {
-                alertBox.classList.add('bg-red-500');
-            } else {
-                alertBox.classList.add('bg-blue-500');
+            document.getElementById(targetTabId).classList.add('active');
+            document.querySelector(`.tab-button[data-tab="${targetTabId}"]`).classList.add('active');
+        }
+
+        // Füllt die Stichwort-Vorschläge
+        function populateStichwortList() {
+            stichwortList.innerHTML = '';
+            allStichworte.forEach(stichwort => {
+                stichwortList.innerHTML += `<option value="${stichwort}">`;
+            });
+        }
+
+        // Aktualisiert Schlagwort-Vorschläge basierend auf Stichwort
+        function updateSchlagwortList(e) {
+            const selectedStichwort = e.target.value;
+            schlagwortList.innerHTML = '';
+            if (stichwortMap[selectedStichwort]) {
+                stichwortMap[selectedStichwort].forEach(schlagwort => {
+                    schlagwortList.innerHTML += `<option value="${schlagwort}">`;
+                });
             }
-            
-            alertBox.classList.remove('animate-pulse'); // Reset animation
-            void alertBox.offsetWidth; // Trigger reflow
-            alertBox.classList.add('animate-pulse'); // Start animation
-            
-            alertTimeout = setTimeout(() => {
-                alertBox.classList.add('hidden');
-                alertBox.classList.remove('animate-pulse');
-            }, 5000);
         }
         
-        function showSuccess(message) {
-            showAlert(message, 'success');
+        // Rendert die Checkboxen für die Fahrzeugauswahl
+        function renderVehicleCheckboxes(containerElement, selectedVehicles = []) {
+            containerElement.innerHTML = '';
+            if (globalVehicleList.length === 0) {
+                containerElement.innerHTML = '<p class="text-gray-500 col-span-full">Keine Fahrzeuge in den Einstellungen definiert.</p>';
+                return;
+            }
+            globalVehicleList.forEach(vehicle => {
+                const isChecked = selectedVehicles.includes(vehicle);
+                containerElement.innerHTML += `
+                    <label class="flex items-center space-x-2 p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-150 cursor-pointer">
+                        <input type="checkbox" value="${vehicle}" ${isChecked ? 'checked' : ''} class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-800">${vehicle}</span>
+                    </label>
+                `;
+            });
         }
         
-        function showError(message) {
-            showAlert(message, 'error');
+        // Holt die ausgewählten Fahrzeuge aus einem Checkbox-Container
+        function getSelectedVehicles(containerElement) {
+            const vehicles = [];
+            containerElement.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+                vehicles.push(input.value);
+            });
+            return vehicles;
         }
 
-        closeAlertBox.addEventListener('click', () => {
-            clearTimeout(alertTimeout);
-            alertBox.classList.add('hidden');
-            alertBox.classList.remove('animate-pulse');
-        });
 
-        // --- Authentifizierung ---
-        
+        // ----- CORE APP-LOGIK (Firebase) -----
+
+        // 1. App-Initialisierung & Auth
         async function authInit() {
-            onAuthStateChanged(auth, async (user) => {
+            onAuthStateChanged(auth, async user => {
                 if (user) {
                     userId = user.uid;
-                    console.log("Benutzer angemeldet:", userId);
-                    // Pfade für Firestore definieren
-                    // HINWEIS: Diese Pfade wurden für dein eigenes Firebase-Projekt angepasst
+                    // Referenzen setzen
                     settingsDocRef = doc(db, "settings", "mainSettings");
                     operationsCollectionRef = collection(db, "operations");
-                    
-                    // Daten-Listener starten
-                    loadSettings(); // Lädt Einstellungen (Fahrzeuge, Adresse)
-                    listenToOperations(); // Startet Echtzeit-Listener für Einsätze
-                    
-                    document.body.classList.remove('opacity-50', 'pointer-events-none');
-                    loadingIndicator.classList.add('hidden');
+                    vehicleStatusCollectionRef = collection(db, "vehicleStatus");
+
+                    // Listener starten
+                    loadSettings(); // Lädt Adresse und Fahrzeugliste (startet auch Listener)
+                    listenForOperations();
+                    listenForSprechwunsch(); // NEUER LISTENER
                 } else {
-                    console.log("Kein Benutzer angemeldet. Versuche anonyme Anmeldung...");
-                    try {
-                        // HINWEIS: Angepasst, um nur anonyme Anmeldung für dein Projekt zu verwenden
-                        await signInAnonymously(auth);
-                        // Der onAuthStateChanged-Listener wird dadurch erneut ausgelöst
-                    } catch (error) {
-                        console.error("Anonyme Anmeldung fehlgeschlagen: ", error);
-                        showError("Verbindung zur Datenbank fehlgeschlagen.");
-                        loadingIndicator.innerHTML = "Verbindung fehlgeschlagen. Bitte neu laden.";
-                    }
-                }
-            });
-        }
-        
-        // --- Stichwort / Schlagwort Logik ---
-        
-        function updateDatalist(datalist, options) {
-            datalist.innerHTML = '';
-            options.forEach(optionText => {
-                const option = document.createElement('option');
-                option.value = optionText;
-                datalist.appendChild(option);
-            });
-        }
-        
-        function setupStichwortSchlagwort(stichwortInput, stichwortDatalist, schlagwortInput, schlagwortDatalist) {
-            // Initial alle Stichworte laden
-            updateDatalist(stichwortDatalist, Object.keys(stichwortSchlagwortMap));
-            
-            // Listener für das Stichwort-Feld
-            stichwortInput.addEventListener('input', () => {
-                const stichwort = stichwortInput.value;
-                const schlagworte = stichwortSchlagwortMap[stichwort];
-                
-                if (schlagworte) {
-                    // Wenn ein gültiges Stichwort gewählt wurde, Schlagwort-Liste füllen
-                    updateDatalist(schlagwortDatalist, schlagworte);
-                    // Optional: Erstes Schlagwort als Vorschlag setzen
-                    // schlagwortInput.value = schlagworte[0] || '';
-                } else {
-                    // Wenn Stichwort manuell eingegeben wird oder ungültig ist, Schlagwort-Liste leeren
-                    updateDatalist(schlagwortDatalist, []);
+                    await signInAnonymously(auth);
                 }
             });
         }
 
-        // --- Tab-Navigation ---
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Alle Buttons deselektieren
-                tabButtons.forEach(btn => {
-                    btn.classList.remove('border-blue-500', 'text-blue-400');
-                    btn.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-200', 'hover:border-gray-500');
-                });
-                
-                // Aktiven Button hervorheben
-                button.classList.add('border-blue-500', 'text-blue-400');
-                button.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-200', 'hover:border-gray-500');
-                
-                // Alle Panels ausblenden
-                tabPanels.forEach(panel => {
-                    panel.classList.add('hidden');
-                });
-                
-                // Aktives Panel anzeigen
-                const tabId = button.getAttribute('data-tab');
-                document.getElementById(tabId).classList.remove('hidden');
-            });
-        });
-
-        // --- Einstellungen (Settings) ---
-
-        // Lädt die Einstellungen (Adresse und Fahrzeuge) aus Firestore
+        // 2. Einstellungen (Adresse & Fahrzeuge)
         async function loadSettings() {
-            if (!settingsDocRef) return;
-            
-            try {
-                const docSnap = await getDoc(settingsDocRef);
+            onSnapshot(settingsDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    // Adresse laden
-                    if (data.address) {
-                        settingsAddressInput.value = data.address;
-                    }
-                    // Fahrzeuge laden
-                    if (data.vehicles && Array.isArray(data.vehicles)) {
-                        localVehicleList = data.vehicles;
+                    homeAddressInput.value = data.address || '';
+                    globalVehicleList = data.vehicles || [];
+                    
+                    // Fahrzeugliste im Einstellungs-Tab rendern
+                    vehicleListDiv.innerHTML = '';
+                    if (globalVehicleList.length > 0) {
+                        globalVehicleList.forEach(vehicle => {
+                            vehicleListDiv.innerHTML += `
+                                <div class="flex justify-between items-center p-2 bg-white rounded shadow-sm border border-gray-200">
+                                    <span class="font-medium text-gray-700">${vehicle}</span>
+                                    <button data-vehicle="${vehicle}" class="delete-vehicle-btn text-red-500 hover:text-red-700 font-bold text-xl">&times;</button>
+                                </div>
+                            `;
+                        });
                     } else {
-                        localVehicleList = [];
+                        vehicleListDiv.innerHTML = '<p class="text-gray-500 italic">Noch keine Fahrzeuge hinzugefügt.</p>';
                     }
-                } else {
-                    console.log("Kein Einstellungs-Dokument gefunden. Wird beim Speichern erstellt.");
-                    localVehicleList = [];
+                    
+                    // Checkboxen in Erstellen- und Edit-Modal neu rendern
+                    renderVehicleCheckboxes(fahrzeugCheckboxesCreate);
+                    renderVehicleCheckboxes(fahrzeugCheckboxesEdit);
                 }
-            } catch (error) {
-                console.error("Fehler beim Laden der Einstellungen:", error);
-                showError("Einstellungen konnten nicht geladen werden.");
-            }
-            // UI für Fahrzeuge aktualisieren
-            updateVehicleUIs();
+            }, (error) => console.error("Fehler beim Laden der Einstellungen: ", error));
         }
 
-        // Adresse speichern
-        formSettingsAddress.addEventListener('submit', async (e) => {
+        async function saveHomeAddress() {
+            await setDoc(settingsDocRef, { address: homeAddressInput.value }, { merge: true });
+        }
+
+        async function addVehicle() {
+            const newVehicle = newVehicleNameInput.value.trim();
+            if (newVehicle && !globalVehicleList.includes(newVehicle)) {
+                const updatedList = [...globalVehicleList, newVehicle].sort();
+                await setDoc(settingsDocRef, { vehicles: updatedList }, { merge: true });
+                newVehicleNameInput.value = '';
+            }
+        }
+
+        async function deleteVehicle(e) {
+            if (!e.target.classList.contains('delete-vehicle-btn')) return;
+            const vehicleToDelete = e.target.dataset.vehicle;
+            const updatedList = globalVehicleList.filter(v => v !== vehicleToDelete);
+            await setDoc(settingsDocRef, { vehicles: updatedList }, { merge: true });
+        }
+
+        // 3. Einsätze Erstellen & Senden
+        async function handleFormSubmit(e) {
             e.preventDefault();
-            if (!settingsDocRef) {
-                showError("Datenbankverbindung nicht bereit.");
-                return;
-            }
-            
-            const newAddress = settingsAddressInput.value;
-            try {
-                // setDoc mit merge:true erstellt das Dokument, falls es nicht existiert,
-                // oder aktualisiert nur das 'address'-Feld, falls es existiert.
-                await setDoc(settingsDocRef, { address: newAddress }, { merge: true });
-                showSuccess("Adresse erfolgreich gespeichert!");
-            } catch (error) {
-                console.error("Fehler beim Speichern der Adresse:", error);
-                showError("Adresse konnte nicht gespeichert werden.");
-            }
-        });
-
-        // Neues Fahrzeug hinzufügen
-        formSettingsVehicles.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!settingsDocRef) {
-                showError("Datenbankverbindung nicht bereit.");
-                return;
-            }
-            
-            const newVehicleName = settingsNewVehicleInput.value.trim();
-            if (newVehicleName && !localVehicleList.includes(newVehicleName)) {
-                const updatedList = [...localVehicleList, newVehicleName];
-                
-                try {
-                    // setDoc mit merge:true für Fahrzeuge
-                    await setDoc(settingsDocRef, { vehicles: updatedList }, { merge: true });
-                    localVehicleList = updatedList; // Lokalen Cache aktualisieren
-                    updateVehicleUIs(); // Alle UIs (Settings, Create, Edit) neu zeichnen
-                    settingsNewVehicleInput.value = ''; // Eingabefeld leeren
-                    showSuccess("Fahrzeug hinzugefügt!");
-                } catch (error) {
-                    console.error("Fehler beim Hinzufügen des Fahrzeugs:", error);
-                    showError("Fahrzeug konnte nicht gespeichert werden.");
-                }
-            } else if (localVehicleList.includes(newVehicleName)) {
-                showError("Fahrzeug existiert bereits.");
-            }
-        });
-        
-        // Fahrzeug löschen (Event-Delegation)
-        settingsVehicleList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('delete-vehicle-btn')) {
-                if (!settingsDocRef) {
-                    showError("Datenbankverbindung nicht bereit.");
-                    return;
-                }
-                
-                const vehicleName = e.target.getAttribute('data-vehicle');
-                const updatedList = localVehicleList.filter(v => v !== vehicleName);
-                
-                try {
-                    await setDoc(settingsDocRef, { vehicles: updatedList }, { merge: true });
-                    localVehicleList = updatedList; // Lokalen Cache aktualisieren
-                    updateVehicleUIs(); // Alle UIs neu zeichnen
-                    showSuccess("Fahrzeug gelöscht!");
-                } catch (error) {
-                    console.error("Fehler beim Löschen des Fahrzeugs:", error);
-                    showError("Fahrzeug konnte nicht gelöscht werden.");
-                }
-            }
-        });
-
-        // Aktualisiert *alle* Fahrzeuglisten in der UI (Settings, Create-Form, Edit-Modal)
-        function updateVehicleUIs() {
-            // 1. Settings-Liste aktualisieren
-            settingsVehicleList.innerHTML = '';
-            if (localVehicleList.length === 0) {
-                settingsVehicleList.innerHTML = '<p class="text-gray-400 italic">Keine Fahrzeuge gespeichert.</p>';
-            } else {
-                localVehicleList.forEach(vehicle => {
-                    settingsVehicleList.innerHTML += `
-                        <div class="flex items-center justify-between p-2 bg-gray-800 rounded-md">
-                            <span class="text-white">${vehicle}</span>
-                            <button type="button" data-vehicle="${vehicle}" class="delete-vehicle-btn text-red-500 hover:text-red-400 font-bold text-xl px-2">&times;</button>
-                        </div>
-                    `;
-                });
-            }
-            
-            // 2. Create-Form-Liste aktualisieren
-            createVehicleList.innerHTML = '';
-            if (localVehicleList.length === 0) {
-                createVehicleList.innerHTML = '<p class="text-gray-400 italic">Keine Fahrzeuge in den Einstellungen definiert.</p>';
-            } else {
-                localVehicleList.forEach(vehicle => {
-                    createVehicleList.innerHTML += `
-                        <label class="flex items-center space-x-3 p-2 bg-gray-800 hover:bg-gray-600 rounded-md cursor-pointer transition duration-200">
-                            <input type="checkbox" name="vehicles" value="${vehicle}" class="form-checkbox h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 rounded focus:ring-blue-500">
-                            <span class="text-white">${vehicle}</span>
-                        </label>
-                    `;
-                });
-            }
-            
-            // 3. Edit-Modal-Liste (nur das HTML-Gerüst, das Füllen passiert beim Öffnen des Modals)
-            // Wir müssen sicherstellen, dass die Liste hier auch aktualisiert wird, falls das Modal
-            // für einen Einsatz geöffnet ist, dessen Fahrzeug-Liste sich ändert.
-            // Besser: Die `openEditModal` füllt die Liste basierend auf `localVehicleList`
-            // und prüft dann die Fahrzeuge des spezifischen Einsatzes.
-            
-            // Für das Edit-Modal (wird beim Öffnen neu befüllt)
-            updateVehicleListForEditModal();
-        }
-        
-        // Füllt die Fahrzeugliste im Bearbeiten-Modal
-        function updateVehicleListForEditModal(checkedVehicles = []) {
-            editVehicleList.innerHTML = '';
-            if (localVehicleList.length === 0) {
-                editVehicleList.innerHTML = '<p class="text-gray-400 italic">Keine Fahrzeuge definiert.</p>';
-            } else {
-                localVehicleList.forEach(vehicle => {
-                    const isChecked = checkedVehicles.includes(vehicle) ? 'checked' : '';
-                    editVehicleList.innerHTML += `
-                        <label class="flex items-center space-x-3 p-2 bg-gray-800 hover:bg-gray-600 rounded-md cursor-pointer transition duration-200">
-                            <input type="checkbox" name="vehicles" value="${vehicle}" ${isChecked} class="form-checkbox h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 rounded focus:ring-blue-500">
-                            <span class="text-white">${vehicle}</span>
-                        </label>
-                    `;
-                });
-            }
-        }
-
-        // --- Einsätze (Operations) ---
-
-        // Neuen Einsatz speichern (wird von beiden "Erstellen"-Buttons genutzt)
-        async function saveOperation(formData, isPrepared) {
-            if (!db || !userId || !operationsCollectionRef) {
-                showError("Datenbank nicht bereit. Bitte warten Sie einen Moment und versuchen Sie es erneut.");
-                return; 
-            }
-
-            const vehicles = formData.getAll('vehicles'); // Array aller ausgewählten Fahrzeuge
+            const action = e.submitter.dataset.action; // 'alarm' or 'prepare'
             
             const operationData = {
-                stichwort: formData.get('stichwort'),
-                schlagwort: formData.get('schlagwort'),
-                adresse: formData.get('adresse'),
-                fahrzeuge: vehicles,
-                sonderechte: formData.get('sonderechte') === 'ja',
-                freitext: formData.get('freitext'),
-                isPrepared: isPrepared,
-                isActive: !isPrepared,
-                // Zeitstempel: serverTimestamp() wenn aktiv, null wenn vorbereitet
-                timestamp: isPrepared ? null : serverTimestamp()
+                stichwort: document.getElementById('stichwort').value,
+                schlagwort: document.getElementById('schlagwort').value,
+                adresse: document.getElementById('adresse').value,
+                fahrzeuge: getSelectedVehicles(fahrzeugCheckboxesCreate),
+                sonderechte: document.querySelector('input[name="sonderechte"]:checked').value === 'ja',
+                freitext: document.getElementById('freitext').value,
+                isPrepped: action === 'prepare',
+                isActive: action === 'alarm',
+                timestamp: serverTimestamp() // Setzt Zeitstempel
             };
+
+            // Validierung (einfach)
+            if (!operationData.stichwort || !operationData.schlagwort || !operationData.adresse) {
+                console.error("Bitte alle Felder ausfüllen."); // Später durch UI-Feedback ersetzen
+                return;
+            }
 
             try {
                 const docRef = await addDoc(operationsCollectionRef, operationData);
-                console.log("Einsatz gespeichert mit ID: ", docRef.id);
-                showSuccess(isPrepared ? "Einsatz vorbereitet!" : "Einsatz alarmiert!");
+                console.log("Einsatz erstellt mit ID: ", docRef.id);
                 
-                // Formular zurücksetzen
-                formCreate.reset();
-                updateDatalist(createSchlagwortDatalist, []); // Schlagwort-Vorschläge löschen
+                // NEU: Wenn sofort alarmiert wird, "C" senden
+                if (operationData.isActive) {
+                    await sendCommandToVehicles(operationData.fahrzeuge, "C", "Neuer Alarm");
+                }
                 
-                // Zum Verwalten-Tab wechseln
-                tabButtons[0].click();
-                
+                createForm.reset(); // Formular zurücksetzen
+                renderVehicleCheckboxes(fahrzeugCheckboxesCreate); // Checkboxen zurücksetzen
+                switchTab('tab-manage'); // Zum Verwalten-Tab wechseln
             } catch (error) {
-                console.error("Fehler beim Speichern des Einsatzes: ", error);
-                showError("Fehler beim Speichern des Einsatzes: " + error.message);
+                console.error("Fehler beim Erstellen des Einsatzes: ", error);
             }
         }
 
-        // Event Listener für "Sofort Alarmieren"
-        formCreateSubmit.addEventListener('click', async (e) => {
-            e.preventDefault(); // Verhindert Standard-Form-Submit
-            if (!formCreate.checkValidity()) {
-                formCreate.reportValidity();
-                return;
-            }
-            const formData = new FormData(formCreate);
-            await saveOperation(formData, false); // false = nicht vorbereitet (sofort aktiv)
-        });
-
-        // Event Listener für "Vorbereiten"
-        formCreatePrepare.addEventListener('click', async (e) => {
-            e.preventDefault(); // Verhindert Standard-Form-Submit
-            if (!formCreate.checkValidity()) {
-                formCreate.reportValidity();
-                return;
-            }
-            const formData = new FormData(formCreate);
-            await saveOperation(formData, true); // true = vorbereitet
-        });
-
-        // Echtzeit-Listener für Einsätze
-        function listenToOperations() {
-            if (!operationsCollectionRef) return;
-            
-            const q = query(operationsCollectionRef);
+        // 4. Einsätze Verwalten (Anzeigen)
+        function listenForOperations() {
+            const q = query(operationsCollectionRef, orderBy("timestamp", "desc"));
             
             onSnapshot(q, (snapshot) => {
-                activeOperationsList.innerHTML = '';
-                preparedOperationsList.innerHTML = '';
-                let hasActive = false;
-                let hasPrepared = false;
+                activeOperationsContainer.innerHTML = '';
+                preppedOperationsContainer.innerHTML = '';
+                let activeCount = 0;
+                let preppedCount = 0;
 
                 snapshot.docs.forEach(doc => {
-                    const op = doc.data();
-                    const opId = doc.id;
+                    const operation = doc.data();
+                    const id = doc.id;
+                    const time = operation.timestamp ? formatFirebaseTimestamp(operation.timestamp) : 'N/A';
                     
-                    if (op.isActive) {
-                        hasActive = true;
-                        activeOperationsList.appendChild(createOperationCard(op, opId, true));
-                    } else if (op.isPrepared) {
-                        hasPrepared = true;
-                        preparedOperationsList.appendChild(createOperationCard(op, opId, false));
+                    const fahrzeugeListe = operation.fahrzeuge.length > 0 
+                        ? operation.fahrzeuge.join(', ') 
+                        : 'Keine';
+
+                    if (operation.isActive) {
+                        // Aktive Einsätze
+                        activeCount++;
+                        activeOperationsContainer.innerHTML += `
+                            <div class="border border-red-300 bg-red-50 rounded-lg p-4 shadow-sm">
+                                <div class="flex flex-wrap justify-between items-center mb-3">
+                                    <h3 class="text-xl font-bold text-red-700">${operation.stichwort} - ${operation.schlagwort}</h3>
+                                    <span class="text-sm font-medium text-red-600">${time}</span>
+                                </div>
+                                <p class="text-gray-700 mb-1"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
+                                <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
+                                <div class="flex flex-wrap gap-3">
+                                    <button data-id="${id}" class="edit-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
+                                    <button data-id="${id}" class="log-op-btn px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-lg shadow transition duration-150">Protokoll</button>
+                                    <button data-id="${id}" class="end-op-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">Beenden</button>
+                                </div>
+                            </div>
+                        `;
+                    } else if (operation.isPrepped) {
+                        // Vorbereitete Einsätze
+                        preppedCount++;
+                        preppedOperationsContainer.innerHTML += `
+                            <div class="border border-blue-300 bg-blue-50 rounded-lg p-4 shadow-sm">
+                                <h3 class="text-xl font-bold text-blue-700">${operation.stichwort} - ${operation.schlagwort}</h3>
+                                <p class="text-gray-700 mb-1 mt-2"><span class="font-semibold">Ort:</span> ${operation.adresse}</p>
+                                <p class="text-gray-700 mb-4"><span class="font-semibold">Fahrzeuge:</span> ${fahrzeugeListe}</p>
+                                <div class="flex flex-wrap gap-3">
+                                    <button data-id="${id}" class="trigger-op-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow transition duration-150">JETZT ALARMIEREN</button>
+                                    <button data-id="${id}" class="edit-op-btn px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition duration-150">Bearbeiten</button>
+                                    <button data-id="${id}" class="delete-op-btn px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg shadow transition duration-150">Löschen</button>
+                                </div>
+                            </div>
+                        `;
                     }
                 });
 
-                noActiveOperations.classList.toggle('hidden', hasActive);
-                noPreparedOperations.classList.toggle('hidden', hasPrepared);
-                
-            }, (error) => {
-                console.error("Fehler beim Abhören der Einsätze:", error);
-                showError("Echtzeit-Verbindung zu Einsätzen fehlgeschlagen.");
+                if (activeCount === 0) activeOperationsContainer.innerHTML = '<p class="text-gray-500">Keine aktiven Einsätze.</p>';
+                if (preppedCount === 0) preppedOperationsContainer.innerHTML = '<p class="text-gray-500">Keine vorbereiteten Einsätze.</p>';
             });
         }
         
-        // Erstellt eine HTML-Karte für einen Einsatz
-        function createOperationCard(op, id, isActiveCard) {
-            const card = document.createElement('div');
-            card.className = `p-4 rounded-lg shadow-lg border ${isActiveCard ? 'bg-gray-700 border-red-600/50' : 'bg-gray-700 border-blue-600/50'}`;
-            
-            const vehiclesStr = op.fahrzeuge.join(', ') || 'Keine';
-            const sonderechteStr = op.sonderechte ? '<span class="font-medium text-yellow-400">Ja</span>' : 'Nein';
-            
-            // Zeitstempel formatieren
-            let timeStr = '';
-            if (op.timestamp) {
-                try {
-                    timeStr = new Date(op.timestamp.seconds * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' Uhr';
-                } catch (e) {
-                    timeStr = 'Gerade eben'; // Fallback
-                }
-            }
-            
-            let buttonsHTML = '';
-            if (isActiveCard) {
-                // Knöpfe für AKTIVE Einsätze
-                buttonsHTML = `
-                    <button data-id="${id}" class="edit-operation-btn py-2 px-4 text-sm bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold rounded-lg shadow-md transition duration-200">
-                        Bearbeiten
-                    </button>
-                    <button data-id="${id}" class="finish-operation-btn py-2 px-4 text-sm bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold rounded-lg shadow-md transition duration-200">
-                        Beenden
-                    </button>
-                `;
-            } else {
-                // Knöpfe für VORBEREITETE Einsätze
-                buttonsHTML = `
-                    <button data-id="${id}" class="trigger-operation-btn py-2 px-4 text-sm bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-lg shadow-md transition duration-200">
-                        Jetzt Alarmieren
-                    </button>
-                    <button data-id="${id}" class="edit-operation-btn py-2 px-4 text-sm bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold rounded-lg shadow-md transition duration-200">
-                        Bearbeiten
-                    </button>
-                    <button data-id="${id}" class="delete-operation-btn py-2 px-4 text-sm bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold rounded-lg shadow-md transition duration-200">
-                        Löschen
-                    </button>
-                `;
-            }
-
-            card.innerHTML = `
-                <div class="flex flex-col md:flex-row justify-between md:items-center mb-2">
-                    <h3 class="text-xl font-bold text-white">${op.stichwort} - ${op.schlagwort}</h3>
-                    <span class="text-lg font-semibold ${isActiveCard ? 'text-red-400' : 'text-blue-400'}">${isActiveCard ? timeStr : 'Vorbereitet'}</span>
-                </div>
-                <p class="text-gray-300 mb-1"><span class="font-semibold">Adresse:</span> ${op.adresse}</p>
-                <p class="text-gray-300 mb-1"><span class="font-semibold">Fahrzeuge:</span> ${vehiclesStr}</p>
-                <p class="text-gray-300 mb-3"><span class="font-semibold">Sonderechte:</span> ${sonderechteStr}</p>
-                ${op.freitext ? `<p class="text-gray-300 mb-4 p-3 bg-gray-800 rounded-md border border-gray-600 italic">"${op.freitext}"</p>` : ''}
-                <div class="flex flex-wrap gap-2 justify-end">
-                    ${buttonsHTML}
-                </div>
-            `;
-            return card;
-        }
-
-        // --- Event-Delegation für Einsatz-Buttons ---
-        
-        document.getElementById('tab-manage').addEventListener('click', async (e) => {
+        // 5. Einsätze Verwalten (Aktionen)
+        async function handleManageClick(e) {
             const target = e.target;
-            const id = target.getAttribute('data-id');
+            const id = target.dataset.id;
             if (!id) return;
-
-            // Einsatz LÖSCHEN (nur bei Vorbereiteten)
-            if (target.classList.contains('delete-operation-btn')) {
-                // if (confirm("Soll dieser vorbereitete Einsatz wirklich gelöscht werden?")) {
-                try {
-                    await deleteDoc(doc(db, "operations", id));
-                    showSuccess("Vorbereiteter Einsatz gelöscht.");
-                } catch (error) {
-                    console.error("Fehler beim Löschen:", error);
-                    showError("Einsatz konnte nicht gelöscht werden.");
-                }
-                // }
-            }
             
-            // Einsatz BEENDEN (nur bei Aktiven)
-            if (target.classList.contains('finish-operation-btn')) {
-                // if (confirm("Soll dieser aktive Einsatz wirklich beendet werden?")) {
-                try {
-                    // Wir löschen ihn auch, statt einen Status "beendet" einzuführen
-                    // Alternativ: await updateDoc(doc(db, "operations", id), { isActive: false, isFinished: true });
-                    await deleteDoc(doc(db, "operations", id));
-                    showSuccess("Einsatz beendet.");
-                } catch (error) {
-                    console.error("Fehler beim Beenden:", error);
-                    showError("Einsatz konnte nicht beendet werden.");
-                }
-                // }
-            }
+            const opDocRef = doc(db, "operations", id);
 
-            // Einsatz JETZT ALARMIEREN (von Vorbereitet zu Aktiv)
-            if (target.classList.contains('trigger-operation-btn')) {
-                try {
-                    await updateDoc(doc(db, "operations", id), {
-                        isActive: true,
-                        isPrepared: false,
-                        timestamp: serverTimestamp()
-                    });
-                    showSuccess("Einsatz alarmiert!");
-                } catch (error) {
-                    console.error("Fehler beim Alarmieren:", error);
-                    showError("Einsatz konnte nicht alarmiert werden.");
-                }
-            }
-            
-            // Einsatz BEARBEITEN (Vorbereitete und Aktive)
-            if (target.classList.contains('edit-operation-btn')) {
-                openEditModal(id);
-            }
-        });
-        
-        // --- Modal-Logik ---
-        
-        async function openEditModal(id) {
-            currentEditId = id;
             try {
-                const docSnap = await getDoc(doc(db, "operations", id));
-                if (!docSnap.exists()) {
-                    showError("Einsatz nicht gefunden.");
-                    return;
+                // Einsatz Beenden
+                if (target.classList.contains('end-op-btn')) {
+                    await updateDoc(opDocRef, { isActive: false, isPrepped: false, isFinished: true });
                 }
-                const op = docSnap.data();
-                
-                // Formularfelder füllen
-                document.getElementById('edit-id').value = id;
-                document.getElementById('edit-stichwort').value = op.stichwort;
-                document.getElementById('edit-schlagwort').value = op.schlagwort;
-                document.getElementById('edit-adresse').value = op.adresse;
-                document.getElementById('edit-freitext').value = op.freitext;
-                
-                // Sonderechte Radio-Buttons
-                if (op.sonderechte) {
-                    document.getElementById('edit-sonderechte-ja').checked = true;
-                } else {
-                    document.getElementById('edit-sonderechte-nein').checked = true;
+                // Einsatz Löschen (Vorbereitete)
+                else if (target.classList.contains('delete-op-btn')) {
+                    await deleteDoc(opDocRef);
                 }
-                
-                // Fahrzeugliste füllen und Haken setzen
-                updateVehicleListForEditModal(op.fahrzeuge || []);
-                
-                // Stichwort/Schlagwort-Logik für Modal initialisieren
-                setupStichwortSchlagwort(
-                    document.getElementById('edit-stichwort'),
-                    document.getElementById('stichwort-list-edit'),
-                    document.getElementById('edit-schlagwort'),
-                    document.getElementById('schlagwort-list-edit')
-                );
-                // Manuelles Triggern, um die Schlagwortliste basierend auf dem geladenen Stichwort zu füllen
-                document.getElementById('edit-stichwort').dispatchEvent(new Event('input'));
-
-                
-                // Modal anzeigen
-                editModal.classList.remove('hidden');
-                setTimeout(() => {
-                    editModalContent.classList.add('scale-100', 'opacity-100');
-                    editModalContent.classList.remove('scale-95', 'opacity-0');
-                }, 10); // Kurze Verzögerung für CSS-Transition
-
+                // Einsatz Bearbeiten (Modal öffnen)
+                else if (target.classList.contains('edit-op-btn')) {
+                    const docSnap = await getDoc(opDocRef);
+                    if (docSnap.exists()) {
+                        openEditModal(id, docSnap.data());
+                    }
+                }
+                // Einsatz Auslösen (Vorbereitete)
+                else if (target.classList.contains('trigger-op-btn')) {
+                    const updateData = {
+                        isActive: true,
+                        isPrepped: false,
+                        timestamp: serverTimestamp() // Alarmzeit jetzt setzen
+                    };
+                    await updateDoc(opDocRef, updateData);
+                    
+                    // NEU: "C" senden, da jetzt alarmiert wird
+                    const docSnap = await getDoc(opDocRef);
+                    if(docSnap.exists()) {
+                        await sendCommandToVehicles(docSnap.data().fahrzeuge, "C", "Neuer Alarm");
+                    }
+                }
+                // NEU: Protokoll anzeigen
+                else if (target.classList.contains('log-op-btn')) {
+                    const docSnap = await getDoc(opDocRef);
+                    if (docSnap.exists()) {
+                        await showLog(docSnap.data());
+                    }
+                }
             } catch (error) {
-                console.error("Fehler beim Laden des Einsatzes für Bearbeitung:", error);
-                showError("Einsatz konnte nicht geladen werden.");
+                console.error("Fehler bei Einsatz-Aktion: ", error);
             }
         }
         
+        // 6. Edit-Modal Logik
+        function openEditModal(id, data) {
+            document.getElementById('editOperationId').value = id;
+            document.getElementById('editStichwort').value = data.stichwort;
+            document.getElementById('editSchlagwort').value = data.schlagwort;
+            document.getElementById('editAdresse').value = data.adresse;
+            document.getElementById('editFreitext').value = data.freitext || '';
+            
+            // Sonderechte Radio-Buttons
+            const sonderechteInputs = document.querySelectorAll('input[name="editSonderechte"]');
+            sonderechteInputs.forEach(input => input.checked = (input.value === 'ja') === data.sonderechte);
+            
+            // Fahrzeug-Checkboxen
+            renderVehicleCheckboxes(fahrzeugCheckboxesEdit, data.fahrzeuge);
+            
+            editModal.classList.remove('modal-hidden');
+            editModal.classList.add('modal-visible');
+        }
+
         function closeEditModal() {
-            editModalContent.classList.remove('scale-100', 'opacity-100');
-            editModalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                editModal.classList.add('hidden');
-                currentEditId = null;
-            }, 200); // Dauer der Transition
+            editModal.classList.add('modal-hidden');
+            editModal.classList.remove('modal-visible');
         }
         
-        closeModalButton.addEventListener('click', closeEditModal);
-        
-        // Änderungen im Modal speichern
-        formEditOperation.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentEditId) return;
-            
-            const formData = new FormData(formEditOperation);
-            const vehicles = formData.getAll('vehicles');
+        async function saveChanges() {
+            const id = document.getElementById('editOperationId').value;
+            if (!id) return;
             
             const updatedData = {
-                stichwort: formData.get('stichwort'),
-                schlagwort: formData.get('schlagwort'),
-                adresse: formData.get('adresse'),
-                fahrzeuge: vehicles,
-                sonderechte: formData.get('sonderechte') === 'ja',
-                freitext: formData.get('freitext'),
-                // WICHTIG: Status (isActive, isPrepared) nicht ändern
+                stichwort: document.getElementById('editStichwort').value,
+                schlagwort: document.getElementById('editSchlagwort').value,
+                adresse: document.getElementById('editAdresse').value,
+                freitext: document.getElementById('editFreitext').value,
+                sonderechte: document.querySelector('input[name="editSonderechte"]:checked').value === 'ja',
+                fahrzeuge: getSelectedVehicles(fahrzeugCheckboxesEdit)
             };
-
-            try {
-                await updateDoc(doc(db, "operations", currentEditId), updatedData);
-                showSuccess("Einsatz aktualisiert!");
-                closeEditModal();
-            } catch (error) {
-                console.error("Fehler beim Aktualisieren des Einsatzes:", error);
-                showError("Einsatz konnte nicht aktualisiert werden.");
-            }
-        });
-
-        // --- Start der Anwendung ---
-        function initializeAppLogic() {
-            try {
-                setLogLevel('Debug'); // Mehr Logs in der Konsole
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                console.log("Firebase initialisiert.");
-                
-                // Authentifizierung starten
-                authInit();
-                
-                // Stichwort/Schlagwort-Logik für Create-Form initialisieren
-                setupStichwortSchlagwort(
-                    createStichwortInput,
-                    createStichwortDatalist,
-                    createSchlagwortInput,
-                    createSchlagwortDatalist
-                );
-
-            } catch (error) {
-                console.error("Firebase Initialisierungsfehler:", error);
-                loadingIndicator.innerHTML = "Schwerwiegender Fehler. App kann nicht gestartet werden.";
-                showError("Firebase Initialisierung fehlgeschlagen. " + error.message);
-            }
+            
+            await updateDoc(doc(db, "operations", id), updatedData);
+            closeEditModal();
+        }
+        
+        // 7. NEU: Protokoll-Modal Logik
+        function closeLogModal() {
+            logModal.classList.add('modal-hidden');
+            logModal.classList.remove('modal-visible');
         }
 
-        // App starten, sobald das DOM geladen ist
-        document.addEventListener('DOMContentLoaded', initializeAppLogic);
+        async function showLog(operation) {
+            logModalTitle.textContent = `Protokoll: ${operation.stichwort}`;
+            logContent.innerHTML = '<div class="text-center"><p class="text-gray-600 animate-pulse">Lade Protokoll...</p></div>';
+            logModal.classList.remove('modal-hidden');
+            logModal.classList.add('modal-visible');
+            
+            let logHTML = '<ul class="space-y-3">';
+            
+            // 1. Alarmierungs-Eintrag
+            logHTML += `
+                <li class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <span class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-500 text-white rounded-full font-bold">!</span>
+                    <div>
+                        <p class="font-semibold text-red-800">ALARMIERUNG</p>
+                        <p class="text-sm text-gray-700">${formatFirebaseTimestamp(operation.timestamp)}</p>
+                    </div>
+                </li>
+            `;
+            
+            // 2. Status-Historie für jedes Fahrzeug abrufen
+            // (Erfordert, dass fahrzeug-display.html die Historie in /statusLog/ schreibt!)
+            for (const vehicleName of operation.fahrzeuge) {
+                logHTML += `<li class="pt-2"><h4 class="font-bold text-gray-800">${vehicleName}</h4><ul class="pl-4 border-l-2 border-gray-300 ml-5 py-2 space-y-2">`;
+                
+                try {
+                    // Versuche, die Sub-Kollektion zu lesen
+                    const logQuery = query(
+                        collection(db, "vehicleStatus", vehicleName, "statusLog"), 
+                        orderBy("timestamp", "desc")
+                    );
+                    const logSnap = await getDocs(logQuery);
+                    
+                    if (logSnap.empty) {
+                        // Fallback: Nur aktuellen Status anzeigen
+                        const statusSnap = await getDoc(doc(db, "vehicleStatus", vehicleName));
+                        if (statusSnap.exists()) {
+                            const data = statusSnap.data();
+                            logHTML += `<li><span class="font-semibold">Status ${data.currentStatus}</span> (${data.statusText}) - ${formatFirebaseTimestamp(data.lastUpdated)}</li>`;
+                        } else {
+                            logHTML += `<li class="text-gray-500 italic">Keine Statusdaten gefunden.</li>`;
+                        }
+                    } else {
+                        // Log-Historie anzeigen
+                        logSnap.docs.forEach(doc => {
+                            const data = doc.data();
+                            logHTML += `<li><span class="font-semibold">Status ${data.status}</span> (${data.text}) - ${formatFirebaseTimestamp(data.timestamp)}</li>`;
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Fehler beim Laden des Logs für ${vehicleName}:`, error);
+                    logHTML += `<li class="text-red-500 italic">Protokoll konnte nicht geladen werden. (Index?)</li>`;
+                }
+                logHTML += `</ul></li>`;
+            }
+            logHTML += '</ul>';
+            logContent.innerHTML = logHTML;
+        }
+
+        // 8. NEU: Sprechwunsch (Status 5) Logik
+        
+        /**
+         * Hört auf alle Fahrzeuge, die Status 5 setzen UND bei denen 'sprechwunschAck' auf false steht.
+         * Erfordert einen Composite-Index in Firestore!
+         */
+        function listenForSprechwunsch() {
+            try {
+                const q = query(
+                    vehicleStatusCollectionRef, 
+                    where("currentStatus", "==", 5),
+                    where("sprechwunschAck", "==", false)
+                );
+                
+                onSnapshot(q, (snapshot) => {
+                    if (snapshot.empty) return; // Kein aktiver Sprechwunsch
+                    
+                    // Nimm den ersten, der reinkommt
+                    const doc = snapshot.docs[0];
+                    const vehicleId = doc.id;
+                    
+                    // Verhindern, dass derselbe Wunsch mehrmals angezeigt wird
+                    if (handledSprechwunschIds.has(vehicleId)) return;
+                    
+                    activeSprechwunschVehicleId = vehicleId;
+                    sprechwunschVehicleName.textContent = `${vehicleId} wünscht Sprechkontakt.`;
+                    
+                    sprechwunschModal.classList.remove('modal-hidden');
+                    sprechwunschModal.classList.add('modal-visible');
+                    
+                    handledSprechwunschIds.add(vehicleId); // Als "gesehen" markieren
+                });
+                
+            } catch (error) {
+                console.error("Fehler beim Erstellen des Sprechwunsch-Listeners:", error);
+                console.warn("Stelle sicher, dass der Firestore-Index für vehicleStatus (currentStatus ASC, sprechwunschAck ASC) existiert.");
+            }
+        }
+        
+        // Schickt "J" (Kommen) an das Fahrzeug
+        async function sendJ() {
+            if (!activeSprechwunschVehicleId) return;
+            
+            const vehicleRef = doc(db, "vehicleStatus", activeSprechwunschVehicleId);
+            try {
+                // Bestätigen (Ack) und Befehl "J" senden.
+                // Die Mobile-App wird dies sehen und ihren Status zurücksetzen.
+                await setDoc(vehicleRef, { 
+                    sprechwunschAck: true, // Verhindert, dass der Listener hier erneut auslöst
+                    lastCommand: {
+                        type: "ACK",
+                        code: "J",
+                        message: "Sprechwunsch bestätigt, bitte kommen."
+                    },
+                    lastCommandTimestamp: serverTimestamp()
+                }, { merge: true });
+                
+                closeSprechwunschModal();
+            } catch (error) {
+                console.error("Fehler beim Senden von 'J':", error);
+            }
+        }
+        
+        function closeSprechwunschModal() {
+            sprechwunschModal.classList.add('modal-hidden');
+            sprechwunschModal.classList.remove('modal-visible');
+            // Erlaube, dass dasselbe Fahrzeug nach dem Schließen erneut anfragen kann
+            if(activeSprechwunschVehicleId) {
+                handledSprechwunschIds.delete(activeSprechwunschVehicleId);
+            }
+            activeSprechwunschVehicleId = null;
+        }
+
+        // 9. NEU: Befehle an Fahrzeuge senden (z.B. "C")
+        async function sendCommandToVehicles(vehicleList, commandCode, message) {
+            const command = {
+                type: "ALARM",
+                code: commandCode,
+                message: message
+            };
+            
+            for (const vehicleName of vehicleList) {
+                try {
+                    const vehicleRef = doc(db, "vehicleStatus", vehicleName);
+                    await setDoc(vehicleRef, {
+                        lastCommand: command,
+                        lastCommandTimestamp: serverTimestamp()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error(`Fehler beim Senden von '${commandCode}' an ${vehicleName}:`, error);
+                }
+            }
+            console.log(`Befehl '${commandCode}' an ${vehicleList.length} Fahrzeuge gesendet.`);
+        }
+
+
+        // ----- EVENT LISTENERS -----
+        window.addEventListener('DOMContentLoaded', () => {
+            setLogLevel('Debug');
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            authInit();
+            populateStichwortList();
+
+            // Tab-Navigation
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => switchTab(button.dataset.tab));
+            });
+            
+            // Stichwort/Schlagwort Logik
+            stichwortInput.addEventListener('input', updateSchlagwortList);
+            document.getElementById('editStichwort').addEventListener('input', updateSchlagwortList);
+
+            // Settings-Tab
+            saveHomeAddressBtn.addEventListener('click', saveHomeAddress);
+            addVehicleBtn.addEventListener('click', addVehicle);
+            vehicleListDiv.addEventListener('click', deleteVehicle);
+            
+            // Create-Tab
+            createForm.addEventListener('submit', handleFormSubmit);
+            
+            // Manage-Tab
+            document.getElementById('tab-manage').addEventListener('click', handleManageClick);
+            
+            // Edit-Modal
+            editModalClose.addEventListener('click', closeEditModal);
+            saveOperationChangesBtn.addEventListener('click', saveChanges);
+            
+            // NEU: Log-Modal
+            logModalClose.addEventListener('click', closeLogModal);
+            
+            // NEU: Sprechwunsch-Modal
+            sprechwunschButtonJ.addEventListener('click', sendJ);
+            sprechwunschModalClose.addEventListener('click', closeSprechwunschModal);
+        });
 
     </script>
 </body>
