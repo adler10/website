@@ -9,14 +9,11 @@
     <!-- 1. STYLES -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #000; color: #fff; user-select: none; -webkit-user-select: none; }
-        /* Scrollbars */
+        body { background-color: #000; color: #fff; user-select: none; -webkit-user-select: none; margin: 0; overscroll-behavior-y: none; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-        
-        /* Monitor specific lock */
-        .monitor-mode { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        .monitor-mode { overflow: hidden; position: fixed; width: 100%; height: 100%; touch-action: none; }
     </style>
 
     <!-- 2. REACT & BABEL -->
@@ -36,11 +33,10 @@
     <script type="text/babel" data-type="module">
         const { useState, useEffect, useRef, memo } = React;
 
-        // --- ICONS CONFIG ---
+        // --- ICONS ---
         const ICONS = {
             Battery: <g><path d="M6 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="M22 11v2"/></g>,
             Wifi: <g><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></g>,
-            Settings: <g><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g>,
             Bell: <g><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></g>,
             Activity: <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>,
             X: <g><path d="M18 6 6 18"/><path d="m6 6 12 12"/></g>,
@@ -48,12 +44,12 @@
             Monitor: <g><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></g>,
             Smartphone: <g><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></g>,
             Heart: <path d="M19 14c1.49-1.28 3.6-2.34 4.5-4.25A3.94 3.94 0 0 0 12 10.5c-3.28-3.25-8.53-8.6-11 1.25-1 3.95.5 7.25 4.5 11.25 5.73 5.74 11.42 1.56 13.5-.5Z" />,
+            Trend: <g><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></g>,
+            Patient: <g><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>,
+            Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         };
-
         const Icon = ({ name, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                {ICONS[name] || null}
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{ICONS[name] || null}</svg>
         );
 
         // --- CONFIG ---
@@ -67,8 +63,7 @@
             measurementId: "G-GLX59X75WJ"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
         const APP_ID = "corpuls-gh-pages-v1"; 
@@ -82,23 +77,20 @@
           let amp = 1.0; let sDepth = 1.0;
           if (lead === 'I') { amp = 0.6; sDepth = 0.5; } else if (lead === 'II') { amp = 1.2; sDepth = 1.0; } else if (lead === 'III') { amp = 0.7; sDepth = 1.8; }
           const rHeight = (amp * 1.0) + (Math.sin(variationSeed) * 0.05); 
-          const tHeight = 0.15 + (Math.cos(variationSeed) * 0.02);
           if (p > 0.1 && p < 0.2) y += 0.1 * Math.sin((p - 0.1) * Math.PI * 10); 
           else if (p > 0.43 && p < 0.45) y -= 0.15 * rHeight; 
-          else if (p >= 0.45 && p < 0.48) y += 1.0 * rHeight; 
+          else if (p >= 0.45 && p < 0.48) y += rHeight * Math.sin(((p - 0.45) / 0.03) * Math.PI);
           else if (p >= 0.48 && p < 0.50) y -= 0.25 * rHeight * sDepth; 
-          else if (p > 0.7 && p < 0.85) y += tHeight * Math.sin((p - 0.7) * Math.PI * 6.6); 
+          else if (p > 0.7 && p < 0.85) y += 0.15 * Math.sin((p - 0.7) * Math.PI * 6.6); 
           return y;
         };
-
         const getPlethValue = (progress, type) => {
             if (type === 'Asystole' || type === 'VFib') return 0;
-            const p = progress; let y = 0;
-            if (p < 0.3) y = Math.sin(p * Math.PI * 3.33);
-            else if (p >= 0.3 && p < 0.6) y = 0.3 * Math.sin((p - 0.3) * Math.PI * 3.33);
-            return y;
+            const p = progress;
+            if (p < 0.2) return Math.sin(p * Math.PI * 5) * 1.0;
+            if (p >= 0.2 && p < 0.5) return Math.sin((p - 0.2) * Math.PI * 3.33) * 0.3;
+            return 0;
         };
-
         const getCapnoValue = (progress, type) => {
             if (type === 'Asystole') return 0;
             const p = progress; let y = 0;
@@ -109,31 +101,49 @@
             return Math.max(0, y);
         };
 
-        // --- COMPONENTS ---
+        // --- WAVEFORM COMPONENT ---
         const WaveformCanvas = memo(({ label, color, gridColor, rhythmType, waveType = 'ecg', lead = 'II', targetRate }) => {
+            const containerRef = useRef(null);
             const canvasRef = useRef(null);
             const requestRef = useRef(null);
-            const stateRef = useRef({ phase: 0, variation: 0, cursor: 0, buffer: [], currentSmoothedRate: 80 });
+            const stateRef = useRef({ phase: 0, variation: 0, cursor: 0, buffer: null, currentSmoothedRate: 80, width: 0, height: 0 });
 
-            useEffect(() => { if (canvasRef.current) stateRef.current.buffer = new Array(canvasRef.current.width).fill(0); }, []);
+            useEffect(() => {
+                const container = containerRef.current;
+                const canvas = canvasRef.current;
+                if (!container || !canvas) return;
+                const resizeObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        const { width, height } = entry.contentRect;
+                        const dpr = window.devicePixelRatio || 1;
+                        canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+                        canvas.width = Math.floor(width * dpr); canvas.height = Math.floor(height * dpr);
+                        const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+                        const logicalWidth = Math.floor(width);
+                        stateRef.current.width = logicalWidth; stateRef.current.height = height;
+                        stateRef.current.buffer = new Float32Array(logicalWidth).fill(0);
+                        stateRef.current.cursor = 0;
+                    }
+                });
+                resizeObserver.observe(container);
+                return () => resizeObserver.disconnect();
+            }, []);
 
             const animate = () => {
                 const canvas = canvasRef.current;
-                if (!canvas) return;
+                if (!canvas || !stateRef.current.buffer) { requestRef.current = requestAnimationFrame(animate); return; }
                 const ctx = canvas.getContext('2d');
-                const width = canvas.width; const height = canvas.height;
+                const { width, height, buffer } = stateRef.current;
 
                 const target = targetRate.current; 
                 const diff = target - stateRef.current.currentSmoothedRate;
                 stateRef.current.currentSmoothedRate += diff * 0.05; 
-                
                 let effectiveRate = stateRef.current.currentSmoothedRate;
                 if (rhythmType !== 'Asystole' && rhythmType !== 'VFib') effectiveRate += Math.sin(Date.now() / 500) * 2; 
                 if (waveType === 'co2') effectiveRate = effectiveRate / 4;
                 if (waveType === 'ecg' && rhythmType === 'VFib') effectiveRate = 300;
 
-                const eventsPerSecond = effectiveRate / 60;
-                const phaseStep = eventsPerSecond / 60; 
+                const eventsPerSecond = effectiveRate / 60; const phaseStep = eventsPerSecond / 60; 
                 stateRef.current.phase += phaseStep;
                 if (stateRef.current.phase >= 1) { stateRef.current.phase -= 1; stateRef.current.variation = Math.random() * 100; }
 
@@ -142,54 +152,49 @@
                 else if (waveType === 'pleth') { let p = stateRef.current.phase - 0.2; if (p < 0) p += 1; newValue = getPlethValue(p, rhythmType); }
                 else if (waveType === 'co2') { newValue = getCapnoValue(stateRef.current.phase, rhythmType); }
 
-                const speed = 2; 
+                const speed = 2;
                 for(let s=0; s<speed; s++) {
                     stateRef.current.cursor++;
                     if (stateRef.current.cursor >= width) stateRef.current.cursor = 0;
-                    if (stateRef.current.buffer) stateRef.current.buffer[stateRef.current.cursor] = newValue;
+                    buffer[stateRef.current.cursor] = newValue;
                 }
 
                 ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
                 ctx.strokeStyle = gridColor || '#333'; ctx.lineWidth = 1; ctx.beginPath();
-                for (let x = 0; x < width; x += 25) ctx.moveTo(x, 0), ctx.lineTo(x, height);
-                for (let y = 0; y < height; y += 25) ctx.moveTo(0, y), ctx.lineTo(width, y);
+                for (let x = 0; x < width; x += 25) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
+                for (let y = 0; y < height; y += 25) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
                 ctx.stroke();
 
-                ctx.strokeStyle = color; ctx.lineWidth = waveType === 'co2' ? 3 : 2; ctx.lineJoin = 'round';
-                if (stateRef.current.buffer) {
-                    ctx.beginPath();
-                    const cursor = stateRef.current.cursor; const eraserGap = 30; 
-                    const scaleY = (val) => {
-                        let scaler = height / 3; let offset = height / 2;
-                        if (waveType === 'co2') { scaler = height / 1.5; offset = height - 10; }
-                        return offset - (val * scaler);
-                    }
-                    if (cursor + eraserGap < width) {
-                        for (let i = cursor + eraserGap; i < width; i++) {
-                            if (i === cursor + eraserGap) ctx.moveTo(i, scaleY(stateRef.current.buffer[i]));
-                            else ctx.lineTo(i, scaleY(stateRef.current.buffer[i]));
-                        }
-                    }
-                    ctx.stroke(); ctx.beginPath();
-                    for (let i = 0; i < cursor; i++) {
-                        if (i === 0) ctx.moveTo(i, scaleY(stateRef.current.buffer[i]));
-                        else ctx.lineTo(i, scaleY(stateRef.current.buffer[i]));
-                    }
-                    ctx.stroke();
-                    
-                    const gradient = ctx.createLinearGradient(cursor, 0, cursor - 10, 0);
-                    gradient.addColorStop(0, color); gradient.addColorStop(1, "transparent");
-                    ctx.fillStyle = gradient; ctx.globalAlpha = 0.3; ctx.fillRect(cursor - 10, 0, 10, height); 
-                    ctx.globalAlpha = 1.0; ctx.fillStyle = '#000'; ctx.fillRect(cursor, 0, eraserGap, height); 
+                ctx.strokeStyle = color; ctx.lineWidth = waveType === 'co2' ? 3 : 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                const eraserGap = 40; const newCursor = stateRef.current.cursor;
+                const scaleY = (val) => {
+                    let scaler = height / 3; let offset = height / 2;
+                    if (waveType === 'co2') { scaler = height / 1.5; offset = height - 10; }
+                    return offset - (val * scaler);
                 }
+
+                ctx.beginPath();
+                let startOld = newCursor + eraserGap;
+                if (startOld < width) {
+                    ctx.moveTo(startOld, scaleY(buffer[startOld]));
+                    for (let i = startOld + 1; i < width; i++) { ctx.lineTo(i, scaleY(buffer[i])); }
+                }
+                ctx.moveTo(0, scaleY(buffer[0]));
+                for (let i = 1; i <= newCursor; i++) { ctx.lineTo(i, scaleY(buffer[i])); }
+                ctx.stroke();
+
+                const gradient = ctx.createLinearGradient(newCursor, 0, newCursor - 15, 0);
+                gradient.addColorStop(0, color); gradient.addColorStop(1, "transparent");
+                ctx.fillStyle = gradient; ctx.globalAlpha = 0.4; ctx.fillRect(newCursor - 15, 0, 15, height); ctx.globalAlpha = 1.0;
+                if (newCursor + eraserGap > width) { ctx.fillStyle = '#000'; ctx.fillRect(newCursor, 0, width - newCursor, height); ctx.fillRect(0, 0, (newCursor + eraserGap) - width, height);
+                } else { ctx.fillStyle = '#000'; ctx.fillRect(newCursor, 0, eraserGap, height); }
                 requestRef.current = requestAnimationFrame(animate);
             };
-
             useEffect(() => { requestRef.current = requestAnimationFrame(animate); return () => cancelAnimationFrame(requestRef.current); }, [rhythmType, waveType, lead]);
             return (
-                <div className="w-full h-full bg-black relative overflow-hidden group flex-1">
-                    <canvas ref={canvasRef} width={600} height={160} className="w-full h-full block" />
-                    <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/50 font-bold font-mono text-lg drop-shadow-md" style={{ color }}>{label}</div>
+                <div ref={containerRef} className="w-full h-full bg-black relative group flex-1">
+                    <canvas ref={canvasRef} className="block" />
+                    <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/50 font-bold font-mono text-lg drop-shadow-md select-none pointer-events-none" style={{ color }}>{label}</div>
                 </div>
             );
         });
@@ -210,23 +215,21 @@
         ));
 
         const SoftKey = ({ label, active, onClick, color = "text-gray-300", icon }) => (
-            <button onClick={onClick} className={`flex-1 border-r border-gray-700 h-14 flex flex-col items-center justify-center text-xs font-bold transition-colors uppercase tracking-wide cursor-pointer ${active ? 'bg-gray-200 text-black' : 'bg-gray-900 hover:bg-gray-800'} ${active ? '' : color}`}>
+            <button onClick={onClick} className={`flex-1 border-r border-gray-700 h-14 flex flex-col items-center justify-center text-xs font-bold transition-colors uppercase tracking-wide cursor-pointer active:bg-gray-800 ${active ? 'bg-gray-200 text-black' : 'bg-gray-900 hover:bg-gray-800'} ${active ? '' : color}`}>
                 {icon && <Icon name={icon} size={14} className="mb-1"/>}
                 {label}
             </button>
         );
 
-        // --- MONITOR SCREEN ---
+        // --- MONITOR VIEW ---
         const MonitorView = ({ sessionData }) => {
             const [nibpState, setNibpState] = useState({ status: 'IDLE', pressure: 0 });
+            const [activeModal, setActiveModal] = useState(null); 
             const liveHRRef = useRef(80);
             const [displayHR, setDisplayHR] = useState(80);
 
-            // Enable lock mode on mount
-            useEffect(() => {
-                document.body.classList.add('monitor-mode');
-                return () => document.body.classList.remove('monitor-mode');
-            }, []);
+            // Lock body scrolling
+            useEffect(() => { document.body.classList.add('monitor-mode'); return () => document.body.classList.remove('monitor-mode'); }, []);
 
             useEffect(() => {
                 if (!sessionData) return;
@@ -234,10 +237,11 @@
                     setNibpState({ status: 'INFLATING', pressure: 0 });
                     db.doc(`artifacts/${APP_ID}/public/data/sessions/default`).update({ nibpCommand: 'ACK' });
                 }
-                let target = sessionData.rhythm === 'Sinus' ? 80 : sessionData.rhythm === 'Brady' ? 40 : sessionData.rhythm === 'Tachy' ? 150 : sessionData.rhythm === 'VFib' ? 300 : 0;
-                if (sessionData.targetHR !== undefined && sessionData.targetHR !== null) { target = sessionData.targetHR; }
-                liveHRRef.current = target;
+                let target = sessionData.targetHR || 80;
+                if (sessionData.rhythm === 'VFib') target = 300; 
+                else if (sessionData.rhythm === 'Asystole') target = 0;
                 
+                liveHRRef.current = target;
                 const timer = setInterval(() => {
                     if (sessionData.rhythm === 'VFib') setDisplayHR('---');
                     else if (sessionData.rhythm === 'Asystole') setDisplayHR(0);
@@ -249,10 +253,7 @@
             useEffect(() => {
                 let interval;
                 if (nibpState.status === 'INFLATING') {
-                    interval = setInterval(() => setNibpState(p => {
-                         if(p.pressure >= 170) return { status: 'MEASURING', pressure: 170 };
-                         return { ...p, pressure: p.pressure + 8 };
-                    }), 100);
+                    interval = setInterval(() => setNibpState(p => { if(p.pressure >= 170) return { status: 'MEASURING', pressure: 170 }; return { ...p, pressure: p.pressure + 8 }; }), 100);
                 } else if (nibpState.status === 'MEASURING') {
                     interval = setInterval(() => setNibpState(p => {
                         if(p.pressure <= 80) {
@@ -269,45 +270,83 @@
 
             if (!sessionData) return <div className="flex items-center justify-center h-screen bg-black text-white">Connecting...</div>;
             
-            const getNibpDisplay = () => {
-                if (nibpState.status !== 'IDLE') return <span className="text-yellow-400 animate-pulse">CUFF {nibpState.pressure}</span>;
-                return <span>{sessionData.nibp?.sys || 120}<span className="text-2xl">/{sessionData.nibp?.dia || 80}</span></span>;
+            // Alarm Logic
+            const limits = sessionData.alarms || { hrHigh: 120, hrLow: 50, spo2Low: 90 };
+            const isHrAlarm = displayHR !== '---' && (displayHR > limits.hrHigh || (displayHR < limits.hrLow && displayHR !== 0));
+            const isSpo2Alarm = sessionData.spo2 < limits.spo2Low;
+            const isRhythmAlarm = sessionData.rhythm === 'VFib' || sessionData.rhythm === 'Asystole';
+            const isNightMode = sessionData.settings?.nightMode || false;
+
+            const renderModal = () => {
+                if (!activeModal) return null;
+                const close = () => setActiveModal(null);
+                const wrapperClass = "absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8";
+                
+                if (activeModal === 'PATIENT') return (
+                    <div className={wrapperClass} onClick={close}>
+                        <div className="bg-gray-800 border border-gray-600 rounded p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center border-b border-gray-600 pb-2 mb-4"><h2 className="text-lg font-bold flex items-center gap-2"><Icon name="Patient" /> Patient Data</h2><button onClick={close}><Icon name="X" /></button></div>
+                            <div className="space-y-4"><div className="p-4 bg-black/30 rounded border border-gray-700"><div className="text-sm text-gray-400 mb-1">NAME</div><div className="text-xl font-mono">{sessionData.patient?.name || "Unknown"}</div></div><div className="flex gap-4"><div className="p-4 bg-black/30 rounded border border-gray-700 flex-1"><div className="text-sm text-gray-400 mb-1">AGE</div><div className="text-xl font-mono">{sessionData.patient?.age || "--"}</div></div><div className="p-4 bg-black/30 rounded border border-gray-700 flex-1"><div className="text-sm text-gray-400 mb-1">SEX</div><div className="text-xl font-mono">M</div></div></div></div>
+                        </div>
+                    </div>
+                );
+                if (activeModal === 'ALARMS') return (
+                    <div className={wrapperClass} onClick={close}>
+                         <div className="bg-gray-800 border border-gray-600 rounded p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center border-b border-gray-600 pb-2 mb-4"><h2 className="text-lg font-bold text-red-500 flex items-center gap-2"><Icon name="Bell" /> Alarm Limits</h2><button onClick={close}><Icon name="X" /></button></div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center bg-black p-3 rounded border border-gray-700"><span>HR High</span> <span className="text-xl font-mono font-bold">{limits.hrHigh}</span></div>
+                                <div className="flex justify-between items-center bg-black p-3 rounded border border-gray-700"><span>HR Low</span> <span className="text-xl font-mono font-bold">{limits.hrLow}</span></div>
+                                <div className="flex justify-between items-center bg-black p-3 rounded border border-gray-700"><span>SpO2 Low</span> <span className="text-xl font-mono font-bold">{limits.spo2Low}</span></div>
+                            </div>
+                         </div>
+                    </div>
+                );
+                if (activeModal === 'MENU') return (
+                    <div className="absolute inset-0 z-50" onClick={close}>
+                        <div className="absolute bottom-16 right-0 w-64 bg-gray-800 border border-gray-600 shadow-xl rounded-tl-lg overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="p-3 border-b border-gray-700 font-bold text-xs uppercase bg-gray-700 flex items-center gap-2"><Icon name="Menu"/> System</div>
+                            <div className="flex flex-col divide-y divide-gray-700">
+                                <div className="flex items-center justify-between p-4 bg-gray-900 text-sm font-bold"><span>Night Mode</span><div className={`w-3 h-3 rounded-full ${isNightMode ? 'bg-green-500' : 'bg-gray-600'}`}></div></div>
+                            </div>
+                        </div>
+                    </div>
+                );
+                return null;
             };
 
-            // Uses 100dvh to fix mobile cutoff
             return (
-                <div className="flex flex-col bg-black overflow-hidden w-full" style={{ height: '100dvh' }}>
+                <div className={`flex flex-col bg-black overflow-hidden w-full relative ${isNightMode ? 'brightness-50 contrast-125' : ''}`} style={{ height: '100dvh' }}>
+                    {renderModal()}
                     <div className="flex justify-between items-center px-4 py-2 bg-gray-900 text-white border-b border-gray-700 text-sm font-bold uppercase tracking-wider shrink-0">
-                        <div className="flex items-center space-x-4">
-                            <span className="text-yellow-500">{sessionData.patient?.age || 'Adult'}</span>
-                            <span className="text-white">{sessionData.patient?.name || 'No Patient'}</span>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-green-500 flex gap-2 items-center"><Icon name="Wifi" size={16}/> ONLINE</span>
-                            <span className="text-green-500 flex gap-2 items-center"><Icon name="Battery" size={16}/> 98%</span>
-                        </div>
+                        <div className="flex items-center space-x-4"><span className="text-yellow-500">{sessionData.patient?.age || 'Adult'}</span><span className="text-white">{sessionData.patient?.name || 'No Patient'}</span></div>
+                        <div className="flex items-center space-x-4"><span className="text-green-500 flex gap-2 items-center"><Icon name="Wifi" size={16}/> ONLINE</span><span className="text-green-500 flex gap-2 items-center"><Icon name="Battery" size={16}/> 98%</span></div>
                     </div>
                     <div className="flex flex-1 relative min-h-0">
-                        <div className="flex-1 flex flex-col border-r border-gray-800">
-                            <div className="flex-1 relative min-h-0"><WaveformCanvas label="II" color="#00ff00" gridColor="#222" targetRate={liveHRRef} rhythmType={sessionData.rhythm} waveType="ecg" /></div>
-                            <div className="flex-1 relative min-h-0"><WaveformCanvas label="Pleth" color="#00ffff" gridColor="#222" targetRate={liveHRRef} rhythmType={sessionData.rhythm} waveType="pleth" /></div>
-                            <div className="flex-1 relative min-h-0"><WaveformCanvas label="CO2" color="#facc15" gridColor="#222" targetRate={liveHRRef} rhythmType={sessionData.rhythm} waveType="co2" /></div>
+                        <div className="flex-1 flex flex-col border-r border-gray-800 min-h-0">
+                            <div className="flex-1 relative min-h-0 flex"><WaveformCanvas label="II" color="#00ff00" gridColor="#222" targetRate={liveHRRef} rhythmType={sessionData.rhythm} waveType="ecg" /></div>
+                            <div className="flex-1 relative min-h-0 flex"><WaveformCanvas label="Pleth" color="#00ffff" gridColor="#222" targetRate={liveHRRef} rhythmType={sessionData.rhythm} waveType="pleth" /></div>
+                            <div className="flex-1 relative min-h-0 flex"><WaveformCanvas label="CO2" color="#facc15" gridColor="#222" targetRate={liveHRRef} rhythmType={sessionData.rhythm} waveType="co2" /></div>
                         </div>
                         <div className="w-1/4 flex flex-col bg-black border-l border-gray-800 shrink-0">
-                            <VitalBox label="HR" value={displayHR} unit="1/min" color="#00ff00" isAlarm={sessionData.rhythm === 'VFib' || sessionData.rhythm === 'Asystole'} />
-                            <VitalBox label="SpO2" value={sessionData.spo2 || 98} unit="%" color="#00ffff" />
+                            <VitalBox label="HR" value={displayHR} unit="1/min" color="#00ff00" isAlarm={isHrAlarm || isRhythmAlarm} />
+                            <VitalBox label="SpO2" value={sessionData.spo2 || 98} unit="%" color="#00ffff" isAlarm={isSpo2Alarm} />
                             <VitalBox label="EtCO2" value={sessionData.etco2 || 38} unit="mmHg" color="#facc15" />
-                            <VitalBox label="NIBP" value={getNibpDisplay()} unit="mmHg" color="#ffffff" isNIBP={true} subValue={<span className="text-sm text-gray-500">{sessionData.nibp?.lastTime || '--:--'}</span>} />
+                            <VitalBox label="NIBP" value={nibpState.status !== 'IDLE' ? <span className="text-yellow-400 animate-pulse">CUFF {nibpState.pressure}</span> : <span>{sessionData.nibp?.sys || 120}<span className="text-2xl">/{sessionData.nibp?.dia || 80}</span></span>} unit="mmHg" color="#ffffff" isNIBP={true} subValue={<span className="text-sm text-gray-500">{sessionData.nibp?.lastTime || '--:--'}</span>} />
                         </div>
                     </div>
-                    <div className="flex border-t border-gray-800 bg-gray-900 h-16 opacity-50 pointer-events-none shrink-0">
-                        <SoftKey label="Monitor" active={true} /><SoftKey label="Patient" /><SoftKey label="Trend" /><SoftKey label="Alarms" /><SoftKey label="Menu" />
+                    <div className="flex border-t border-gray-800 bg-gray-900 h-16 shrink-0 z-40 relative">
+                        <SoftKey label="Start NIBP" onClick={() => setNibpState({status: 'INFLATING', pressure: 0})} active={nibpState.status !== 'IDLE'} color="text-blue-400" icon="Activity" />
+                        <SoftKey label="Patient" onClick={() => setActiveModal('PATIENT')} active={activeModal === 'PATIENT'} icon="Patient" />
+                        <SoftKey label="Trend" onClick={() => {}} active={false} icon="Trend" />
+                        <SoftKey label="Alarms" onClick={() => setActiveModal('ALARMS')} active={activeModal === 'ALARMS'} icon="Bell" />
+                        <SoftKey label="Menu" onClick={() => setActiveModal('MENU')} active={activeModal === 'MENU'} icon="Menu" />
                     </div>
                 </div>
             );
         };
 
-        // --- REMOTE SCREEN ---
+        // --- REMOTE VIEW ---
         const RemoteView = ({ sessionData }) => {
             const [nameInput, setNameInput] = useState('');
             const [manualHR, setManualHR] = useState('');
@@ -315,12 +354,23 @@
             const setRhythm = (r) => updateSession({ rhythm: r, targetHR: null });
             const applyManualHR = () => { const val = parseInt(manualHR); if (!isNaN(val) && val >= 0 && val <= 300) updateSession({ targetHR: val }); };
 
+            // Local state for sliders (debounced)
+            const [alarmLimits, setAlarmLimits] = useState({ hrHigh: 120, hrLow: 50, spo2Low: 90 });
+            
+            // Sync from DB on load
+            useEffect(() => {
+                if (sessionData?.alarms) setAlarmLimits(sessionData.alarms);
+            }, [sessionData?.alarms]);
+
+            const updateAlarms = () => updateSession({ alarms: alarmLimits });
+
             return (
                 <div className="min-h-screen bg-gray-900 text-white p-4 pb-20 font-sans overflow-y-auto">
                     <div className="mb-6 flex items-center justify-between">
                         <h1 className="text-xl font-bold flex items-center gap-2"><Icon name="Smartphone" size={24} className="text-blue-400"/> Remote Control</h1>
                         <div className="text-xs text-green-400 flex items-center gap-1"><Icon name="Wifi" size={12}/> Connected</div>
                     </div>
+
                     <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
                         <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">ECG Rhythm</h2>
                         <div className="grid grid-cols-3 gap-2">
@@ -329,12 +379,13 @@
                             ))}
                         </div>
                     </div>
+
                     <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
                         <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">Vitals Override</h2>
                         <div className="space-y-5">
                             <div>
                                 <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-bold text-gray-300 flex items-center gap-2"><Icon name="Heart" size={14} className="text-green-500"/> Heart Rate (HR)</span> 
+                                    <span className="text-sm font-bold text-gray-300 flex items-center gap-2"><Icon name="Heart" size={14} className="text-green-500"/> Heart Rate</span> 
                                     <span className="font-mono font-bold text-green-400">{sessionData?.targetHR ? sessionData.targetHR : '(Auto)'}</span>
                                 </div>
                                 <div className="flex gap-2">
@@ -343,25 +394,40 @@
                                     {sessionData?.targetHR && (<button onClick={() => updateSession({targetHR: null})} className="bg-gray-700 text-white px-3 rounded font-bold text-xs">AUTO</button>)}
                                 </div>
                             </div>
-                            <div>
-                                <div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">SpO2</span> <span className="font-mono font-bold text-cyan-400">{sessionData?.spo2}%</span></div>
-                                <input type="range" min="50" max="100" value={sessionData?.spo2 || 98} onChange={(e) => updateSession({ spo2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"/>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">EtCO2</span> <span className="font-mono font-bold text-yellow-400">{sessionData?.etco2}</span></div>
-                                <input type="range" min="0" max="60" value={sessionData?.etco2 || 38} onChange={(e) => updateSession({ etco2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"/>
-                            </div>
+                            <div><div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">SpO2</span> <span className="font-mono font-bold text-cyan-400">{sessionData?.spo2}%</span></div><input type="range" min="50" max="100" value={sessionData?.spo2 || 98} onChange={(e) => updateSession({ spo2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"/></div>
+                            <div><div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">EtCO2</span> <span className="font-mono font-bold text-yellow-400">{sessionData?.etco2}</span></div><input type="range" min="0" max="60" value={sessionData?.etco2 || 38} onChange={(e) => updateSession({ etco2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"/></div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <button onClick={() => updateSession({ nibpCommand: 'START' })} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 active:scale-95 transition-all border border-gray-700">
-                            <Icon name="Activity" className="mb-2 text-blue-400" /><span className="font-bold text-sm">Start NIBP</span>
-                        </button>
-                        <button onClick={() => updateSession({ nibp: { sys: '---', dia: '---', lastTime: '--:--' }})} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 active:scale-95 transition-all border border-gray-700">
-                            <Icon name="Bell" className="mb-2 text-red-400" /><span className="font-bold text-sm">Reset NIBP</span>
-                        </button>
+
+                    <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
+                         <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">Alarm Limits Configuration</h2>
+                         <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between mb-1 text-sm"><span>HR High</span> <span className="font-mono">{alarmLimits.hrHigh}</span></div>
+                                <input type="range" min="60" max="200" value={alarmLimits.hrHigh} onChange={(e) => setAlarmLimits({...alarmLimits, hrHigh: parseInt(e.target.value)})} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500"/>
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1 text-sm"><span>HR Low</span> <span className="font-mono">{alarmLimits.hrLow}</span></div>
+                                <input type="range" min="20" max="100" value={alarmLimits.hrLow} onChange={(e) => setAlarmLimits({...alarmLimits, hrLow: parseInt(e.target.value)})} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500"/>
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1 text-sm"><span>SpO2 Low</span> <span className="font-mono">{alarmLimits.spo2Low}</span></div>
+                                <input type="range" min="50" max="99" value={alarmLimits.spo2Low} onChange={(e) => setAlarmLimits({...alarmLimits, spo2Low: parseInt(e.target.value)})} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500"/>
+                            </div>
+                         </div>
                     </div>
-                    <div className="bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700">
+
+                    <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
+                        <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">System Settings</h2>
+                         <div className="flex items-center justify-between">
+                            <span>Night Mode</span>
+                            <button onClick={() => updateSession({ settings: { nightMode: !sessionData?.settings?.nightMode } })} className={`px-4 py-2 rounded font-bold text-sm ${sessionData?.settings?.nightMode ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
+                                {sessionData?.settings?.nightMode ? 'ON' : 'OFF'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700 mb-4">
                         <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">Patient Identity</h2>
                         <div className="flex gap-2">
                             <input type="text" placeholder="Enter Name..." className="flex-1 bg-black border border-gray-600 rounded p-3 text-white" value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
@@ -369,10 +435,16 @@
                         </div>
                         <div className="mt-2 text-xs text-gray-500">Current: {sessionData?.patient?.name || 'None'}</div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <button onClick={() => updateSession({ nibpCommand: 'START' })} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 border border-gray-700"><Icon name="Activity" className="mb-2 text-blue-400" /><span className="font-bold text-sm">Start NIBP</span></button>
+                        <button onClick={() => updateSession({ nibp: { sys: '---', dia: '---', lastTime: '--:--' }})} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 border border-gray-700"><Icon name="Bell" className="mb-2 text-red-400" /><span className="font-bold text-sm">Reset NIBP</span></button>
+                    </div>
                 </div>
             );
         };
 
+        // --- MAIN APP ---
         const App = () => {
             const [view, setView] = useState('landing'); 
             const [user, setUser] = useState(null);
@@ -389,7 +461,9 @@
                 docRef.set({ 
                     rhythm: 'Sinus', spo2: 98, etco2: 38, 
                     nibp: { sys: 120, dia: 80, lastTime: '--:--' }, 
-                    patient: { name: '', age: '' } 
+                    patient: { name: '', age: '' },
+                    alarms: { hrHigh: 120, hrLow: 50, spo2Low: 90 },
+                    settings: { nightMode: false }
                 }, { merge: true });
 
                 const unsub = docRef.onSnapshot((snap) => { 
@@ -408,12 +482,8 @@
                           <p className="text-gray-400">Distributed Training Environment</p>
                       </div>
                       <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl">
-                          <button onClick={() => setView('monitor')} className="group relative bg-gray-800 border border-gray-700 hover:border-blue-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/20">
-                              <Icon name="Monitor" size={64} className="mb-4 text-gray-300 group-hover:text-blue-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Monitor</h2><p className="text-sm text-gray-500 text-center">Open this on the main display screen.</p>
-                          </button>
-                          <button onClick={() => setView('remote')} className="group relative bg-gray-800 border border-gray-700 hover:border-green-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-green-900/20">
-                              <Icon name="Smartphone" size={64} className="mb-4 text-gray-300 group-hover:text-green-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Remote</h2><p className="text-sm text-gray-500 text-center">Open this on a tablet or mobile device.</p>
-                          </button>
+                          <button onClick={() => setView('monitor')} className="group relative bg-gray-800 border border-gray-700 hover:border-blue-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/20"><Icon name="Monitor" size={64} className="mb-4 text-gray-300 group-hover:text-blue-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Monitor</h2><p className="text-sm text-gray-500 text-center">Open this on the main display screen.</p></button>
+                          <button onClick={() => setView('remote')} className="group relative bg-gray-800 border border-gray-700 hover:border-green-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-green-900/20"><Icon name="Smartphone" size={64} className="mb-4 text-gray-300 group-hover:text-green-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Remote</h2><p className="text-sm text-gray-500 text-center">Open this on a tablet or mobile device.</p></button>
                       </div>
                   </div>
                 );
@@ -422,7 +492,6 @@
             if (view === 'remote') return <RemoteView sessionData={sessionData} />;
         };
 
-        // Render
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
