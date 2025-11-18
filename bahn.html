@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<!-- Dark Mode & PWA Meta-Tags (für Lesezeichen) -->
+<html lang="de" class="h-full bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abfahrtsmonitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Mobile Optimierung (Styling-Tags) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KVV Monitor">
+    <meta name="theme-color" content="#1F2937"> <!-- Dark Mode Farbe für Adressleiste -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1); /* Heller für Dark Mode */
+            border-left-color: #6366F1; /* Helleres Indigo */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Dark Mode Button Styling */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            flex-grow: 1;
+            padding: 12px 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #4B5563; /* Dunkelgrauer Rand */
+            background-color: #374151; /* Dunkelgrauer Hintergrund (inaktiv) */
+            color: #D1D5DB; /* Helle Schrift (inaktiv) */
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background-color: #6366F1; /* Helleres Indigo (aktiv) */
+            color: #FFFFFF;
+            border-color: #6366F1;
+        }
+
+        .tab-btn:not(.active):hover {
+            background-color: #4B5563; /* Etwas helleres Grau */
+        }
+    </style>
+</head>
+<body class="h-full flex items-start justify-center py-8 md:py-16 px-4">
+    <div class="w-full max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-white text-center mb-6">Pendel-Monitor</h1>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-nav" aria-label="Tabs">
+            <button id="tab-btn-grenzstrasse" class="tab-btn active" data-target="panel-grenzstrasse">
+                Hinfahrt (ab Grenzstraße)
+            </button>
+            <button id="tab-btn-europahalle" class="tab-btn" data-target="panel-europahalle">
+                Heimfahrt (ab Europahalle)
+            </button>
+        </nav>
+
+        <!-- Dark Mode Panel -->
+        <div id="panel-grenzstrasse" class="tab-panel bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+            <header class="mb-6 px-4 pt-6">
+                <h2 id="station-name-grenzstrasse" class="text-2xl text-indigo-400 font-semibold">Lade...</h2>
+                <p id="subtitle-grenzstrasse" class="text-sm text-gray-400">Lade...</p>
+            </header>
+            <div class="flex justify-between items-center mb-4 px-4">
+                <div>
+                    <!-- Live Indicator Dark Mode -->
+                    <span id="live-indicator-grenzstrasse" class="inline-flex items-center rounded-full bg-gray-600 px-3 py-1 text-sm font-medium text-gray-200">
+                        <svg id="live-dot-grenzstrasse" class="-ml-1 mr-1.5 h-2 w-2 text-gray-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" /></svg>
+                        <span id="live-text-grenzstrasse">Lade...</span>
+                    </span>
+                </div>
+                <div class="text-right">
+                    <p id="last-updated-grenzstrasse" class="text-sm text-gray-400"></p>
+                </div>
+            </div>
+            <div>
+                <div id="loading-spinner-grenzstrasse" class="flex justify-center items-center h-48"><div class="spinner"></div></div>
+                <div id="error-message-grenzstrasse" class="hidden p-6 text-center">
+                    <h3 class="text-lg font-medium text-red-400">Fehler</h3>
+                    <p class="text-red-400 mt-2" id="error-text-grenzstrasse"></p>
+                </div>
+                <ul id="departures-list-grenzstrasse" role="list" class="divide-y divide-gray-700"></ul> <!-- Darker divider -->
+            </div>
+        </div>
+
+        <!-- Dark Mode Panel -->
+        <div id="panel-europahalle" class="tab-panel hidden bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+            <header class="mb-6 px-4 pt-6">
+                <h2 id="station-name-europahalle" class="text-2xl text-indigo-400 font-semibold">Lade...</h2>
+                <p id="subtitle-europahalle" class="text-sm text-gray-400">Lade...</p>
+            </header>
+            <div class="flex justify-between items-center mb-4 px-4">
+                <div>
+                    <!-- Live Indicator Dark Mode -->
+                    <span id="live-indicator-europahalle" class="inline-flex items-center rounded-full bg-gray-600 px-3 py-1 text-sm font-medium text-gray-200">
+                        <svg id="live-dot-europahalle" class="-ml-1 mr-1.5 h-2 w-2 text-gray-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" /></svg>
+                        <span id="live-text-europahalle">Lade...</span>
+                    </span>
+                </div>
+                <div class="text-right">
+                    <p id="last-updated-europahalle" class="text-sm text-gray-400"></p>
+                </div>
+            </div>
+            <div>
+                <div id="loading-spinner-europahalle" class="flex justify-center items-center h-48"><div class="spinner"></div></div>
+                <div id="error-message-europahalle" class="hidden p-6 text-center">
+                    <h3 class="text-lg font-medium text-red-400">Fehler</h3>
+                    <p class="text-red-400 mt-2" id="error-text-europahalle"></p>
+                </div>
+                <ul id="departures-list-europahalle" role="list" class="divide-y divide-gray-700"></ul> <!-- Darker divider -->
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-6 text-center text-sm text-gray-500">
+            <p>Daten bereitgestellt über die EFA-Schnittstelle des KVV. Alle Angaben ohne Gewähr.</p>
+            <p id="footer-distance-text" class="mt-1"></p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const STOPFINDER_URL = "https://projekte.kvv-efa.de/sl3-alone/XSLT_STOPFINDER_REQUEST";
+        const DEPARTURE_MONITOR_URL = "https://projekte.kvv-efa.de/sl3-alone/XSLT_DM_REQUEST";
+        const REFRESH_INTERVAL_MS = 30000;
+        
+        const PACE_CONFIG = {
+            BUFFER_TIME_MINUTES: 1,
+            PACE_WALK_KMH: 5,
+            PACE_JOG_KMH: 10,
+            PACE_RUN_KMH: 15,
+        };
+
+        // --- START OF EDIT: Geolocation Coordinates ---
+        const GRENZSTRASSE_COORDS = { latitude: 49.1255, longitude: 8.4116 };
+        const EUROPAHALLE_COORDS = { latitude: 49.0028, longitude: 8.3845 };
+        // --- END OF EDIT ---
+
+        // --- Monitor Definitions ---
+        const monitors = {
+            "grenzstrasse": {
+                type: 'departures',
+                panelId: 'panel-grenzstrasse',
+                dom: {
+                    stationName: document.getElementById('station-name-grenzstrasse'),
+                    subtitle: document.getElementById('subtitle-grenzstrasse'),
+                    list: document.getElementById('departures-list-grenzstrasse'),
+                    loading: document.getElementById('loading-spinner-grenzstrasse'),
+                    error: document.getElementById('error-message-grenzstrasse'),
+                    errorText: document.getElementById('error-text-grenzstrasse'),
+                    lastUpdated: document.getElementById('last-updated-grenzstrasse'),
+                    liveIndicator: document.getElementById('live-indicator-grenzstrasse'),
+                    liveDot: document.getElementById('live-dot-grenzstrasse'),
+                    liveText: document.getElementById('live-text-grenzstrasse'),
+                },
+                queryName: "Grenzstraße Linkenheim-Hochstetten",
+                title: "Grenzstraße, Linkenheim-Hochstetten",
+                subtitle: "Nächste 5 S-Bahn Abfahrten (Richtung Karlsruhe)",
+                distance: 850, // "Am Fuchsheck 2"
+                distanceText: "Tempo-Berechnung (Hinfahrt) basiert auf ca. 850m Distanz (Am Fuchsheck 2).",
+                lineFilter: (line) => line.number.startsWith('S'),
+                directionFilter: (dir) => {
+                    const dirLower = dir.toLowerCase();
+                    return !dirLower.includes('hochstetten') && !dirLower.includes('leopoldshafen') && !dirLower.includes('linkenheim');
+                },
+                lineColor: (line) => (line.number === 'S1' || line.number === 'S11') ? 'bg-green-600' : 'bg-indigo-600',
+                stationId: null,
+                refreshTimer: null,
+            },
+            "europahalle": {
+                type: 'departures',
+                panelId: 'panel-europahalle',
+                dom: {
+                    stationName: document.getElementById('station-name-europahalle'),
+                    subtitle: document.getElementById('subtitle-europahalle'),
+                    list: document.getElementById('departures-list-europahalle'),
+                    loading: document.getElementById('loading-spinner-europahalle'),
+                    error: document.getElementById('error-message-europahalle'),
+                    errorText: document.getElementById('error-text-europahalle'),
+                    lastUpdated: document.getElementById('last-updated-europahalle'),
+                    liveIndicator: document.getElementById('live-indicator-europahalle'),
+                    liveDot: document.getElementById('live-dot-europahalle'),
+                    liveText: document.getElementById('live-text-europahalle'),
+                },
+                queryName: "Europahalle/Europabad, Karlsruhe",
+                title: "Europahalle/Europabad, KA",
+                subtitle: "Nächste 5 Abfahrten (Richtung Waldstadt)",
+                distance: 230, // "Carl-Engler-Schule"
+                distanceText: "Tempo-Berechnung (Heimfahrt) basiert auf ca. 230m Distanz (Carl-Engler-Schule).",
+                lineFilter: (line) => true,
+                directionFilter: (dir) => dir.toLowerCase().includes('waldstadt'),
+                lineColor: (line) => 'bg-red-600',
+                stationId: null,
+                refreshTimer: null,
+            }
+        };
+        // --- START OF EDIT: Default activeMonitorKey removed from here ---
+        // let activeMonitorKey = "grenzstrasse"; 
+        let activeMonitorKey = null; // Wird jetzt durch Geolocation gesetzt
+        // --- END OF EDIT ---
+        const footerDistanceText = document.getElementById('footer-distance-text');
+
+        // --- Utility Functions ---
+
+        function formatTime(timeData) {
+            if (typeof timeData === 'object' && timeData !== null && timeData.hour && timeData.minute) {
+                const hour = timeData.hour.padStart(2, '0');
+                const minute = timeData.minute.padStart(2, '0');
+                return `${hour}:${minute}`;
+            }
+            if (typeof timeData === 'string' && timeData.includes('T') && timeData.includes(':')) {
+                try {
+                    const date = new Date(timeData);
+                    if (isNaN(date.getTime())) return "??:??";
+                    const hour = date.getHours().toString().padStart(2, '0');
+                    const minute = date.getMinutes().toString().padStart(2, '0');
+                    return `${hour}:${minute}`;
+                } catch (e) {
+                    console.error("Error parsing date string in formatTime:", timeData, e);
+                    return "??:??";
+                }
+            }
+            console.warn("Unknown timeData format in formatTime:", timeData);
+            return "??:??";
+        }
+
+        function parseDateTime(timeData) {
+            if (typeof timeData === 'object' && timeData !== null && timeData.year) {
+                try {
+                    return new Date(
+                        parseInt(timeData.year, 10),
+                        parseInt(timeData.month, 10) - 1,
+                        parseInt(timeData.day, 10),
+                        parseInt(timeData.hour, 10),
+                        parseInt(timeData.minute, 10)
+                    );
+                } catch (e) {
+                    console.error("Error parsing structured date:", timeData, e);
+                    return null;
+                }
+            }
+            if (typeof timeData === 'string' && timeData.includes('T') && timeData.includes(':')) {
+                try {
+                    const date = new Date(timeData);
+                    if (isNaN(date.getTime())) {
+                        console.error("Parsed invalid date from string:", timeData);
+                        return null;
+                    }
+                    return date;
+                } catch (e) {
+                    console.error("Error parsing date string:", timeData, e);
+                    return null;
+                }
+            }
+            console.warn("Unknown timeData format in parseDateTime:", timeData);
+            return null;
+        }
+
+        function getMinutesUntil(departureDate) {
+            if (!departureDate) {
+                return null;
+            }
+            const now = new Date();
+            const diffMs = departureDate.getTime() - now.getTime();
+            return Math.max(0, Math.floor(diffMs / 60000));
+        }
+
+        function updateTimestamp(monitor) {
+            const now = new Date();
+            monitor.dom.lastUpdated.textContent = `Stand: ${now.toLocaleTimeString('de-DE')} Uhr`;
+        }
+        
+        function setStatus(monitor, type, message) {
+            monitor.dom.liveIndicator.classList.remove('bg-gray-600', 'bg-green-900', 'bg-red-900');
+            monitor.dom.liveDot.classList.remove('text-gray-400', 'text-green-300', 'text-red-300');
+            switch (type) {
+                case 'loading':
+                    monitor.dom.liveIndicator.classList.add('bg-gray-600');
+                    monitor.dom.liveDot.classList.add('text-gray-400');
+                    break;
+                case 'live':
+                    monitor.dom.liveIndicator.classList.add('bg-green-900');
+                    monitor.dom.liveDot.classList.add('text-green-300');
+                    break;
+                case 'error':
+                    monitor.dom.liveIndicator.classList.add('bg-red-900');
+                    monitor.dom.liveDot.classList.add('text-red-300');
+                    break;
+            }
+            monitor.dom.liveText.textContent = message;
+        }
+        
+        function getPaceHtml(minutes, distance) {
+            if (minutes === null) {
+                return `<p class="text-sm font-bold text-gray-500" title="Zeit nicht verfügbar">Tempo n.v.</p>`;
+            }
+            
+            let timeToMakeIt = minutes - PACE_CONFIG.BUFFER_TIME_MINUTES;
+            let speedHtml = '';
+            const speedTitle = `Distanz: ${distance}m, Puffer: ${PACE_CONFIG.BUFFER_TIME_MINUTES} Min.`;
+
+            if (timeToMakeIt <= 0) {
+                speedHtml = `<p class="text-sm font-bold text-red-400" title="${speedTitle}">Unmöglich</p>`;
+            } else {
+                const timeInHours = timeToMakeIt / 60;
+                const distanceInKm = distance / 1000;
+                const requiredKmh = (distanceInKm / timeInHours).toFixed(1);
+
+                if (requiredKmh < PACE_CONFIG.PACE_WALK_KMH) {
+                    speedHtml = `<p class="text-sm font-medium text-green-400" title="${speedTitle}">Gehen (${requiredKmh} km/h)</p>`;
+                } else if (requiredKmh < PACE_CONFIG.PACE_JOG_KMH) {
+                    speedHtml = `<p class="text-sm font-medium text-yellow-400" title="${speedTitle}">Laufen (${requiredKmh} km/h)</p>`;
+                } else if (requiredKmh < PACE_CONFIG.PACE_RUN_KMH) {
+                    speedHtml = `<p class="text-sm font-medium text-orange-400" title="${speedTitle}">Rennen (${requiredKmh} km/h)</p>`;
+                } else {
+                    speedHtml = `<p class="text-sm font-medium text-red-400" title="${speedTitle}">Sprinten! (${requiredKmh} km/h)</p>`;
+                }
+            }
+            return speedHtml;
+        }
+
+        function showError(monitor, message) {
+            monitor.dom.list.innerHTML = '';
+            monitor.dom.loading.classList.add('hidden');
+            monitor.dom.error.classList.remove('hidden');
+            monitor.dom.errorText.textContent = message;
+        }
+
+        // --- Core Functions ---
+        async function fetchStopId(queryName) {
+            console.log(`Fetching Stop ID for: ${queryName}`);
+            const params = new URLSearchParams({
+                outputFormat: 'JSON',
+                locationServerActive: 1,
+                type_sf: 'stop',
+                name_sf: queryName
+            });
+            const url = `${STOPFINDER_URL}?${params.toString()}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
+                const data = await response.json();
+                console.log(`StopFinder Response for ${queryName}:`, data);
+
+                if (data.stopFinder && data.stopFinder.points && data.stopFinder.points.point) {
+                    let point = Array.isArray(data.stopFinder.points.point) ? data.stopFinder.points.point[0] : data.stopFinder.points.point;
+                    const id = point.stateless || (point.ref && point.ref.id);
+                    if (id) {
+                        console.log(`Found Station ID ${id} for ${queryName}`);
+                        return { id: id, name: point.name };
+                    } else {
+                        throw new Error("No usable ID found in StopFinder response.");
+                    }
+                } else {
+                    throw new Error("No stops found for the query.");
+                }
+            } catch (error) {
+                console.error(`Error fetching stop ID for ${queryName}:`, error);
+                return null;
+            }
+        }
+
+        async function fetchDepartures(monitor) {
+            if (!monitor.stationId) return;
+            
+            console.log(`Fetching Departures for ID: ${monitor.stationId}`);
+            monitor.dom.list.innerHTML = '';
+            monitor.dom.loading.classList.remove('hidden');
+            monitor.dom.loading.classList.add('flex');
+            monitor.dom.error.classList.add('hidden');
+            setStatus(monitor, 'loading', 'Lade...');
+
+            const params = new URLSearchParams({
+                outputFormat: 'JSON',
+                depType: 'stopEvents',
+                locationServerActive: 1,
+                mode: 'direct',
+                type_dm: 'stop',
+                useOnlyStops: 1,
+                useRealtime: 1,
+                name_dm: monitor.stationId
+            });
+            const url = `${DEPARTURE_MONITOR_URL}?${params.toString()}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
+                const data = await response.json();
+                renderDepartures(monitor, data.departureList || []);
+                updateTimestamp(monitor);
+                setStatus(monitor, 'live', 'Live');
+            } catch (error) {
+                console.error(`Error fetching departures for ${monitor.stationId}:`, error);
+                showError(monitor, `Abfahrten konnten nicht geladen werden: ${error.message}`);
+                setStatus(monitor, 'error', 'Fehler');
+            } finally {
+                monitor.dom.loading.classList.add('hidden');
+                monitor.dom.loading.classList.remove('flex');
+            }
+        }
+
+        function renderDepartures(monitor, departures) {
+            if (departures.length === 0) {
+                monitor.dom.list.innerHTML = `<li class="p-6 text-center text-gray-400">Keine Abfahrten in nächster Zeit gefunden.</li>`;
+                return;
+            }
+            
+            const relevantDepartures = departures
+                .filter(dep => dep.servingLine && dep.servingLine.number && monitor.lineFilter(dep.servingLine))
+                .filter(dep => dep.servingLine && dep.servingLine.direction && monitor.directionFilter(dep.servingLine.direction));
+
+            if (relevantDepartures.length === 0) {
+                monitor.dom.list.innerHTML = `<li class="p-6 text-center text-gray-400">Keine passenden Abfahrten gefunden. (Gefiltert aus ${departures.length} Abfahrten)</li>`;
+                return;
+            }
+
+            relevantDepartures.slice(0, 5).forEach(dep => {
+                const line = dep.servingLine.number;
+                const direction = dep.servingLine.direction;
+                const lineClass = monitor.lineColor(dep.servingLine); 
+                
+                const isCancelled = dep.state === 'cancelled' || 
+                                    dep.servingLine.state === 'deleted' || 
+                                    dep.realtimeStatus === 'DEPARTURE_CANCELLED';
+
+                const scheduledTime = formatTime(dep.dateTime);
+                const li = document.createElement('li');
+
+                if (isCancelled) {
+                    li.className = 'p-4 flex items-center space-x-4 px-4 opacity-60';
+                    li.innerHTML = `
+                        <div class="flex-shrink-0 w-16 text-center">
+                            <span class="inline-block ${lineClass} text-white text-lg font-bold px-3 py-1 rounded-md opacity-50">
+                                ${line}
+                            </span>
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-lg font-semibold text-gray-400 truncate line-through" title="${direction}">
+                                ${direction}
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                Geplant: ${scheduledTime} Uhr
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 w-28 text-right flex flex-col justify-center">
+                            <p class="text-xl font-bold text-red-400">ENTFÄLLT</p>
+                            <p class="text-sm font-medium text-red-400">Ausfall</p>
+                        </div>
+                    `;
+                } else {
+                    // Logic for regular/delayed trains
+                    const hasRealtime = dep.realDateTime;
+                    const departureTime = hasRealtime ? dep.realDateTime : dep.dateTime;
+                    const departureDate = parseDateTime(departureTime);
+                    const minutes = getMinutesUntil(departureDate);
+                    
+                    const isDelayed = hasRealtime && (formatTime(dep.realDateTime) !== scheduledTime);
+                    
+                    let delayText = '';
+                    if (isDelayed) {
+                        const scheduledDate = parseDateTime(dep.dateTime);
+                        if (departureDate && scheduledDate) {
+                            const delayMinutes = Math.round((departureDate.getTime() - scheduledDate.getTime()) / 60000);
+                            if (delayMinutes > 0) delayText = `+${delayMinutes}`;
+                        }
+                    }
+
+                    const speedHtml = getPaceHtml(minutes, monitor.distance);
+                    const minutesHtml = (minutes !== null) ? 
+                        `<p class="text-xl font-bold ${isDelayed ? 'text-red-400' : 'text-green-400'}">in ${minutes} Min</p>` : 
+                        `<p class="text-xl font-bold text-gray-500">?? Min</p>`;
+                    const delayHtml = isDelayed ? 
+                        `<p class="text-sm font-semibold text-red-400" title="Verspätung">${formatTime(dep.realDateTime)} Uhr ${delayText ? `(${delayText})` : ''}</p>` : 
+                        `<p class="text-sm text-green-400">Pünktlich</p>`;
+                    
+                    li.className = 'p-4 hover:bg-gray-700 flex items-center space-x-4 px-4';
+                    li.innerHTML = `
+                        <div class="flex-shrink-0 w-16 text-center">
+                            <span class="inline-block ${lineClass} text-white text-lg font-bold px-3 py-1 rounded-md">
+                                ${line}
+                            </span>
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="text-lg font-semibold text-white truncate" title="${direction}">
+                                ${direction}
+                            </p>
+                            <p class="text-sm text-gray-400">
+                                Geplant: ${scheduledTime} Uhr
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 w-28 text-right flex flex-col justify-center">
+                            ${minutesHtml}
+                            ${(minutes !== null) ? delayHtml : ''}
+                            ${speedHtml}
+                        </div>
+                    `;
+                }
+                monitor.dom.list.appendChild(li);
+            });
+        }
+        
+        async function startMonitor(monitorKey) {
+            const monitor = monitors[monitorKey];
+            if (!monitor) {
+                console.error(`Monitor with key "${monitorKey}" not found!`);
+                return;
+            }
+
+            if (monitor.refreshTimer) {
+                clearInterval(monitor.refreshTimer);
+            }
+            
+            setStatus(monitor, 'loading', 'Lade...');
+            
+            try {
+                if (monitor.type === 'departures') {
+                    if (!monitor.stationId) {
+                        const stop = await fetchStopId(monitor.queryName);
+                        if (stop) {
+                            monitor.stationId = stop.id;
+                            monitor.dom.stationName.textContent = stop.name || monitor.title;
+                            monitor.dom.subtitle.textContent = monitor.subtitle;
+                        } else {
+                            throw new Error("Haltestellen-ID nicht gefunden.");
+                        }
+                    }
+                    if (monitor.stationId) await fetchDepartures(monitor);
+                }
+            } catch (error) {
+                console.error("Error during monitor setup:", error);
+                showError(monitor, error.message);
+                setStatus(monitor, 'error', 'Fehler');
+            }
+
+            monitor.refreshTimer = setInterval(async () => {
+                if (monitor.type === 'departures' && monitor.stationId) {
+                    await fetchDepartures(monitor);
+                }
+            }, REFRESH_INTERVAL_MS);
+        }
+
+        // --- Tab Switching Logic ---
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        function switchTab(targetKey) {
+            // Beendet alle laufenden Timer
+            Object.values(monitors).forEach(mon => {
+                if (mon.refreshTimer) clearInterval(mon.refreshTimer);
+            });
+            
+            activeMonitorKey = targetKey;
+            const monitor = monitors[activeMonitorKey];
+
+            if (!monitor) {
+                console.error(`Invalid tab key: ${targetKey}. Cannot switch tab.`);
+                return;
+            }
+
+            // Setzt den aktiven Button-Stil
+            tabButtons.forEach(btn => {
+                if (btn.dataset.target === monitor.panelId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Zeigt das richtige Panel an
+            tabPanels.forEach(panel => {
+                if (panel.id === monitor.panelId) {
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            });
+
+            // Aktualisiert den Footer-Text
+            footerDistanceText.textContent = monitor.distanceText;
+            // Startet den Monitor für den ausgewählten Tab
+            startMonitor(activeMonitorKey);
+        }
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetKey = btn.id.includes('grenzstrasse') ? 'grenzstrasse' : 'europahalle';
+                switchTab(targetKey);
+            });
+        });
+
+        // --- START OF EDIT: Geolocation Logic ---
+        
+        /**
+         * Berechnet die Luftlinie zwischen zwei Koordinaten in km.
+         * @param {number} lat1 
+         * @param {number} lon1 
+         * @param {number} lat2 
+         * @param {number} lon2 
+         * @returns {number} Distanz in km
+         */
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius der Erde in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // Distanz in km
+        }
+
+        /**
+         * Frägt den Standort ab und wählt den nächstgelegenen Tab aus.
+         */
+        function autoSelectTabByLocation() {
+            if ('geolocation' in navigator) {
+                console.log("Standortabfrage gestartet...");
+                footerDistanceText.textContent = "Standort wird ermittelt...";
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        // Erfolgreich
+                        const userLat = position.coords.latitude;
+                        const userLon = position.coords.longitude;
+                        console.log(`Standort gefunden: ${userLat}, ${userLon}`);
+
+                        const distToGrenzstrasse = haversineDistance(userLat, userLon, GRENZSTRASSE_COORDS.latitude, GRENZSTRASSE_COORDS.longitude);
+                        const distToEuropahalle = haversineDistance(userLat, userLon, EUROPAHALLE_COORDS.latitude, EUROPAHALLE_COORDS.longitude);
+
+                        console.log(`Distanz zur Grenzstraße: ${distToGrenzstrasse.toFixed(2)} km`);
+                        console.log(`Distanz zur Europahalle: ${distToEuropahalle.toFixed(2)} km`);
+
+                        if (distToGrenzstrasse < distToEuropahalle) {
+                            console.log("Näher an Grenzstraße. Wähle 'Hinfahrt'.");
+                            switchTab('grenzstrasse');
+                        } else {
+                            console.log("Näher an Europahalle. Wähle 'Heimfahrt'.");
+                            switchTab('europahalle');
+                        }
+                    },
+                    (error) => {
+                        // Fehler oder Ablehnung
+                        console.warn(`Geolocation-Fehler (${error.code}): ${error.message}`);
+                        console.log("Fallback: Starte mit Standard-Tab 'grenzstrasse'.");
+                        // Bei Fehler den Standard-Tab (Hinfahrt) laden
+                        switchTab('grenzstrasse');
+                    }
+                );
+            } else {
+                // Geolocation nicht unterstützt
+                console.log("Geolocation wird nicht unterstützt. Starte mit Standard-Tab 'grenzstrasse'.");
+                // Standard-Tab (Hinfahrt) laden
+                switchTab('grenzstrasse');
+            }
+        }
+
+        // --- Initial Load ---
+        // Ruft die neue Geolocation-Funktion statt der alten startMonitor-Funktion auf
+        autoSelectTabByLocation();
+        // --- END OF EDIT ---
+
+    </script>
+</body>
+</html>
