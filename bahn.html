@@ -11,7 +11,7 @@
     <!-- Mobile Optimierung (Styling-Tags) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="KVV Monitor">
+    <meta name="apple-mobile-web-app-title" content="Abfahrtsmonitor">
     <meta name="theme-color" content="#1F2937"> <!-- Dark Mode Farbe für Adressleiste -->
 
     <style>
@@ -68,10 +68,10 @@
         <!-- Tab Navigation -->
         <nav class="tab-nav" aria-label="Tabs">
             <button id="tab-btn-grenzstrasse" class="tab-btn active" data-target="panel-grenzstrasse">
-                Hinfahrt (ab Grenzstraße)
+                Grenzstraße
             </button>
             <button id="tab-btn-europahalle" class="tab-btn" data-target="panel-europahalle">
-                Heimfahrt (ab Europahalle)
+                Europahalle
             </button>
         </nav>
 
@@ -142,7 +142,7 @@
         // --- Configuration ---
         const STOPFINDER_URL = "https://projekte.kvv-efa.de/sl3-alone/XSLT_STOPFINDER_REQUEST";
         const DEPARTURE_MONITOR_URL = "https://projekte.kvv-efa.de/sl3-alone/XSLT_DM_REQUEST";
-        const REFRESH_INTERVAL_MS = 30000;
+        const REFRESH_INTERVAL_MS = 60000;
         
         const PACE_CONFIG = {
             BUFFER_TIME_MINUTES: 1,
@@ -176,8 +176,8 @@
                 queryName: "Grenzstraße Linkenheim-Hochstetten",
                 title: "Grenzstraße, Linkenheim-Hochstetten",
                 subtitle: "Nächste 5 S-Bahn Abfahrten (Richtung Karlsruhe)",
-                distance: 850, // "Am Fuchsheck 2"
-                distanceText: "Tempo-Berechnung (Hinfahrt) basiert auf ca. 850m Distanz (Am Fuchsheck 2).",
+                distance: 600, // "Am Fuchsheck 2"
+                distanceText: "Tempo-Berechnung (Hinfahrt) basiert auf ca. 600m Distanz (Am Fuchsheck 2).",
                 lineFilter: (line) => line.number.startsWith('S'),
                 directionFilter: (dir) => {
                     const dirLower = dir.toLowerCase();
@@ -205,8 +205,8 @@
                 queryName: "Europahalle/Europabad, Karlsruhe",
                 title: "Europahalle/Europabad, KA",
                 subtitle: "Nächste 5 Abfahrten (Richtung Waldstadt)",
-                distance: 230, // "Carl-Engler-Schule"
-                distanceText: "Tempo-Berechnung (Heimfahrt) basiert auf ca. 230m Distanz (Carl-Engler-Schule).",
+                distance: 450, // "Carl-Engler-Schule"
+                distanceText: "Tempo-Berechnung (Heimfahrt) basiert auf ca. 550m Distanz (Carl-Engler-Schule).",
                 lineFilter: (line) => true,
                 directionFilter: (dir) => dir.toLowerCase().includes('waldstadt'),
                 lineColor: (line) => 'bg-red-600',
