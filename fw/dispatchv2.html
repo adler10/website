@@ -1729,7 +1729,47 @@
         window.addEventListener('online', () => els.modals.offline.classList.add('hidden'));
         window.addEventListener('offline', () => {
             els.modals.offline.classList.remove('hidden');
-            document.getElementById('offline-incident-report').innerHTML = Array.from(incidents.values()).map(i => `<div class="p-2 border-b border-gray-200"><b class="text-gray-900">${i.keyword}</b><br><span class="text-gray-600">${i.formattedAddress}</span></div>`).join('');
+            
+            // 1. POPULATE INCIDENTS
+            document.getElementById('offline-incident-report').innerHTML = Array.from(incidents.values())
+                .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by time desc
+                .map(i => {
+                    // Status translation
+                    const statusMap = { 'open': 'Offen', 'dispatched': 'Disponiert', 'completed': 'Abgeschlossen' };
+                    const colorMap = { 'open': 'text-fire-red', 'dispatched': 'text-police-blue', 'completed': 'text-alert-amber' };
+                    
+                    return `
+                    <div class="p-4 border-b border-gray-200 hover:bg-gray-50 flex justify-between">
+                        <div>
+                            <div class="font-bold text-soot-black text-lg">${i.keyword}</div>
+                            <div class="text-gray-600 text-sm mt-1">${i.formattedAddress}</div>
+                            ${i.locationName ? `<div class="text-xs font-bold text-gray-500 mt-1 uppercase tracking-wide">📍 ${i.locationName}</div>` : ''}
+                        </div>
+                        <div class="flex flex-col items-end">
+                             <span class="text-[10px] font-bold uppercase tracking-wider mb-1 ${colorMap[i.status] || 'text-gray-500'}">
+                                ${statusMap[i.status] || i.status}
+                            </span>
+                            <span class="text-xs text-gray-400 font-mono">${new Date(i.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            // 2. POPULATE SECTIONS
+            const offlineEaList = document.getElementById('offline-ea-list');
+             if(offlineEaList) {
+                 offlineEaList.innerHTML = '';
+                 if(sections.size === 0) offlineEaList.innerHTML = '<p class="text-gray-400 italic text-sm col-span-2">Keine aktiven Abschnitte.</p>';
+                 sections.forEach(sec => {
+                     const activeCount = Array.from(incidents.values()).filter(i => i.sectionId === sec.id && i.status !== 'completed').length;
+                     offlineEaList.innerHTML += `
+                        <div class="bg-gray-50 border-l-4 p-3 rounded shadow-sm" style="border-left-color: ${sec.color}">
+                            <div class="font-bold text-gray-900 text-sm">${sec.name}</div>
+                            <div class="text-xs text-gray-500">${sec.responsible}</div>
+                            <div class="mt-2 text-xs font-bold text-gray-700">${activeCount} Aktive Einsätze</div>
+                        </div>
+                     `;
+                 });
+             }
         });
 
     </script>
