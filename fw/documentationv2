@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benutzerhandbuch | Command Center</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'fire-red': '#cc0000',
+                        'police-blue': '#2563eb',
+                        'alert-amber': '#d97706',
+                        'soot-black': '#1a1a1a',
+                        'cool-gray': '#f9fafb',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        slab: ['Roboto Slab', 'serif'],
+                    },
+                    boxShadow: {
+                        'hero': '0 4px 20px -2px rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+        h1, h2, h3, .font-hero { font-family: 'Roboto Slab', serif; font-weight: 700; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .doc-section { scroll-margin-top: 100px; }
+        
+        .step-number {
+            background-color: #cc0000;
+            color: white;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body class="bg-cool-gray text-soot-black h-screen overflow-hidden flex flex-col md:flex-row relative">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="w-full md:w-[320px] bg-white border-r border-gray-200 h-full shadow-hero z-20 flex flex-col flex-shrink-0">
+        
+        <!-- HEADER -->
+        <div class="p-6 bg-soot-black flex-shrink-0">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="bg-fire-red text-white p-2 rounded shadow-lg">
+                    <!-- Lucide: Life Buoy -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" x2="9.17" y1="4.93" y2="9.17"/><line x1="14.83" x2="19.07" y1="14.83" y2="19.07"/><line x1="14.83" x2="19.07" y1="9.17" y2="4.93"/><line x1="14.83" x2="9.17" y1="19.07" y2="14.83"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl text-white leading-none tracking-tight">BENUTZER<span class="text-fire-red">HANDBUCH</span></h1>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Einsatzleitsoftware v2.0</p>
+                </div>
+            </div>
+            <div class="text-[10px] bg-gray-800 text-gray-400 p-2 rounded border border-gray-700 font-mono">
+                STATUS: Online<br>
+                ROLLE: Führungsassistent
+            </div>
+        </div>
+
+        <!-- NAVIGATION LINKS -->
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+            <p class="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-2">Grundlagen</p>
+            <a href="#overview" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
+                <span>Oberfläche & Dashboard</span>
+            </a>
+            
+            <p class="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-6">Einsatzführung</p>
+            <a href="#creating-incidents" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-fire-red"></span>
+                <span>Neuen Einsatz anlegen</span>
+            </a>
+            <a href="#managing-status" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-police-blue"></span>
+                <span>Status & Disposition</span>
+            </a>
+            <a href="#ea-management" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-alert-amber"></span>
+                <span>Einsatzabschnitte (EA)</span>
+            </a>
+
+            <p class="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-6">Abschluss & System</p>
+            <a href="#reporting" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span>Bericht & Export</span>
+            </a>
+             <a href="#offline-mode" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>
+                <span>Offline Modus</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex-1 h-full overflow-y-auto bg-gray-50 scroll-smooth">
+        <div class="max-w-4xl mx-auto p-8 md:p-12 space-y-12">
+
+            <!-- INTRO -->
+            <div id="overview" class="border-b border-gray-200 pb-8">
+                <h2 class="font-hero text-3xl text-soot-black mb-4">Übersicht</h2>
+                <p class="text-gray-600 leading-relaxed mb-6">
+                    Willkommen im Einsatzleitsystem (Command Center). Diese Software unterstützt Führungskräfte bei der Verwaltung von komplexen Einsatzlagen, der Zuweisung von Einsatzabschnitten (EA) und der Dokumentation.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="font-hero text-lg mb-2 text-soot-black">Linke Spalte (Einsatzliste)</h3>
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li class="flex items-center"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>Zeigt alle aktiven Einsätze.</li>
+                            <li class="flex items-center"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>Such- und Filterfunktionen.</li>
+                            <li class="flex items-center"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>Zugriff auf das Archiv (abgeschlossene Einsätze).</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="font-hero text-lg mb-2 text-soot-black">Rechte Spalte (Lagekarte)</h3>
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li class="flex items-center"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>Interaktive Karte der Einsatzstelle.</li>
+                            <li class="flex items-center"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>Visuelle Darstellung von EAs (Farbzonen).</li>
+                            <li class="flex items-center"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>Pins zeigen genaue Standorte und Status an.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CREATING INCIDENTS -->
+            <div id="creating-incidents" class="doc-section scroll-mt-24">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="h-8 w-1 bg-fire-red rounded-full"></span>
+                    <h2 class="font-hero text-2xl text-soot-black">Einsätze anlegen</h2>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    Drücken Sie den großen roten Button <strong>"NEUER EINSATZ"</strong> oben links, um das Alarmierungsfenster zu öffnen. Sie haben zwei Möglichkeiten, den Ort zu bestimmen:
+                </p>
+
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-lg border-l-4 border-fire-red shadow-sm flex items-start">
+                        <div class="flex-shrink-0 bg-gray-100 p-2 rounded mr-4 text-fire-red">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900">Variante A: Automatische Suche</h3>
+                            <p class="text-sm text-gray-600 mt-1">Geben Sie Straße und Hausnummer in das Adressfeld ein. Das System schlägt automatisch Adressen vor. Klicken Sie auf einen Vorschlag, um ihn zu übernehmen.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg border-l-4 border-gray-300 shadow-sm flex items-start">
+                        <div class="flex-shrink-0 bg-gray-100 p-2 rounded mr-4 text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900">Variante B: Karte nutzen</h3>
+                            <p class="text-sm text-gray-600 mt-1">Klicken Sie auf <strong>"AUF KARTE WÄHLEN"</strong>. Klicken Sie anschließend direkt auf das betroffene Gebäude in der Karte. Das System ermittelt automatisch die nächstgelegene Adresse.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
+                    <strong>Hinweis zu Duplikaten:</strong> Wenn Sie einen Einsatz in unmittelbarer Nähe (15m) eines bestehenden Einsatzes anlegen, warnt Sie das System vor einem möglichen Duplikat.
+                </div>
+            </div>
+
+            <!-- MANAGING STATUS -->
+            <div id="managing-status" class="doc-section scroll-mt-24">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="h-8 w-1 bg-police-blue rounded-full"></span>
+                    <h2 class="font-hero text-2xl text-soot-black">Status & Disposition</h2>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    Jeder Einsatz durchläuft drei Phasen. Sie können den Status ändern, indem Sie einen Einsatz in der Liste anklicken und die entsprechenden Buttons nutzen.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-lg border-t-4 border-fire-red shadow-sm text-center">
+                        <span class="block text-xs font-bold uppercase tracking-wider text-fire-red mb-2">Phase 1</span>
+                        <h3 class="font-hero text-lg text-soot-black">Offen</h3>
+                        <p class="text-xs text-gray-500 mt-2">Einsatz ist angelegt, aber noch keine Kräfte alarmiert/eingetroffen. Roter Pin.</p>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-lg border-t-4 border-police-blue shadow-sm text-center">
+                        <span class="block text-xs font-bold uppercase tracking-wider text-police-blue mb-2">Phase 2</span>
+                        <h3 class="font-hero text-lg text-soot-black">Disponiert</h3>
+                        <p class="text-xs text-gray-500 mt-2">Einheiten sind alarmiert oder vor Ort. Maßnahmen laufen. Blauer Pin.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border-t-4 border-alert-amber shadow-sm text-center">
+                        <span class="block text-xs font-bold uppercase tracking-wider text-alert-amber mb-2">Phase 3</span>
+                        <h3 class="font-hero text-lg text-soot-black">Abgeschlossen</h3>
+                        <p class="text-xs text-gray-500 mt-2">Einsatz beendet. Einsatz wird ins Archiv verschoben. Orangener Pin.</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-hero text-lg mb-2">Einsätze bearbeiten oder verschieben</h3>
+                    <p class="text-sm text-gray-600">
+                        Klicken Sie auf das kleine <span class="inline-block bg-gray-200 rounded px-1 text-xs">Stift-Symbol</span> neben einem Einsatz in der Liste, um das Bearbeitungsfenster zu öffnen.
+                        Hier können Sie:
+                    </p>
+                    <ul class="list-disc list-inside mt-2 text-sm text-gray-600 space-y-1">
+                        <li>Den Standort des Markers auf der Karte korrigieren.</li>
+                        <li>Das Alarmstichwort ändern.</li>
+                        <li>Die Zuordnung zum Einsatzabschnitt (EA) manuell überschreiben.</li>
+                        <li>Den Einsatz löschen.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- EA MANAGEMENT -->
+            <div id="ea-management" class="doc-section scroll-mt-24">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="h-8 w-1 bg-alert-amber rounded-full"></span>
+                    <h2 class="font-hero text-2xl text-soot-black">Einsatzabschnitte (EA)</h2>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    Das System ordnet Einsätze automatisch geografischen Zonen zu. Diese Zonen (EAs) müssen Sie zuerst zeichnen.
+                </p>
+
+                <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h3 class="font-bold text-sm text-gray-700">So erstellen Sie einen EA</h3>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="flex items-start">
+                            <span class="step-number">1</span>
+                            <div class="text-sm">
+                                Klicken Sie oben im Menü auf <strong>"EA VERWALTEN"</strong>. Geben Sie Name (z.B. "EA West"), Leitung und Farbe ein. Klicken Sie auf "Erstellen".
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="step-number">2</span>
+                            <div class="text-sm">
+                                Klicken Sie in der Liste auf das <strong>Stift-Symbol</strong> neben dem neuen EA. Der Zeichenmodus startet.
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="step-number">3</span>
+                            <div class="text-sm">
+                                Klicken Sie auf die Karte, um die Eckpunkte der Zone zu setzen.
+                                <br>
+                                <span class="text-fire-red font-bold text-xs mt-1 block">TIPP: Wenn Sie in die Nähe eines anderen EA klicken, "snappt" der Punkt automatisch an die Grenze, um Lücken zu vermeiden.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="step-number">4</span>
+                            <div class="text-sm">
+                                Klicken Sie erneut auf den <strong>Startpunkt</strong>, um die Fläche zu schließen und zu speichern. Alle Einsätze innerhalb dieser Fläche werden nun automatisch diesem EA zugeordnet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTING -->
+            <div id="reporting" class="doc-section scroll-mt-24">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="h-8 w-1 bg-gray-400 rounded-full"></span>
+                    <h2 class="font-hero text-2xl text-soot-black">Bericht & Export</h2>
+                </div>
+                <p class="text-gray-600 mb-4">
+                    Am Ende einer Schicht oder Lage können Sie ein vollständiges Protokoll exportieren.
+                </p>
+                <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2 mb-6">
+                    <li>Klicken Sie oben auf den Button <strong>"BERICHT / ENDE"</strong>.</li>
+                    <li>Prüfen Sie die Statistik (Anzahl Einsätze, Datum).</li>
+                    <li>Tragen Sie den Namen des Protokollführers oder Lagezeichners ein.</li>
+                    <li>Klicken Sie auf <strong>"BERICHT HERUNTERLADEN"</strong>.</li>
+                </ol>
+                <p class="text-sm text-gray-500 italic">
+                    Es wird eine HTML-Datei heruntergeladen, die Sie per E-Mail versenden oder archivieren können. Diese Datei enthält eine interaktive Karte und die komplette Historie und kann ohne Internet geöffnet werden.
+                </p>
+            </div>
+            
+            <!-- OFFLINE MODE -->
+            <div id="offline-mode" class="doc-section scroll-mt-24 pb-20">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="h-8 w-1 bg-gray-800 rounded-full"></span>
+                    <h2 class="font-hero text-2xl text-soot-black">Offline Modus</h2>
+                </div>
+                <div class="bg-gray-800 text-white p-6 rounded-lg shadow-lg">
+                    <h3 class="font-bold text-lg mb-2 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-fire-red"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>
+                        Was passiert bei Internetausfall?
+                    </h3>
+                    <p class="text-sm text-gray-300 leading-relaxed">
+                        Sollte die Internetverbindung abbrechen, schaltet das System automatisch in den <strong>Notfall-Lese-Modus</strong>.
+                        <br><br>
+                        Ein schwarzer Bildschirm überlagert die Anwendung. Sie können keine neuen Einsätze anlegen, haben aber weiterhin <strong>Lesezugriff</strong> auf alle bisherigen Daten, Adressen und EA-Zuweisungen, um den Betrieb manuell (per Papier/Funk) fortzuführen.
+                        Sobald das Internet zurückkehrt, verschwindet der Bildschirm automatisch.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
