@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>503 - System Critical</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000500; }
+        canvas { display: block; }
+        .glitch-layer { mix-blend-mode: overlay; pointer-events: none; }
+    </style>
+</head>
+<body class="font-mono text-white selection:bg-green-500/30">
+
+    <canvas id="canvas" class="absolute inset-0 z-0"></canvas>
+    
+    <!-- Glitch Overlay -->
+    <div class="absolute inset-0 z-0 glitch-layer bg-green-900/10 animate-pulse"></div>
+
+    <div class="absolute inset-0 z-10 flex items-center justify-center p-4 pointer-events-none">
+        <div class="pointer-events-auto relative bg-black/90 backdrop-blur-xl border border-green-500/30 p-8 rounded-sm max-w-[340px] w-full shadow-2xl overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-green-500"></div>
+
+            <div class="flex items-start justify-between mb-6">
+                <div>
+                    <h1 class="text-5xl font-black text-white tracking-tighter mb-1 font-sans">503</h1>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full animate-pulse bg-green-500"></div>
+                        <span class="text-xs text-green-700 uppercase tracking-widest">Critical</span>
+                    </div>
+                </div>
+                <div class="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <i data-lucide="activity" class="w-8 h-8 text-green-500"></i>
+                </div>
+            </div>
+
+            <div class="h-px w-full bg-green-900/50 mb-6 relative">
+                 <div class="absolute left-0 top-0 bottom-0 w-8 bg-green-500"></div>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold text-white font-sans">Reality Buffer Overflow</h2>
+                <p class="text-sm text-green-600/80 leading-relaxed">
+                    Entropy levels have exceeded safe parameters. System is attempting to recalibrate.
+                </p>
+                
+                <div class="pt-4">
+                    <button class="w-full group relative overflow-hidden bg-white text-black py-3 px-4 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-green-200 transition-all cursor-pointer">
+                        <i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reboot Universe
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-dashed border-green-900/50 flex justify-between items-end text-[10px] text-green-700">
+                <div class="font-mono">ID: <span id="errId"></span></div>
+                <div class="text-right">Matrix v1.0.4</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('errId').innerText = Math.random().toString(36).substr(2, 6).toUpperCase();
+        lucide.createIcons();
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        const themeColors = ['#22c55e', '#15803d', '#ffffff', '#4ade80'];
+        const bgColor = '#000500';
+
+        class Particle {
+            constructor(w, h) { this.init(w, h); }
+            init(w, h) {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                // High chaos speed
+                this.vx = (Math.random() - 0.5) * 5; 
+                this.vy = (Math.random() - 0.5) * 5;
+                this.size = Math.random() * 2 + 1;
+                this.color = themeColors[Math.floor(Math.random() * themeColors.length)];
+            }
+            update(w, h) {
+                // Glitch effect: random teleportation
+                if (Math.random() > 0.99) {
+                     this.x = Math.random() * w;
+                     this.color = '#ffffff'; // Flash white
+                } else if (Math.random() > 0.9) {
+                     this.color = themeColors[Math.floor(Math.random() * themeColors.length)];
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x > w) this.x = 0;
+                if (this.x < 0) this.x = w;
+                if (this.y > h) this.y = 0;
+                if (this.y < 0) this.y = h;
+            }
+            draw(ctx) {
+                ctx.fillStyle = this.color;
+                // Square particles for digital feel
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = window.innerWidth < 768 ? 60 : 150;
+            for(let i=0; i<count; i++) particles.push(new Particle(canvas.width, canvas.height));
+        }
+
+        function animate() {
+            ctx.fillStyle = `${bgColor}40`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(canvas.width, canvas.height); p.draw(ctx); });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+        resize();
+        initParticles();
+        animate();
+    </script>
+</body>
+</html>
