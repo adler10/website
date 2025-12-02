@@ -25,13 +25,16 @@
             transition: opacity 0.3s ease;
         }
     </style>
-    <!-- FIREBASE AUTH PROTECTION START -->
-<script type="module">
-    // 1. Import Firebase from CDN (Works in plain HTML)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+   <!-- FIREBASE AUTH PROTECTION START -->
+<style>
+    /* Hide body by default to prevent "Flash of Unauthenticated Content" */
+    body { display: none; }
+</style>
 
-    // 2. Your Specific Configuration
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
         authDomain: "auth-107d8.firebaseapp.com",
@@ -42,29 +45,29 @@
         measurementId: "G-SYBYJH5P8D"
     };
 
-    // 3. Initialize with a unique name ("AuthGuardApp") to prevent conflicts
+    // Initialize with a unique name to avoid conflicts
     const app = initializeApp(firebaseConfig, "AuthGuardApp");
     const auth = getAuth(app);
 
-    // 4. The Guard Logic
     onAuthStateChanged(auth, (user) => {
-        const currentPath = window.location.pathname;
-        const isErrorPage = currentPath.includes('403.html');
-        const isLoginPage = currentPath.includes('login.html');
-
         if (!user) {
-            // If NOT logged in...
-            console.warn("Access Denied: Redirecting to 403.");
-            
-            // Redirect to 403 page (unless we are already there or on login)
-            if (!isErrorPage && !isLoginPage) {
-                window.location.href = '403.html';
-            }
+            // User NOT logged in:
+            // 1. Redirect to 403 error page
+            // 2. Use 'replace' so the Back button doesn't bring them back here
+            window.location.replace('403.html');
         } else {
-            // If logged in...
-            console.log("Access Granted:", user.email);
+            // User IS logged in:
+            // 1. Reveal the page content
+            document.body.style.display = 'block';
+            // 2. Trigger a resize event in case canvas/layout needs to recalculate
+            window.dispatchEvent(new Event('resize'));
         }
     });
+
+    // Make logout globally available for any buttons on the page
+    window.logout = () => {
+        signOut(auth).then(() => window.location.replace('403.html'));
+    };
 </script>
 <!-- FIREBASE AUTH PROTECTION END -->
 </head>
