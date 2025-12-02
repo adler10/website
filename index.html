@@ -20,14 +20,10 @@
 </head>
 <body class="font-mono text-white selection:bg-cyan-500/30">
 
-    <!-- Canvas Background -->
     <canvas id="canvas" class="absolute inset-0 z-0"></canvas>
 
-    <!-- Login Modal -->
     <div class="absolute inset-0 z-10 flex items-center justify-center p-4">
         <div id="loginBox" class="relative bg-black/80 backdrop-blur-xl border border-cyan-500/30 p-8 rounded-sm max-w-[340px] w-full shadow-2xl shadow-cyan-500/10">
-            
-            <!-- Decorator Line -->
             <div class="absolute top-0 left-0 right-0 h-1 bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
 
             <div class="flex flex-col items-center mb-6">
@@ -42,7 +38,8 @@
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase tracking-widest text-neutral-500">Identity</label>
                     <div class="relative">
-                        <input id="email" type="email" placeholder="user@domain.com" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10">
+                        <!-- Added 'name' attribute for better browser autofill handling -->
+                        <input id="email" name="email" type="email" placeholder="user@domain.com" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10" required>
                         <i data-lucide="user" class="w-4 h-4 text-neutral-600 absolute left-3 top-2.5"></i>
                     </div>
                 </div>
@@ -50,7 +47,7 @@
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase tracking-widest text-neutral-500">Passcode</label>
                     <div class="relative">
-                        <input id="password" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10">
+                        <input id="password" name="password" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10" required>
                         <i data-lucide="key" class="w-4 h-4 text-neutral-600 absolute left-3 top-2.5"></i>
                     </div>
                 </div>
@@ -67,7 +64,6 @@
         </div>
     </div>
 
-    <!-- FIREBASE LOGIN LOGIC (v10.13.1 Stable) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
@@ -92,31 +88,47 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            
+            // TRIM inputs to remove accidental spaces
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                showError("Please enter email and password");
+                return;
+            }
 
             btnText.innerText = "Verifying...";
             errorMsg.style.opacity = '0';
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                window.location.href = 'index.html';
+                // SUCCESS
+                window.location.replace('index.html'); // Use replace to prevent back button returning to login
             } catch (error) {
-                console.error("Login Error:", error);
+                console.error("Login Failed:", error.code, error.message);
                 btnText.innerText = "Connect";
-                // Show a more helpful error message if possible
-                if (error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
-                    errorMsg.innerText = "Invalid Email or Password";
+                
+                if (error.code === 'auth/invalid-email') {
+                    showError("Invalid Email Format");
+                } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    showError("Invalid Email or Password");
+                } else if (error.code === 'auth/too-many-requests') {
+                    showError("Too many attempts. Try later.");
                 } else {
-                    errorMsg.innerText = "Connection Error";
+                    showError("Connection Error");
                 }
-                errorMsg.style.opacity = '1';
-                loginBox.classList.add('shake');
-                setTimeout(() => loginBox.classList.remove('shake'), 500);
             }
         });
 
-        // --- Visuals ---
+        function showError(msg) {
+            errorMsg.innerText = msg;
+            errorMsg.style.opacity = '1';
+            loginBox.classList.add('shake');
+            setTimeout(() => loginBox.classList.remove('shake'), 500);
+        }
+
+        // Visuals
         lucide.createIcons();
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -144,39 +156,28 @@
                 ctx.fillRect(this.x, this.y, this.size, this.size);
             }
         }
-
         function init() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             particles = [];
             for(let i=0; i<100; i++) particles.push(new Particle(canvas.width, canvas.height));
         }
-
         function animate() {
             ctx.fillStyle = 'rgba(0,0,0,0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.lineWidth = 0.2;
             ctx.strokeStyle = '#06b6d4';
-            
-            particles.forEach((p, index) => {
+            particles.forEach((p, i) => {
                 p.update(canvas.width, canvas.height);
                 p.draw(ctx);
-                for(let j = index; j < particles.length; j++) {
+                for(let j=i; j<particles.length; j++) {
                     const p2 = particles[j];
-                    const dx = p.x - p2.x;
-                    const dy = p.y - p2.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist < 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                    }
+                    const d = Math.sqrt((p.x-p2.x)**2 + (p.y-p2.y)**2);
+                    if(d<100) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
                 }
             });
             requestAnimationFrame(animate);
         }
-
         window.addEventListener('resize', init);
         init();
         animate();
