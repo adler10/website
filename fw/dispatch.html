@@ -1,26 +1,38 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Einsatzleitsystem der Feuerwehr (Mit Geo-Einsatzabschnitten und Kategorisiertem Autocomplete)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
-        #map { height: 100%; }
+        #map {
+            height: 100%;
+        }
+
         .leaflet-container {
             border-radius: 0.5rem;
         }
+
         /* Highlight cursor when in drawing/pin mode */
-        .map-draw-mode, .map-pin-mode { /* ADDED .map-pin-mode */
+        .map-draw-mode,
+        .map-pin-mode {
+            /* ADDED .map-pin-mode */
             cursor: crosshair !important;
         }
+
         /* Custom styles for Leaflet Draw markers */
         .leaflet-drawing-icon {
-            background-color: #fef08a; /* yellow-200 */
-            border: 2px solid #eab308; /* yellow-500 */
+            background-color: #fef08a;
+            /* yellow-200 */
+            border: 2px solid #eab308;
+            /* yellow-500 */
             width: 14px;
             height: 14px;
             border-radius: 50%;
@@ -28,27 +40,42 @@
             margin-left: -7px;
             position: absolute;
             box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.4);
-            cursor: move !important; /* Draggable cursor */
+            cursor: move !important;
+            /* Draggable cursor */
         }
+
         .leaflet-drawing-icon:hover {
-            background-color: #eab308; /* yellow-500 */
+            background-color: #eab308;
+            /* yellow-500 */
         }
+
         /* Style for the selected incident card */
         .incident-selected {
-            border-color: #E600E6 !important; /* Magenta color */
+            border-color: #E600E6 !important;
+            /* Magenta color */
             /* FIX: Removed box-shadow (glow) and light background */
             /* box-shadow: 0 0 0 3px rgba(230, 0, 230, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.05); */
             /* background-color: #FFB8FF !important; */
-            background-color: #f9fafb !important; /* Use a standard gray-50 */
+            background-color: #f9fafb !important;
+            /* Use a standard gray-50 */
         }
+
         /* Offline Overlay Z-Index Fix */
         #offline-overlay {
-            z-index: 5000 !important; /* Ensure it's on top of Leaflet UI */
+            z-index: 5000 !important;
+            /* Ensure it's on top of Leaflet UI */
         }
+
         /* Modals Z-Index */
-        #end-shift-modal, #ea-management-modal, #incident-creation-modal, #incident-edit-modal { /* ADDED incident edit modal */
-            z-index: 6000 !important; /* Ensure it's on top of everything */
+        #end-shift-modal,
+        #ea-management-modal,
+        #incident-creation-modal,
+        #incident-edit-modal {
+            /* ADDED incident edit modal */
+            z-index: 6000 !important;
+            /* Ensure it's on top of everything */
         }
+
         /* Custom label for EA polygons */
         .ea-label {
             background-color: transparent;
@@ -62,28 +89,75 @@
             opacity: 0;
             transform: translateX(100%);
         }
+
         .toast-notification.show {
             opacity: 1;
             transform: translateX(0);
         }
+
         .toast-notification.fade-out {
             opacity: 0;
             transform: translateX(100%);
         }
     </style>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body class="bg-gray-100 font-sans">
     <div class="flex flex-col md:flex-row h-screen">
         <!-- Sidebar -->
         <div id="sidebar-container" class="w-full md:w-1/3 bg-white p-4 overflow-y-auto shadow-lg">
-            
+
             <!-- HEADER WITH UNDO BUTTON -->
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold text-red-700">Lokale Einsatzkonsole</h1>
-                <button id="undo-btn" class="flex items-center space-x-1 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-gray-800 disabled:text-white font-bold py-1 px-2 rounded transition duration-150 text-sm" disabled>
+                <button id="undo-btn"
+                    class="flex items-center space-x-1 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-gray-800 disabled:text-white font-bold py-1 px-2 rounded transition duration-150 text-sm"
+                    disabled>
                     <!-- Back Arrow SVG Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                        <path fill-rule="evenodd" d="M15.312 8.412a1.002 1.002 0 0 1 .634.341c.288.354.341.854.148 1.256l-1.049 2.098a.75.75 0 0 0 1.295.648l1.049-2.098a2.502 2.502 0 0 0-.154-4.814 1 1 0 0 1-.692-.98 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 1.7 8.356a.75.75 0 0 0-.256.452l-.63 1.89c-.19.569.21.992.746.857l2.128-.532a.75.75 0 0 0 .584-.712c0-.398-.242-.71-.564-.812a4.002 4.002 0 0 0-.001-.001 1 1 0 0 1 1.004-.996c.555 0 1 .444 1 1a1 1 0 0 1-.996 1.004c-.001 0-.002 0-.003-.001h.001a2.502 2.502 0 0 0 2.501 2.396 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 3.737 4.08 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 2.825-1.127 1 1 0 0 1 1.414 1.414 6.002 6.002 0 0 1-4.239 1.693 1 1 0 0 1-.96-1.004 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 15.312 8.412Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M15.312 8.412a1.002 1.002 0 0 1 .634.341c.288.354.341.854.148 1.256l-1.049 2.098a.75.75 0 0 0 1.295.648l1.049-2.098a2.502 2.502 0 0 0-.154-4.814 1 1 0 0 1-.692-.98 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 1.7 8.356a.75.75 0 0 0-.256.452l-.63 1.89c-.19.569.21.992.746.857l2.128-.532a.75.75 0 0 0 .584-.712c0-.398-.242-.71-.564-.812a4.002 4.002 0 0 0-.001-.001 1 1 0 0 1 1.004-.996c.555 0 1 .444 1 1a1 1 0 0 1-.996 1.004c-.001 0-.002 0-.003-.001h.001a2.502 2.502 0 0 0 2.501 2.396 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 3.737 4.08 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 2.825-1.127 1 1 0 0 1 1.414 1.414 6.002 6.002 0 0 1-4.239 1.693 1 1 0 0 1-.96-1.004 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 15.312 8.412Z"
+                            clip-rule="evenodd" />
                     </svg>
                     <span>Rückgängig</span>
                 </button>
@@ -91,18 +165,22 @@
             <!-- END HEADER WITH UNDO BUTTON -->
 
             <!-- Status Indicator -->
-            <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Adresssuche aktiv</div>
-            
+            <div id="status-indicator"
+                class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">
+                Online: Adresssuche aktiv</div>
+
             <!-- NEW: EA Management Button -->
-            <button type="button" id="manage-ea-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
+            <button type="button" id="manage-ea-btn"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
                 Einsatzabschnitte verwalten
             </button>
             <!-- END NEW: EA Management Button -->
 
             <!-- MOVED: Dispatch Form is now in a modal -->
-            
+
             <!-- NEW: Button to open Incident Creation Modal -->
-            <button type="button" id="open-create-incident-modal-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
+            <button type="button" id="open-create-incident-modal-btn"
+                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
                 Neuen Einsatz erstellen
             </button>
             <!-- END NEW Button -->
@@ -118,16 +196,20 @@
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sortieren nach:</label>
                     <div id="sort-bar" class="flex w-full rounded-md shadow-sm" role="group">
-                        <button type-button" data-sort="createdAt" class="sort-btn flex-1 py-1 px-2 text-xs font-medium rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-indigo-600 text-white">
+                        <button type-button" data-sort="createdAt"
+                            class="sort-btn flex-1 py-1 px-2 text-xs font-medium rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-indigo-600 text-white">
                             Zeit
                         </button>
-                        <button type-button" data-sort="keyword" class="sort-btn flex-1 py-1 px-2 text-xs font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
+                        <button type-button" data-sort="keyword"
+                            class="sort-btn flex-1 py-1 px-2 text-xs font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
                             Stichwort
                         </button>
-                        <button type-button" data-sort="status" class="sort-btn flex-1 py-1 px-2 text-xs font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
+                        <button type-button" data-sort="status"
+                            class="sort-btn flex-1 py-1 px-2 text-xs font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
                             Status
                         </button>
-                        <button type-button" data-sort="ea" class="sort-btn flex-1 py-1 px-2 text-xs font-medium rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
+                        <button type-button" data-sort="ea"
+                            class="sort-btn flex-1 py-1 px-2 text-xs font-medium rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500 bg-white text-gray-700">
                             EA
                         </button>
                     </div>
@@ -135,7 +217,8 @@
                 <!-- END NEW: Incident Sort Bar -->
 
                 <!-- NEW: Active Incidents Toggle Button -->
-                <button id="active-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center mb-3">
+                <button id="active-toggle-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center mb-3">
                     Aktive Einsätze (0) ▼
                 </button>
                 <div id="incident-list" class="space-y-3">
@@ -146,7 +229,8 @@
             <hr class="my-4">
 
             <!-- Completed Incidents Section (Collapsible) -->
-            <button id="completed-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center">
+            <button id="completed-toggle-btn"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center">
                 Abgeschlossene Einsätze (0) ▼
             </button>
             <div id="completed-incident-list" class="space-y-3 mt-3 hidden">
@@ -155,7 +239,8 @@
 
             <!-- NEW: End Shift Button -->
             <hr class="my-4">
-            <button id="end-shift-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded w-full transition duration-150">
+            <button id="end-shift-btn"
+                class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded w-full transition duration-150">
                 (Zwischen-) Bericht erstellen
             </button>
             <!-- END NEW: End Shift Button -->
@@ -169,25 +254,31 @@
     </div>
 
     <!-- UPDATED: Offline Overlay with Data Report -->
-    <div id="offline-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 sm:p-8 hidden">
+    <div id="offline-overlay"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 sm:p-8 hidden">
         <!-- Main content box -->
         <div class="bg-white p-6 sm:p-8 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <!-- Header -->
             <div class="flex-shrink-0 text-center mb-4">
-                <svg class="w-12 h-12 sm:w-16 sm:h-16 text-red-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                <svg class="w-12 h-12 sm:w-16 sm:h-16 text-red-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                 </svg>
                 <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">VERBINDUNG VERLOREN</h2>
                 <p class="text-base sm:text-lg font-medium text-gray-700 mb-4">SAFE-MODUS AKTIV</p>
-                <p class="text-xs sm:text-sm text-gray-600">Alle Eingaben sind gesperrt. Daten zur manuellen Übertragung:</p>
+                <p class="text-xs sm:text-sm text-gray-600">Alle Eingaben sind gesperrt. Daten zur manuellen
+                    Übertragung:</p>
             </div>
-            
+
             <!-- Scrollable Data Report -->
-            <div id="offline-data-report" class="flex-grow overflow-y-auto bg-gray-50 p-4 rounded border border-gray-300 space-y-6">
-                
+            <div id="offline-data-report"
+                class="flex-grow overflow-y-auto bg-gray-50 p-4 rounded border border-gray-300 space-y-6">
+
                 <!-- EA List -->
                 <div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Einsatzabschnitte (EA)</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Einsatzabschnitte
+                        (EA)</h3>
                     <div id="offline-ea-list" class="space-y-2">
                         <!-- EAs will be populated here by JS -->
                     </div>
@@ -196,7 +287,8 @@
                 <!-- Incident List -->
                 <div>
                     <!-- UPDATED: Title changed -->
-                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Einsatz-Übersicht</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 pb-1 border-b border-gray-300">Einsatz-Übersicht
+                    </h3>
                     <!-- UPDATED: ID changed -->
                     <div id="offline-incident-report" class="space-y-3">
                         <!-- Incidents will be populated here by JS -->
@@ -210,52 +302,66 @@
     <!-- END: Offline Overlay -->
 
     <!-- NEW: Incident Creation Modal -->
-    <div id="incident-creation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+    <div id="incident-creation-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-900">Neuen Einsatz erstellen</h2>
-                <button id="close-incident-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                <button id="close-incident-modal-btn"
+                    class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                            clip-rule="evenodd" />
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Scrollable Content Area -->
             <div class="overflow-y-auto">
                 <!-- Dispatch Form (MOVED) -->
                 <form id="dispatch-form" class="border-t pt-4 border-gray-200">
-                    
+
                     <!-- Incident Add Panel (New) -->
                     <!-- This panel is now outside the modal, near the end of <body> -->
 
                     <!-- Add Incident on Map Button (New) -->
-                    <button type="button" id="add-incident-map-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150 mb-3">
+                    <button type="button" id="add-incident-map-btn"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150 mb-3">
                         Einsatz auf Karte hinzufügen (Pin-Tool)
                     </button>
 
                     <div class="mb-3 relative">
                         <label for="address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                        <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben (z.B. Am Wall 1)" autocomplete="off">
-                        
+                        <input type="text" id="address"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            placeholder="Adresse eingeben (z.B. Am Wall 1)" autocomplete="off">
+
                         <input type="hidden" id="lat-input" value="">
                         <input type="hidden" id="lon-input" value="">
 
-                        <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                        <div id="address-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                        </div>
                     </div>
                     <div class="mb-3 relative">
                         <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                        <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. TH - Ast / Baum droht zu fallen" required autocomplete="off">
-                        
+                        <input type="text" id="keyword"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            placeholder="z.B. TH - Ast / Baum droht zu fallen" required autocomplete="off">
+
                         <!-- Autocomplete Suggestions Container -->
-                        <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-80 overflow-y-auto"></div>
+                        <div id="keyword-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-80 overflow-y-auto">
+                        </div>
                     </div>
-                    
+
                     <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
                     <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
                         <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
-                        <p id="auto-section-display" class="text-sm font-semibold text-gray-700">Wird nach Adresse bestimmt...</p>
+                        <p id="auto-section-display" class="text-sm font-semibold text-gray-700">Wird nach Adresse
+                            bestimmt...</p>
                         <input type="hidden" id="final-section-assignment" value="">
                     </div>
                     <!-- END AUTOMATIC ASSIGNMENT DISPLAY -->
@@ -263,7 +369,9 @@
                     <!-- Error Message Display (DELETED, now a toast) -->
                     <!-- <div id="form-message" class="hidden p-2 mb-3 text-sm rounded bg-red-100 text-red-700 font-medium"></div> -->
 
-                    <button type="submit" id="submit-btn" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150" disabled>
+                    <button type="submit" id="submit-btn"
+                        class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline transition duration-150"
+                        disabled>
                         Einsatz erstellen
                     </button>
                 </form>
@@ -275,42 +383,56 @@
 
 
     <!-- NEW: Incident Edit Modal -->
-    <div id="incident-edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+    <div id="incident-edit-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-900">Einsatz bearbeiten</h2>
-                <button id="close-incident-edit-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                <button id="close-incident-edit-modal-btn"
+                    class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                            clip-rule="evenodd" />
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Scrollable Content Area -->
             <div class="overflow-y-auto">
                 <form id="incident-edit-form" class="border-t pt-4 border-gray-200 space-y-4">
-                    
+
                     <!-- Add Incident on Map Button (New) -->
-                    <button type="button" id="edit-incident-map-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
+                    <button type="button" id="edit-incident-map-btn"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150">
                         Neue Adresse von Karte wählen (Pin-Tool)
                     </button>
 
                     <div class="relative">
                         <label for="edit-address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                        <input type="text" id="edit-address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Adresse eingeben... (z.B. 76351...)" autocomplete="off">
-                        
+                        <input type="text" id="edit-address"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            placeholder="Adresse eingeben... (z.B. 76351...)" autocomplete="off">
+
                         <input type="hidden" id="edit-lat-input" value="">
                         <input type="hidden" id="edit-lon-input" value="">
 
-                        <div id="edit-address-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                        <div id="edit-address-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                        </div>
                     </div>
                     <div class="relative">
-                        <label for="edit-keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                        <input type="text" id="edit-keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
-                        
+                        <label for="edit-keyword"
+                            class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
+                        <input type="text" id="edit-keyword"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            placeholder="z.B. Baum umgestürzt, Keller unter Wasser" required autocomplete="off">
+
                         <!-- Autocomplete Suggestions Container -->
-                        <div id="edit-keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
+                        <div id="edit-keyword-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                        </div>
                     </div>
 
                     <!-- FIX: Replaced Status Dropdown with Buttons -->
@@ -318,34 +440,40 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
                         <input type="hidden" id="edit-status-hidden" value="">
                         <div class="flex w-full rounded-md shadow-sm">
-                            <button type="button" id="edit-status-btn-open" data-status="open" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
+                            <button type="button" id="edit-status-btn-open" data-status="open"
+                                class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
                                 Offen
                             </button>
-                            <button type="button" id="edit-status-btn-dispatched" data-status="dispatched" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
+                            <button type="button" id="edit-status-btn-dispatched" data-status="dispatched"
+                                class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
                                 Entsandt
                             </button>
-                            <button type="button" id="edit-status-btn-completed" data-status="completed" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
+                            <button type="button" id="edit-status-btn-completed" data-status="completed"
+                                class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-indigo-500">
                                 Abgeschlossen
                             </button>
                         </div>
                     </div>
                     <!-- END FIX -->
-                    
+
                     <!-- AUTOMATIC ASSIGNMENT DISPLAY -->
                     <div class="p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
                         <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
-                        <p id="edit-auto-section-display" class="text-sm font-semibold text-gray-700">Wird nach Adresse bestimmt...</p>
+                        <p id="edit-auto-section-display" class="text-sm font-semibold text-gray-700">Wird nach Adresse
+                            bestimmt...</p>
                     </div>
 
                     <hr class="my-2">
-                    
+
                     <!-- Action Buttons -->
                     <!-- FIX: Made buttons equal width (w-1/2) -->
                     <div class="flex justify-between items-center space-x-3">
-                        <button type="button" id="delete-incident-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-150 w-1/2">
+                        <button type="button" id="delete-incident-btn"
+                            class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-150 w-1/2">
                             Einsatz Löschen
                         </button>
-                        <button type="submit" id="save-incident-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-1/2 transition duration-150">
+                        <button type="submit" id="save-incident-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-1/2 transition duration-150">
                             Änderungen speichern
                         </button>
                     </div>
@@ -358,14 +486,18 @@
 
 
     <!-- NEW: End Shift Modal -->
-    <div id="end-shift-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+    <div id="end-shift-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Schicht beenden & Bericht erstellen</h2>
-            
+
             <div class="space-y-4">
                 <div>
-                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner (Nachname, Name)</label>
-                    <input type="text" id="lagezeichner-input" class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="z.B. Mustermann, Max">
+                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner
+                        (Nachname, Name)</label>
+                    <input type="text" id="lagezeichner-input"
+                        class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="z.B. Mustermann, Max">
                 </div>
 
                 <!-- DELETED: Modal Error Message (now a toast) -->
@@ -375,18 +507,23 @@
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Zusammenfassung</h3>
                     <ul class="space-y-1 text-sm text-gray-700">
-                        <li><strong>Einsätze Gesamt:</strong> <span id="report-stats-incidents" class="font-medium">...</span></li>
-                        <li><strong>Einsatzabschnitte:</strong> <span id="report-stats-eas" class="font-medium">...</span></li>
-                        <li><strong>Berichtsdatum:</strong> <span id="report-stats-date" class="font-medium">...</span></li>
+                        <li><strong>Einsätze Gesamt:</strong> <span id="report-stats-incidents"
+                                class="font-medium">...</span></li>
+                        <li><strong>Einsatzabschnitte:</strong> <span id="report-stats-eas"
+                                class="font-medium">...</span></li>
+                        <li><strong>Berichtsdatum:</strong> <span id="report-stats-date" class="font-medium">...</span>
+                        </li>
                     </ul>
                 </div>
 
                 <!-- Modal Buttons -->
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button id="cancel-report-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
+                    <button id="cancel-report-btn"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
                         Abbrechen
                     </button>
-                    <button id="create-report-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                    <button id="create-report-btn"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
                         Bericht erstellen & Herunterladen
                     </button>
                 </div>
@@ -396,36 +533,47 @@
     <!-- END: End Shift Modal -->
 
     <!-- NEW: EA Management Modal -->
-    <div id="ea-management-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
+    <div id="ea-management-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-900">Einsatzabschnitte verwalten</h2>
-                <button id="close-ea-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                <button id="close-ea-modal-btn"
+                    class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                            clip-rule="evenodd" />
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Scrollable Content Area for EA Management -->
             <div id="ea-modal-content" class="overflow-y-auto space-y-4">
-                
+
                 <!-- EA Creation Form (Moved from sidebar) -->
                 <form id="section-form" class="space-y-3 p-4 bg-gray-50 rounded-lg shadow-inner">
                     <h3 class="text-lg font-bold text-gray-800">Neuen EA erstellen</h3>
                     <div>
                         <label for="section-name" class="block text-sm font-medium text-gray-700">Name des EA</label>
-                        <input type="text" id="section-name" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="z.B. Hochstetten (Ost)" required>
+                        <input type="text" id="section-name"
+                            class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm"
+                            placeholder="z.B. Hochstetten (Ost)" required>
                     </div>
                     <div>
-                        <label for="section-responsible" class="block text-sm font-medium text-gray-700">Verantwortlicher</label>
-                        <input type="text" id="section-responsible" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm" placeholder="EAL Nachname, Name" required>
+                        <label for="section-responsible"
+                            class="block text-sm font-medium text-gray-700">Verantwortlicher</label>
+                        <input type="text" id="section-responsible"
+                            class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight text-sm"
+                            placeholder="EAL Nachname, Name" required>
                     </div>
                     <div>
                         <label for="section-color" class="block text-sm font-medium text-gray-700">Farbe</label>
-                        <input type="color" id="section-color" class="mt-1 shadow appearance-none border rounded w-full h-10" value="#4f46e5">
+                        <input type="color" id="section-color"
+                            class="mt-1 shadow appearance-none border rounded w-full h-10" value="#4f46e5">
                     </div>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded w-full text-sm transition duration-150">
+                    <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded w-full text-sm transition duration-150">
                         EA erstellen
                     </button>
                 </form>
@@ -435,7 +583,7 @@
 
                 <!-- EA List (Moved from sidebar) -->
                 <div class="space-y-4">
-                     <h3 class="text-lg font-bold text-gray-800">Bestehende EAs</h3>
+                    <h3 class="text-lg font-bold text-gray-800">Bestehende EAs</h3>
                     <div id="section-list" class="space-y-3 text-sm">
                         <!-- Section cards will be dynamically inserted here -->
                     </div>
@@ -463,15 +611,18 @@
     <!-- MOVED: EA Drawing Panel -->
     <!-- This panel is now fixed to the bottom-right of the viewport and is only visible when drawingSectionId is active -->
     <!-- Z-index 1000 is fine, it's below modals/toasts -->
-    <div id="section-draw-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-red-100 text-red-700 rounded-lg hidden shadow-xl w-72">
+    <div id="section-draw-panel"
+        class="fixed bottom-8 right-8 z-[1000] p-4 bg-red-100 text-red-700 rounded-lg hidden shadow-xl w-72">
         <p class="font-bold mb-2">EA-Zeichenmodus aktiv</p>
         <p class="text-sm">Klicken Sie auf die Karte, um Punkte hinzuzufügen.</p>
         <p class="text-sm mt-1">Klicken Sie auf Punkte, um sie zu löschen.</p>
         <div class="flex mt-3 space-x-2">
-            <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
+            <button id="finish-draw-btn"
+                class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
                 Zeichnen beenden
             </button>
-            <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
+            <button id="cancel-draw-btn"
+                class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
                 Abbrechen
             </button>
         </div>
@@ -479,23 +630,27 @@
     <!-- END MOVED: EA Drawing Panel -->
 
     <!-- NEW: Incident Add Panel (MOVED) -->
-    <div id="incident-add-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-blue-100 text-blue-700 rounded-lg hidden shadow-xl w-72">
+    <div id="incident-add-panel"
+        class="fixed bottom-8 right-8 z-[1000] p-4 bg-blue-100 text-blue-700 rounded-lg hidden shadow-xl w-72">
         <p class="font-bold mb-1">Einsatz-Hinzufügen-Modus</p>
         <p class="text-sm">Klicken Sie auf die Karte, um die Adresse zu füllen.</p>
         <div class="flex mt-2 space-x-2">
-            <button type="button" id="cancel-add-incident-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
+            <button type="button" id="cancel-add-incident-btn"
+                class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
                 Abbrechen
             </button>
         </div>
     </div>
     <!-- END NEW: Incident Add Panel -->
-    
+
     <!-- NEW: Incident Edit Panel (for map pin) -->
-    <div id="incident-edit-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden shadow-xl w-72">
+    <div id="incident-edit-panel"
+        class="fixed bottom-8 right-8 z-[1000] p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden shadow-xl w-72">
         <p class="font-bold mb-1">Einsatz-Bearbeiten-Modus</p>
         <p class="text-sm">Klicken Sie auf die Karte, um die Adresse zu ändern.</p>
         <div class="flex mt-2 space-x-2">
-            <button type="button" id="cancel-edit-incident-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
+            <button type="button" id="cancel-edit-incident-btn"
+                class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded w-full text-xs">
                 Abbrechen
             </button>
         </div>
@@ -509,61 +664,61 @@
             "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
             "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz", "B - Explosion im Freien", "B - Fahrzeug sonstiges", "B - Garage / Carport / Gartenhaus", "B - Gasaustritt im Freien klein", "B - Lagerplatz klein", "B - Land- / Forst- / Baumaschine", "B - LKW / Kleintransporter", "B - Maschine", "B - mehrere PKW / Kleinbusse", "B - Person im Freien", "B - PKW / Kleinbus außerorts", "B - Spielplatz", "B - Wald klein (< 10m x 10m)", "B - Wohnmobil / Wohnanhänger"],
             "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sontiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B -  Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
-			"B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
-			"B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
-			"B 6": ["B - Alarmstufenerhöhung auf B 6"],
-			"B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
-			"B - Bio": ["B - Bio"],
-			"B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage","B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
-			"B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
-			"B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
-			"B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
-			"B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
-			"B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
-			"B - Metall": ["B - Metall"],
-			"B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
-			"B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
-			"B - Straßentunnel": ["B - Tunnel / Unterführung"],
-			"B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
-			"B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
-			"S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
-			"S - First Responder": ["S - First Responder"],
+            "B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
+            "B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
+            "B 6": ["B - Alarmstufenerhöhung auf B 6"],
+            "B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
+            "B - Bio": ["B - Bio"],
+            "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage", "B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
+            "B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
+            "B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
+            "B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
+            "B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
+            "B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
+            "B - Metall": ["B - Metall"],
+            "B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
+            "B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
+            "B - Straßentunnel": ["B - Tunnel / Unterführung"],
+            "B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
+            "B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
+            "S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
+            "S - First Responder": ["S - First Responder"],
             "S - Sonstiges": ["S - Ausfall Notruf / Alarmierung", "S - Bedrohungslage", "S - Bereitstellungsraum besetzen", "S - Bombendrohung", "S - Drohendes Attentat", "S - Einsatzalarm überörtlich (ca. 12h)", "S - Einsatzalarm überregional (ca. 24h)", "S - Einsatzbereitschaft herstellen", "S - Führungshaus besetzen", "S - Große Polizeilage (Amok / Terror)", "S - Grundschutz sicherstellen", "S - Maßnahmenstufe 1", "S - Maßnahmenstufe 2", "S - Maßnahmenstufe 3", "S - Stabseinsatz", "S - Vorabinformation / Einsatzanfrage", "S - Voralarm überörtlich (ca. 12h)", "S - Voralarm überregional (ca. 24h)", "S - Wachbesetzung", "S - Überlandhilfe Feuerwehr (außerhalb SK & LK KA)"],
-			"TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
-			"TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
-			"TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
-			"TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
-			"TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
-			"TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
-			"TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
-			"TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
-			"TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
-			"TH - Person im Rhein": ["TH - Person im Rhein"],
-			"TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
-			"TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
-			"TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
-			"TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
-			"TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
-			"TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
-			"TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
-			"TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
-			"TH U - Bio": ["TH U - Bio"],
-			"TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
-			"TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
-			"TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
-			"TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
-			"TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
-			"TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
-			"TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
+            "TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
+            "TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
+            "TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
+            "TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
+            "TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
+            "TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
+            "TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
+            "TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
+            "TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
+            "TH - Person im Rhein": ["TH - Person im Rhein"],
+            "TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
+            "TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
+            "TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
+            "TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
+            "TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
+            "TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
+            "TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
+            "TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
+            "TH U - Bio": ["TH U - Bio"],
+            "TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
+            "TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
+            "TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
+            "TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
+            "TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
+            "TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
+            "TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
         };
         // --- END AAO KEYWORDS ---
-        
-        
+
+
         // --- COMPATIBILITY FIX: Custom UUID Generator (V4) ---
         function generateUUID() {
             let d = new Date().getTime();
             let d2 = (performance && performance.now && (performance.now() * 1000)) || 0;
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
                 let r = Math.random() * 16;
                 if (d > 0) {
                     r = (d + r) % 16 | 0;
@@ -586,43 +741,43 @@
         function getCategoryColors(categoryName) {
             // "TH VU" (Dark Blue) must be checked before "TH U" and "TH"
             if (categoryName.startsWith("TH VU")) {
-                return { 
-                    header: 'text-blue-800 bg-blue-50 border-blue-200', 
-                    hover: 'hover:bg-blue-100' 
+                return {
+                    header: 'text-blue-800 bg-blue-50 border-blue-200',
+                    hover: 'hover:bg-blue-100'
                 };
             }
             // "TH U" (Green) must be checked before "TH"
             if (categoryName.startsWith("TH U")) {
-                return { 
-                    header: 'text-green-700 bg-green-50 border-green-200', 
-                    hover: 'hover:bg-green-100' 
+                return {
+                    header: 'text-green-700 bg-green-50 border-green-200',
+                    hover: 'hover:bg-green-100'
                 };
             }
             // "TH" (Light Blue)
             if (categoryName.startsWith("TH")) {
-                return { 
-                    header: 'text-sky-700 bg-sky-50 border-sky-200', 
-                    hover: 'hover:bg-sky-100' 
+                return {
+                    header: 'text-sky-700 bg-sky-50 border-sky-200',
+                    hover: 'hover:bg-sky-100'
                 };
             }
             // "B" (Red)
             if (categoryName.startsWith("B")) {
-                return { 
-                    header: 'text-red-700 bg-red-50 border-red-200', 
-                    hover: 'hover:bg-red-100' 
+                return {
+                    header: 'text-red-700 bg-red-50 border-red-200',
+                    hover: 'hover:bg-red-100'
                 };
             }
             // "S" (Yellow)
             if (categoryName.startsWith("S")) {
-                return { 
-                    header: 'text-yellow-700 bg-yellow-50 border-yellow-200', 
-                    hover: 'hover:bg-yellow-100' 
+                return {
+                    header: 'text-yellow-700 bg-yellow-50 border-yellow-200',
+                    hover: 'hover:bg-yellow-100'
                 };
             }
             // Default (Grey)
-            return { 
-                header: 'text-gray-700 bg-gray-50 border-gray-200', 
-                hover: 'hover:bg-gray-100' 
+            return {
+                header: 'text-gray-700 bg-gray-50 border-gray-200',
+                hover: 'hover:bg-gray-100'
             };
         }
         // --- END NEW Helper ---
@@ -648,22 +803,22 @@
 
 
         // --- Local State and Persistence ---
-        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v2"; 
-        const LOCAL_STORAGE_SECTIONS_KEY = "localDispatchSections_v2"; 
-        const LOCAL_STORAGE_HISTORY_KEY = "localDispatchIncidentHistory_v2"; 
-        
+        const LOCAL_STORAGE_KEY = "localDispatchIncidents_v2";
+        const LOCAL_STORAGE_SECTIONS_KEY = "localDispatchSections_v2";
+        const LOCAL_STORAGE_HISTORY_KEY = "localDispatchIncidentHistory_v2";
+
         const incidents = new Map();
-        const sections = new Map(); 
+        const sections = new Map();
         const markers = new Map();
         const sectionPolygons = new Map(); // Map to store Leaflet Polygon layers
-        
-        let selectedIncidentId = null; 
+
+        let selectedIncidentId = null;
         let editingIncidentId = null; // NEW: For edit modal
-        let statusHistory = []; 
+        let statusHistory = [];
         let isCompletedSectionOpen = false;
         let isActiveSectionOpen = true; // NEW: State for active list
         let currentSortCriteria = 'createdAt'; // NEW: Sorting state
-        
+
         // --- Drawing State ---
         let drawingSectionId = null;
         let currentDrawPoints = []; // Array of [lat, lon]
@@ -677,20 +832,20 @@
         // --- Incident Mode State ---
         let isIncidentAddMode = false;
         let isIncidentEditMode = false; // NEW
-        
+
         // --- UI Elements ---
-        
+
         // --- Incident Creation Modal ---
         const dispatchForm = document.getElementById('dispatch-form');
         const addressInput = document.getElementById('address');
-        const keywordInput = document.getElementById('keyword'); 
-        const keywordSuggestionsContainer = document.getElementById('keyword-suggestions'); 
-        const finalSectionAssignmentInput = document.getElementById('final-section-assignment'); 
+        const keywordInput = document.getElementById('keyword');
+        const keywordSuggestionsContainer = document.getElementById('keyword-suggestions');
+        const finalSectionAssignmentInput = document.getElementById('final-section-assignment');
         const autoSectionDisplay = document.getElementById('auto-section-display');
         const submitBtn = document.getElementById('submit-btn');
         const latInput = document.getElementById('lat-input');
         const lonInput = document.getElementById('lon-input');
-        const suggestionsContainer = document.getElementById('address-suggestions'); 
+        const suggestionsContainer = document.getElementById('address-suggestions');
         // Incident Add Mode UI (Global Panel)
         const addIncidentMapBtn = document.getElementById('add-incident-map-btn');
         const incidentAddPanel = document.getElementById('incident-add-panel');
@@ -704,13 +859,13 @@
         const completedToggleBtn = document.getElementById('completed-toggle-btn');
         const activeToggleBtn = document.getElementById('active-toggle-btn'); // NEW
         const statusIndicator = document.getElementById('status-indicator');
-        const undoBtn = document.getElementById('undo-btn'); 
-        
+        const undoBtn = document.getElementById('undo-btn');
+
         // --- NEW: Incident Creation Modal UI ---
         const openCreateIncidentModalBtn = document.getElementById('open-create-incident-modal-btn');
         const incidentCreationModal = document.getElementById('incident-creation-modal');
         const closeIncidentModalBtn = document.getElementById('close-incident-modal-btn');
-        
+
         // --- NEW: Incident Edit Modal UI ---
         const incidentEditModal = document.getElementById('incident-edit-modal');
         const incidentEditForm = document.getElementById('incident-edit-form');
@@ -735,7 +890,7 @@
         const manageEABtn = document.getElementById('manage-ea-btn');
         const eaManagementModal = document.getElementById('ea-management-modal');
         const closeEAModalBtn = document.getElementById('close-ea-modal-btn');
-        
+
         // EA Management UI (now inside modal)
         const sectionForm = document.getElementById('section-form');
         const sectionNameInput = document.getElementById('section-name');
@@ -746,12 +901,12 @@
 
         // NEW: Toast Container
         const toastContainer = document.getElementById('toast-container');
-        
+
         // MOVED: EA Draw Panel (now global)
         const sectionDrawPanel = document.getElementById('section-draw-panel');
         const finishDrawBtn = document.getElementById('finish-draw-btn');
         const cancelDrawBtn = document.getElementById('cancel-draw-btn');
-        
+
         // Offline Overlay & Data Containers (Updated)
         const offlineOverlay = document.getElementById('offline-overlay');
         const offlineEaList = document.getElementById('offline-ea-list');
@@ -772,7 +927,7 @@
 
         let debounceTimer;
         let editDebounceTimer; // NEW
-        
+
         // --- Map Initialization (Leaflet.js) ---
         // MODIFIED: Centered on Linkenheim-Hochstetten
         const map = L.map('map').setView([49.123, 8.404], 14); // Centered on Linkenheim-Hochstetten
@@ -782,7 +937,7 @@
         }).addTo(map);
 
         currentDrawLayer.addTo(map);
-        
+
         // --- Central Map Click Handler (Refactored) ---
         function onMapClickHandler(e) {
             // Do not process clicks if offline overlay is active
@@ -807,10 +962,10 @@
                 }
             }
         }
-        
+
         map.on('click', onMapClickHandler);
         // --- END Central Map Click Handler ---
-        
+
         // --- Utility Functions ---
 
         /**
@@ -824,10 +979,10 @@
             if (!offlineOverlay.classList.contains('hidden')) return;
 
             const toast = document.createElement('div');
-            const iconSVG = isError ? 
+            const iconSVG = isError ?
                 `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-3 flex-shrink-0"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-.28-4.47a.75.75 0 0 0-1.06-1.06L10 10.94l-1.72-1.72a.75.75 0 0 0-1.06 1.06L8.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 12l1.72-1.72Z" clip-rule="evenodd" /></svg>` :
                 `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-3 flex-shrink-0"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" /></svg>`;
-            
+
             // NEW: Close button
             // FIX: Replaced 'X' icon path with a more standard one.
             const closeBtnHTML = `
@@ -838,14 +993,14 @@
                 </button>`;
 
             const baseClasses = 'p-4 rounded-lg shadow-lg flex items-start text-sm font-medium w-full toast-notification';
-            const colorClasses = isError ? 
-                'bg-red-100 text-red-700' : 
+            const colorClasses = isError ?
+                'bg-red-100 text-red-700' :
                 'bg-green-100 text-green-700';
 
             toast.className = `${baseClasses} ${colorClasses}`;
             // UPDATED: Inner HTML with close button
             toast.innerHTML = `${iconSVG} <span class="flex-grow">${message}</span> ${closeBtnHTML}`;
-            
+
             // Append to the *top* of the container
             toastContainer.prepend(toast);
 
@@ -870,13 +1025,13 @@
 
             // Add listener to the close button
             toast.querySelector('.toast-close-btn').addEventListener('click', removeToast);
-            
-            if(duration > 0) {
+
+            if (duration > 0) {
                 // Set timeout to fade out and remove
                 autoDismissTimer = setTimeout(removeToast, duration);
             }
         }
-        
+
         // --- DEPRECATED: showSectionMessage, showFormMessage, showModalErrorMessage ---
         // All now use showMessage()
 
@@ -891,13 +1046,13 @@
             if (street) parts.push(`${street} ${houseNumber}`.trim());
             if (postcode && city) parts.push(`${postcode} ${city}`);
             else if (city && !parts.includes(city)) parts.push(city);
-            
+
             const finalAddress = parts.join(', ');
-            
+
             if (!finalAddress && address.display_name) {
                 return address.display_name;
             }
-            
+
             return finalAddress;
         }
 
@@ -910,15 +1065,15 @@
          */
         async function geocodeAddress(query) {
             if (!query || !navigator.onLine) return []; // Return empty array
-            
+
             try {
                 // Get 10 suggestions, biased to Linkenheim-Hochstetten area, but not bounded
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&addressdetails=1&limit=10&viewbox=8.3,49.0,8.5,49.25`);
-                
-                const data = await response.json(); 
+
+                const data = await response.json();
 
                 const validData = data.filter(place => place.address);
-                
+
                 // NEW: Prioritize based on user request (Li-Ho > 76xxx > Other)
                 validData.sort((a, b) => {
                     const postA = a.address.postcode || '';
@@ -934,7 +1089,7 @@
                     // Second priority: Other 76... postcodes
                     const aIs76 = postA.startsWith('76');
                     const bIs76 = postB.startsWith('76');
-                    
+
                     if (aIs76 && !bIs76) return -1;
                     if (!aIs76 && bIs76) return 1;
 
@@ -974,13 +1129,13 @@
                 return null;
             }
         }
-        
+
         /**
          * Point-in-Polygon (PIP) Ray Casting Algorithm
          */
         function isPointInPolygon(point, polygon) {
-            const x = point[0]; 
-            const y = point[1]; 
+            const x = point[0];
+            const y = point[1];
             let inside = false;
 
             for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -989,7 +1144,7 @@
 
                 let intersect = ((yi > y) !== (yj > y))
                     && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-                
+
                 if (intersect) inside = !inside;
             }
             return inside;
@@ -1000,7 +1155,7 @@
          */
         function findContainingSection(lat, lon) {
             let assignedSectionId = null;
-            
+
             sections.forEach(section => {
                 if (section.boundary && section.boundary.length >= 3) {
                     const point = [lat, lon];
@@ -1011,19 +1166,19 @@
             });
             return assignedSectionId;
         }
-        
+
         // --- Geometric Helper Functions for Intersection Check ---
-        
+
         function orientation(p, q, r) {
             const val = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
 
-            if (Math.abs(val) < 1e-9) return 0; 
-            return (val > 0) ? 1 : 2; 
+            if (Math.abs(val) < 1e-9) return 0;
+            return (val > 0) ? 1 : 2;
         }
 
         function onSegment(p, q, r) {
             return (q[0] <= Math.max(p[0], r[0]) && q[0] >= Math.min(p[0], r[0]) &&
-                    q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1]));
+                q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1]));
         }
 
         function segmentsIntersect(p1, q1, p2, q2) {
@@ -1037,7 +1192,7 @@
             }
             return false;
         }
-        
+
         /**
          * Checks if the proposed newBoundary intersects any existing EA boundary.
          */
@@ -1046,18 +1201,18 @@
 
             sections.forEach(section => {
                 if (section.id === excludeSectionId || !section.boundary || section.boundary.length < 3) {
-                    return; 
+                    return;
                 }
-                
+
                 const existingBoundary = section.boundary;
-                
+
                 for (let i = 0; i < newBoundary.length; i++) {
                     const p1 = newBoundary[i];
-                    const q1 = newBoundary[(i + 1) % newBoundary.length]; 
+                    const q1 = newBoundary[(i + 1) % newBoundary.length];
                     for (let j = 0; j < existingBoundary.length; j++) {
                         const p2 = existingBoundary[j];
-                        const q2 = existingBoundary[(j + 1) % existingBoundary.length]; 
-                        
+                        const q2 = existingBoundary[(j + 1) % existingBoundary.length];
+
                         if (segmentsIntersect(p1, q1, p2, q2)) {
                             intersectionFound = true;
                             break;
@@ -1065,22 +1220,22 @@
                     }
                     if (intersectionFound) break;
                 }
-                if (intersectionFound) return; 
-                
+                if (intersectionFound) return;
+
                 if (isPointInPolygon(newBoundary[0], existingBoundary)) {
                     intersectionFound = true;
-                    return; 
+                    return;
                 }
-                
+
                 if (isPointInPolygon(existingBoundary[0], newBoundary)) {
                     intersectionFound = true;
-                    return; 
+                    return;
                 }
             });
 
             return intersectionFound;
         }
-        
+
         /**
          * Iterates over all active incidents and re-runs the EA assignment logic.
          */
@@ -1108,11 +1263,11 @@
         function saveState() {
             const incidentsArray = Array.from(incidents.values());
             const sectionsArray = Array.from(sections.values());
-            
+
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(incidentsArray));
             localStorage.setItem(LOCAL_STORAGE_SECTIONS_KEY, JSON.stringify(sectionsArray));
             localStorage.setItem(LOCAL_STORAGE_HISTORY_KEY, JSON.stringify(statusHistory));
-            
+
             console.log("Lokaler Status gespeichert (Einsätze, Abschnitte, Verlauf).");
         }
 
@@ -1124,7 +1279,7 @@
                     const sectionsArray = JSON.parse(cachedSections);
                     sectionsArray.forEach(section => {
                         if (!section.id) section.id = generateUUID();
-                        if (typeof section.boundary === 'undefined') section.boundary = []; 
+                        if (typeof section.boundary === 'undefined') section.boundary = [];
                         if (!section.color) section.color = '#4f46e5'; // Add default color
                         sections.set(section.id, section);
                     });
@@ -1134,18 +1289,18 @@
                     localStorage.removeItem(LOCAL_STORAGE_SECTIONS_KEY);
                 }
             }
-            
+
             // 2. Load Incidents
             const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cachedData) {
                 try {
                     const incidentsArray = JSON.parse(cachedData);
                     incidentsArray.forEach(incident => {
-                        if (!incident.id) incident.id = generateUUID(); 
+                        if (!incident.id) incident.id = generateUUID();
                         if (typeof incident.notes === 'undefined') incident.notes = '';
-                        if (typeof incident.sectionId === 'undefined') incident.sectionId = null; 
+                        if (typeof incident.sectionId === 'undefined') incident.sectionId = null;
                         // NEW: Ensure createdAt exists for sorting
-                        if (!incident.createdAt) incident.createdAt = new Date().toISOString(); 
+                        if (!incident.createdAt) incident.createdAt = new Date().toISOString();
                         incidents.set(incident.id, incident);
                     });
                     console.log(`Geladen: ${incidents.size} Einsätze aus dem lokalen Speicher.`);
@@ -1154,7 +1309,7 @@
                     localStorage.removeItem(LOCAL_STORAGE_KEY);
                 }
             }
-            
+
             // 3. Load History
             const cachedHistory = localStorage.getItem(LOCAL_STORAGE_HISTORY_KEY);
             if (cachedHistory) {
@@ -1176,7 +1331,7 @@
             undoBtn.disabled = statusHistory.length === 0;
             if (statusHistory.length > 0) {
                 undoBtn.classList.replace('disabled:bg-gray-400', 'bg-yellow-500');
-                undoBtn.classList.replace('disabled:text-white', 'text-gray-800'); 
+                undoBtn.classList.replace('disabled:text-white', 'text-gray-800');
             } else {
                 undoBtn.classList.replace('bg-yellow-500', 'disabled:bg-gray-400');
                 undoBtn.classList.replace('text-gray-800', 'disabled:text-white');
@@ -1193,28 +1348,28 @@
                 incident.status = lastAction.oldStatus;
                 // Re-assign to EA if being un-completed
                 if (incident.status !== 'completed') {
-                    incident.sectionId = findContainingSection(incident.lat, incident.lon); 
+                    incident.sectionId = findContainingSection(incident.lat, incident.lon);
                 }
                 // NOTE: We keep the sectionId if the oldStatus was 'completed'
                 // This relies on the logic change to preserve sectionId on completion.
-                
+
                 incidents.set(incident.id, incident);
-                
-                selectedIncidentId = null; 
+
+                selectedIncidentId = null;
                 saveState();
-                renderAll(); 
-                
+                renderAll();
+
                 showMessage(`Aktion für Einsatz ${lastAction.id.substring(0, 4)}... erfolgreich rückgängig gemacht.`, false);
             } else {
                 showMessage("Fehler: Einsatz für Rückgängig-Aktion nicht gefunden. Verlauf wurde gelöscht.", true);
-                statusHistory = []; 
+                statusHistory = [];
             }
 
             updateUndoButtonState();
         }
 
         undoBtn.addEventListener('click', undoLastAction);
-        
+
         // --- NEW: EA Modal Logic ---
         manageEABtn.addEventListener('click', () => {
             selectedIncidentId = null; // NEW: Collapse incident
@@ -1235,13 +1390,13 @@
         eaManagementModal.addEventListener('click', (e) => {
             if (e.target === eaManagementModal) {
                 if (drawingSectionId) {
-                    setDrawMode(false); 
+                    setDrawMode(false);
                 }
                 eaManagementModal.classList.add('hidden');
-                renderAll(); 
+                renderAll();
             }
         });
-        
+
         // --- REMOVED: Old listener for responsible person change ---
         // This is now handled by the "Save" button in the edit panel
 
@@ -1255,7 +1410,7 @@
                 selectedIncidentId = null;
                 renderAllIncidents(); // Collapse any open incidents
             }
-            
+
             isIncidentAddMode = isActive;
             const mapContainer = map.getContainer();
 
@@ -1270,7 +1425,7 @@
                 incidentAddPanel.classList.add('hidden'); // Hide global panel
                 addIncidentMapBtn.disabled = false;
                 // Re-validate form to see if submit should be enabled
-                validateIncidentForm(); 
+                validateIncidentForm();
                 addIncidentMapBtn.textContent = 'Einsatz auf Karte hinzufügen (Pin-Tool)';
             }
         }
@@ -1283,21 +1438,21 @@
 
             // Show loading state in panel
             incidentAddPanel.querySelector('p.text-sm').textContent = 'Suche Adresse...';
-            
+
             const result = await reverseGeocode(lat, lon);
-            
+
             if (result) {
                 addressInput.value = result.formattedAddress;
                 latInput.value = result.lat;
                 lonInput.value = result.lon;
-                
+
                 updateAutoAssignment(result.lat, result.lon, 'auto-section-display');
-                
+
                 showMessage("Adresse von Karte übernommen. Bitte Stichwort eingeben.", false);
-                
+
                 setIncidentAddMode(false); // Turn off mode on success
                 incidentCreationModal.classList.remove('hidden'); // RE-OPEN MODAL
-                
+
                 keywordInput.focus();
                 validateIncidentForm(); // Check if form is now valid
             } else {
@@ -1308,7 +1463,7 @@
             // Reset panel text
             incidentAddPanel.querySelector('p.text-sm').textContent = 'Klicken Sie auf die Karte, um die Adresse zu füllen.';
         }
-        
+
         // --- NEW: Incident Edit Mode Logic ---
         function setIncidentEditMode(isActive) {
             if (isActive) {
@@ -1318,7 +1473,7 @@
                 selectedIncidentId = null;
                 renderAllIncidents(); // Collapse any open incidents
             }
-            
+
             isIncidentEditMode = isActive;
             const mapContainer = map.getContainer();
 
@@ -1334,7 +1489,7 @@
                 editIncidentMapBtn.textContent = 'Neue Adresse von Karte wählen (Pin-Tool)';
             }
         }
-        
+
         async function handleMapEditIncidentClick(e) {
             if (!isIncidentEditMode) return;
 
@@ -1343,22 +1498,22 @@
 
             // Show loading state in panel
             incidentEditPanel.querySelector('p.text-sm').textContent = 'Suche Adresse...';
-            
+
             const result = await reverseGeocode(lat, lon);
-            
+
             if (result) {
                 // Update fields in the hidden edit modal
                 editAddressInput.value = result.formattedAddress;
                 editLatInput.value = result.lat;
                 editLonInput.value = result.lon;
-                
+
                 updateAutoAssignment(result.lat, result.lon, 'edit-auto-section-display');
-                
+
                 showMessage("Neue Adresse von Karte übernommen.", false);
-                
+
                 setIncidentEditMode(false); // Turn off mode on success
                 incidentEditModal.classList.remove('hidden'); // RE-OPEN MODAL
-                
+
                 editAddressInput.focus();
             } else {
                 showMessage("Adresse für den geklickten Punkt konnte nicht gefunden werden.", true);
@@ -1371,7 +1526,7 @@
 
 
         // --- EA Drawing Logic (REFACTORED) ---
-        
+
         /**
          * Finds the closest vertex (snap point) from other EAs within SNAP_DISTANCE_PX.
          */
@@ -1387,7 +1542,7 @@
                     const vertexLatLng = L.latLng(vertex[0], vertex[1]);
                     const vertexPoint = map.latLngToContainerPoint(vertexLatLng);
                     const distance = clickedPoint.distanceTo(vertexPoint);
-                    
+
                     if (distance < minDistance) {
                         minDistance = distance;
                         bestSnap = vertexLatLng;
@@ -1405,10 +1560,10 @@
             if (currentPolyline) {
                 currentPolyline.setLatLngs(latlngs);
             } else {
-                currentPolyline = L.polyline(latlngs, { 
-                    color: '#ef4444', 
-                    weight: 3, 
-                    opacity: 0.7 
+                currentPolyline = L.polyline(latlngs, {
+                    color: '#ef4444',
+                    weight: 3,
+                    opacity: 0.7
                 }).addTo(currentDrawLayer);
             }
         }
@@ -1417,12 +1572,12 @@
          * Creates a single draggable vertex marker.
          */
         function createVertexMarker(lat, lon, index) {
-            const marker = L.marker([lat, lon], { 
-                draggable: true, 
+            const marker = L.marker([lat, lon], {
+                draggable: true,
                 icon: drawingIcon,
                 autoPan: true
             }).addTo(currentDrawLayer);
-            
+
             marker._vertexIndex = index; // Store index
 
             marker.on('drag', (e) => {
@@ -1440,7 +1595,7 @@
                 currentDrawPoints.splice(indexToRemove, 1);
                 refreshDrawLayer(); // Rebuild all markers and polyline
             });
-            
+
             currentVertexMarkers.push(marker);
             return marker;
         }
@@ -1453,7 +1608,7 @@
             currentDrawLayer.clearLayers();
             currentVertexMarkers = [];
             currentPolyline = null;
-            
+
             const pointsToDraw = [...currentDrawPoints]; // Copy
             currentDrawPoints = []; // Reset
 
@@ -1461,7 +1616,7 @@
                 createVertexMarker(p[0], p[1], i);
                 currentDrawPoints.push([p[0], p[1]]); // Re-add to array in correct order
             });
-            
+
             updateDrawPolyline();
         }
 
@@ -1472,14 +1627,14 @@
                 setIncidentEditMode(false);
                 selectedIncidentId = null;
                 renderAllIncidents(); // Collapse any open incidents
-                
+
                 incidentCreationModal.classList.add('hidden'); // Close incident modal if open
                 incidentEditModal.classList.add('hidden'); // Close edit modal
             }
 
             drawingSectionId = isActive ? sectionId : null;
             const mapContainer = map.getContainer();
-            
+
             if (isActive) {
                 mapContainer.classList.add('map-draw-mode');
                 // Show the global draw panel
@@ -1488,9 +1643,9 @@
                 if (sectionForm) {
                     sectionForm.querySelector('button[type="submit"]').disabled = true;
                 }
-                
+
                 // Load existing points
-                currentDrawPoints = sections.get(sectionId)?.boundary ? [...sections.get(sectionId).boundary] : []; 
+                currentDrawPoints = sections.get(sectionId)?.boundary ? [...sections.get(sectionId).boundary] : [];
                 refreshDrawLayer(); // Initial draw
             } else {
                 mapContainer.classList.remove('map-draw-mode');
@@ -1500,31 +1655,31 @@
                 if (sectionForm) {
                     sectionForm.querySelector('button[type="submit"]').disabled = false;
                 }
-                
+
                 // Clear all drawing layers
                 currentDrawLayer.clearLayers();
                 currentDrawPoints = [];
                 currentVertexMarkers = [];
                 currentPolyline = null;
             }
-            
+
             // Re-render the modal list (to update button states)
             renderSectionManager();
         }
 
         function handleMapDrawClick(e) {
             if (!drawingSectionId) return;
-            
+
             // Find snap point
             const snappedLatLng = findSnapPoint(e.latlng, drawingSectionId);
             const newLat = snappedLatLng ? snappedLatLng.lat : e.latlng.lat;
             const newLon = snappedLatLng ? snappedLatLng.lng : e.latlng.lng;
-            
+
             const newIndex = currentDrawPoints.length;
             currentDrawPoints.push([newLat, newLon]);
             createVertexMarker(newLat, newLon, newIndex);
             updateDrawPolyline();
-            
+
             // Show message as a TOAST
             const section = sections.get(drawingSectionId);
             showMessage(`Punkt ${newIndex + 1} hinzugefügt für EA "${section.name}". ${snappedLatLng ? '(An Punkt angedockt)' : ''}`, false, 3000);
@@ -1537,7 +1692,7 @@
                 showMessage("Ein Polygon benötigt mindestens 3 Punkte.", true);
                 return;
             }
-            
+
             if (checkExistingEAOverlaps(currentDrawPoints, drawingSectionId)) {
                 // Show message as a TOAST
                 showMessage("FEHLER: Die neue Grenze überschneidet oder überlappt einen bestehenden Einsatzabschnitt. Dies ist nicht erlaubt.", true);
@@ -1549,9 +1704,9 @@
                 section.boundary = [...currentDrawPoints]; // Save a copy
                 sections.set(drawingSectionId, section);
                 saveState();
-                
+
                 reEvaluateIncidents();
-                
+
                 // Show message as a TOAST
                 showMessage(`Grenze für EA "${section.name}" erfolgreich gespeichert. ${section.boundary.length} Punkte.`, false);
             }
@@ -1567,7 +1722,7 @@
             renderSectionManager(); // Re-render EA list
             renderAllIncidents(); // Re-render map polygons
         });
-        
+
         // --- EA Management Logic ---
 
         sectionForm.addEventListener('submit', (e) => {
@@ -1580,7 +1735,7 @@
                 showMessage("Bitte füllen Sie alle Felder aus.", true);
                 return;
             }
-            
+
             const newSection = {
                 id: generateUUID(),
                 name: name,
@@ -1601,13 +1756,13 @@
             // Do not use confirm() as it's blocked
             const section = sections.get(id);
             if (!section) return;
-            
+
             // This is tricky. The old logic added a button to a message div.
             // The new logic uses toasts, which disappear.
             // For this *one case*, I will create a special persistent error toast.
             const toastMessage = `SIND SIE SICHER, dass Sie "${section.name}" löschen möchten? Alle Zuordnungen werden entfernt. 
                 <button id="confirm-delete-${id}" class="mt-2 bg-red-700 text-white px-3 py-1 rounded text-xs font-bold w-full hover:bg-red-800">JA, LÖSCHEN</button>`;
-            
+
             showMessage(toastMessage, true, 0); // Duration 0 means it stays until clicked
 
             // Need to add listener to the new button inside the toast
@@ -1617,22 +1772,22 @@
                 if (confirmBtn) {
                     confirmBtn.onclick = (e) => {
                         e.stopPropagation(); // Stop click from propagating
-                        
+
                         if (drawingSectionId === id) setDrawMode(false);
 
                         sections.delete(id);
-                        
+
                         incidents.forEach(incident => {
                             if (incident.sectionId === id) {
                                 incident.sectionId = null;
                             }
                         });
 
-                        reEvaluateIncidents(); 
-                        
+                        reEvaluateIncidents();
+
                         saveState();
                         renderAll(); // Full re-render
-                        
+
                         // Manually close the toast
                         const parentToast = confirmBtn.closest('.toast-notification');
                         if (parentToast) {
@@ -1644,13 +1799,13 @@
                                 }
                             }, { once: true });
                         }
-                        
+
                         showMessage("EA gelöscht.", false); // Show new confirmation toast
                     };
                 }
             }, 100); // 100ms delay
         }
-        
+
         // --- UI Rendering ---
 
         function renderSectionManager() {
@@ -1661,11 +1816,11 @@
 
             if (!sectionListContainer) return; // Guard if element not found
             sectionListContainer.innerHTML = '';
-            
+
             if (sections.size === 0) {
                 sectionListContainer.innerHTML = '<p class="text-xs text-gray-500">Noch keine Einsatzabschnitte erstellt.</p>';
             }
-            
+
             // Re-draw polygons on the main map
             sectionPolygons.forEach(polygon => map.removeLayer(polygon));
             sectionPolygons.clear();
@@ -1674,28 +1829,28 @@
                 // MODIFIED: Calculate both current and previous counts
                 const currentCount = Array.from(incidents.values()).filter(i => i.sectionId === section.id && (i.status === 'open' || i.status === 'dispatched')).length;
                 const previousCount = Array.from(incidents.values()).filter(i => i.sectionId === section.id && i.status === 'completed').length;
-                
+
                 const hasBoundary = section.boundary && section.boundary.length >= 3;
                 const sectionColor = section.color || '#4f46e5'; // Fallback
-                
+
                 if (hasBoundary) {
                     const isDrawing = drawingSectionId === section.id;
                     const polygon = L.polygon(section.boundary, {
-                        color: isDrawing ? '#ef4444' : sectionColor, 
-                        fillColor: isDrawing ? '#fef2f2' : sectionColor, 
+                        color: isDrawing ? '#ef4444' : sectionColor,
+                        fillColor: isDrawing ? '#fef2f2' : sectionColor,
                         fillOpacity: 0.2,
                         weight: 2,
                         interactive: false // Makes polygon non-clickable
                     }).addTo(map);
-                    
+
                     // NEW: Add permanent label to polygon
                     polygon.bindTooltip(
                         `<span style="color: ${sectionColor}; font-weight: bold; font-size: 14px; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 4px #FFF;">${section.name}</span>`, {
-                            permanent: true,
-                            direction: 'center',
-                            className: 'ea-label',
-                            interactive: false
-                        }
+                        permanent: true,
+                        direction: 'center',
+                        className: 'ea-label',
+                        interactive: false
+                    }
                     );
                     // END NEW
 
@@ -1706,12 +1861,12 @@
                 const sectionDiv = document.createElement('div');
                 sectionDiv.className = 'flex flex-col p-3 bg-white rounded border-2';
                 sectionDiv.style.borderColor = hasBoundary ? sectionColor : '#ef4444'; // Use sectionColor or red
-                
-                const boundaryStatusText = hasBoundary ? 
-                    `<span class="text-xs font-medium text-green-700">✓ Grenze definiert</span>` : 
+
+                const boundaryStatusText = hasBoundary ?
+                    `<span class="text-xs font-medium text-green-700">✓ Grenze definiert</span>` :
                     `<span class="text-xs font-medium text-red-700">✕ Grenze fehlt</span>`;
 
-                const drawButtonHTML = hasBoundary ? 
+                const drawButtonHTML = hasBoundary ?
                     `<button data-id="${section.id}" class="draw-section-btn bg-yellow-500 hover:bg-yellow-600 text-gray-800 font-bold py-1 px-2 rounded flex-grow text-xs transition duration-150">
                         Grenze bearbeiten
                     </button>` :
@@ -1788,7 +1943,7 @@
                 // --- END UPDATED HTML ---
                 sectionListContainer.appendChild(sectionDiv);
             });
-            
+
             // --- NEW: Delegated Event Listener for Section List ---
             // Clear old listeners by replacing the node
             const newSectionListContainer = sectionListContainer.cloneNode(true);
@@ -1801,12 +1956,12 @@
                 if (!target) return;
 
                 const id = target.dataset.id;
-                
+
                 // --- Delete Button ---
                 if (target.classList.contains('delete-section-btn')) {
                     deleteSection(id);
                 }
-                
+
                 // --- Draw Button ---
                 else if (target.classList.contains('draw-section-btn')) {
                     setDrawMode(true, id);
@@ -1814,13 +1969,13 @@
                     // FIX: Use current zoom level instead of fixed '13'
                     map.flyTo(map.getCenter(), map.getZoom());
                 }
-                
+
                 // --- Edit Button (NEW) ---
                 else if (target.classList.contains('edit-ea-btn')) {
                     document.getElementById(`edit-panel-${id}`).classList.toggle('hidden');
                     document.getElementById(`static-resp-${id}`).classList.toggle('hidden');
                 }
-                
+
                 // --- Cancel Edit Button (NEW) ---
                 else if (target.classList.contains('cancel-edit-btn')) {
                     document.getElementById(`edit-panel-${id}`).classList.add('hidden');
@@ -1832,7 +1987,7 @@
                         document.getElementById(`edit-color-${id}`).value = section.color;
                     }
                 }
-                
+
                 // --- Save Edit Button (NEW) ---
                 else if (target.classList.contains('save-edit-btn')) {
                     const section = sections.get(id);
@@ -1840,22 +1995,22 @@
 
                     const newResp = document.getElementById(`edit-resp-${id}`).value.trim();
                     const newColor = document.getElementById(`edit-color-${id}`).value;
-                    
+
                     if (!newResp) {
                         showMessage("Name des Verantwortlichen darf nicht leer sein.", true);
                         return;
                     }
-                    
+
                     section.responsible = newResp;
                     section.color = newColor;
                     sections.set(id, section);
-                    
+
                     saveState();
                     renderAll(); // Full re-render to update map and list
                     renderSectionManager(); // Re-render modal list
-                    
+
                     showMessage(`EA "${section.name}" erfolgreich aktualisiert.`, false);
-                    
+
                     // Manually hide panel after save (renderAll might be too slow)
                     document.getElementById(`edit-panel-${id}`).classList.add('hidden');
                     document.getElementById(`static-resp-${id}`).classList.remove('hidden');
@@ -1863,26 +2018,26 @@
             });
             // --- END NEW Delegated Listener ---
         }
-        
+
         function getStatusColor(status) {
             if (status === 'open') return 'red';
             if (status === 'dispatched') return 'blue';
-            if (status === 'completed') return 'amber'; 
+            if (status === 'completed') return 'amber';
             return 'grey';
         }
 
         function createMarkerIcon(color) {
             const hexColor = {
-                'red': '#ef4444', 
-                'blue': '#3b82f6', 
+                'red': '#ef4444',
+                'blue': '#3b82f6',
                 'amber': '#f59e0b',
                 'grey': '#6b7280',
                 'magenta': '#E600E6' // For selected incident
             }[color];
-            
+
             // FIX: Removed glow effect by setting selectedEffect to an empty string
             const selectedEffect = ''; // OLD: color === 'magenta' ? 'drop-shadow(0 0 5px #E600E6)' : '';
-            
+
             const svgIcon = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${hexColor}" width="36px" height="36px" style="filter: ${selectedEffect};">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -1909,10 +2064,10 @@
 
             const incidentElement = document.createElement('div');
             incidentElement.id = `incident-${incident.id}`;
-            
+
             let statusColorClass = 'bg-gray-100 text-gray-800 border-l-4 border-gray-300';
             let buttonHTML = '';
-            
+
             if (incident.status === 'open') {
                 statusColorClass = 'bg-red-100 text-red-800 border-l-4 border-red-500';
                 buttonHTML = `<button data-id="${incident.id}" class="update-status-btn dispatch-btn bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Einheit entsenden</button>`;
@@ -1923,7 +2078,7 @@
                 statusColorClass = 'bg-amber-100 text-amber-800 opacity-75 border-l-4 border-amber-500';
                 buttonHTML = `<button disabled class="bg-gray-300 text-gray-700 text-sm font-bold py-1 px-3 rounded w-full cursor-not-allowed">Abgeschlossen</button>`;
             }
-            
+
             let selectionClass = '';
             let notesSectionHTML = '';
             let sectionInfoHTML = '';
@@ -1945,7 +2100,7 @@
                     ${unassignButtonHTML}
                 </div>`;
             } else if (!isCompleted) {
-                 sectionInfoHTML = `<div class="mt-2 text-xs text-gray-600 font-medium bg-gray-200 p-1.5 rounded">
+                sectionInfoHTML = `<div class="mt-2 text-xs text-gray-600 font-medium bg-gray-200 p-1.5 rounded">
                     EA: Nicht zugeordnet (Keine Grenze gefunden)
                 </div>`;
             }
@@ -2046,7 +2201,7 @@
             completedIncidentList.innerHTML = '';
             markers.forEach(marker => map.removeLayer(marker));
             markers.clear();
-            
+
             // Re-draw map polygons (necessary in case EA modal was closed)
             sectionPolygons.forEach(polygon => map.removeLayer(polygon));
             sectionPolygons.clear();
@@ -2054,8 +2209,8 @@
                 if (section.boundary && section.boundary.length >= 3) {
                     const sectionColor = section.color || '#4f46e5';
                     const polygon = L.polygon(section.boundary, {
-                        color: sectionColor, 
-                        fillColor: sectionColor, 
+                        color: sectionColor,
+                        fillColor: sectionColor,
                         fillOpacity: 0.2,
                         weight: 2,
                         interactive: false
@@ -2064,14 +2219,14 @@
                     // NEW: Add permanent label to polygon
                     polygon.bindTooltip(
                         `<span style="color: ${sectionColor}; font-weight: bold; font-size: 14px; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF, 0 0 4px #FFF;">${section.name}</span>`, {
-                            permanent: true,
-                            direction: 'center',
-                            className: 'ea-label',
-                            interactive: false
-                        }
+                        permanent: true,
+                        direction: 'center',
+                        className: 'ea-label',
+                        interactive: false
+                    }
                     );
                     // END NEW
-                    
+
                     sectionPolygons.set(section.id, polygon);
                 }
             });
@@ -2107,9 +2262,9 @@
                         selectedIncidentId = null;
                     } else {
                         selectedIncidentId = incident.id;
-                        map.flyTo([incident.lat, incident.lon], 15); 
+                        map.flyTo([incident.lat, incident.lon], 15);
                     }
-                    
+
                     renderAllIncidents(); // Only re-render incidents
                 });
 
@@ -2117,24 +2272,24 @@
                     // NEW: Check if selected
                     const isSelected = incident.id === selectedIncidentId;
                     const color = isSelected ? 'magenta' : getStatusColor(incident.status);
-                    
+
                     const newIcon = createMarkerIcon(color);
                     const germanStatus = getGermanStatusText(incident.status);
                     const sectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : 'Kein EA';
                     const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
-                    
-                    const newMarker = L.marker([incident.lat, incident.lon], { 
+
+                    const newMarker = L.marker([incident.lat, incident.lon], {
                         icon: newIcon,
                         zIndexOffset: isSelected ? 1000 : 0 // Make selected marker on top
                     }).addTo(map);
                     newMarker.bindPopup(popupContent);
-                    
-                    newMarker.on('click', function(e) {
+
+                    newMarker.on('click', function (e) {
                         if (selectedIncidentId !== incident.id) {
                             selectedIncidentId = incident.id;
                             renderAllIncidents(); // Re-render list and markers
                         }
-                        map.flyTo([incident.lat, incident.lon], map.getZoom()); 
+                        map.flyTo([incident.lat, incident.lon], map.getZoom());
                     });
 
                     markers.set(incident.id, newMarker);
@@ -2145,18 +2300,18 @@
             completedIncidents.forEach(incident => {
                 const incidentElement = renderIncidentCard(incident);
                 completedIncidentList.appendChild(incidentElement);
-                
-                 incidentElement.addEventListener('click', (e) => {
+
+                incidentElement.addEventListener('click', (e) => {
                     // Stop propagation if clicking on an interactive element
                     if (e.target.closest('button') || e.target.closest('textarea') || e.target.closest('.notes-textarea')) {
                         return;
                     }
-                    
+
                     if (selectedIncidentId === incident.id) {
                         selectedIncidentId = null;
                     } else {
                         selectedIncidentId = incident.id;
-                        map.flyTo([incident.lat, incident.lon], 15); 
+                        map.flyTo([incident.lat, incident.lon], 15);
                     }
                     renderAllIncidents(); // Re-render list and markers
                 });
@@ -2165,30 +2320,30 @@
                     // NEW: Check if selected
                     const isSelected = incident.id === selectedIncidentId;
                     const color = isSelected ? 'magenta' : getStatusColor(incident.status);
-                    
+
                     const newIcon = createMarkerIcon(color);
                     const germanStatus = getGermanStatusText(incident.status);
                     // MODIFICATION: Show EA for completed incidents in popup
                     const sectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : (incident.status === 'completed' ? 'N/A (Abgeschl.)' : 'Kein EA');
                     const popupContent = `<b>${incident.keyword}</b><br>${incident.formattedAddress}<br>Status: ${germanStatus}<br>EA: ${sectionName}`;
-                    
-                    const newMarker = L.marker([incident.lat, incident.lon], { 
+
+                    const newMarker = L.marker([incident.lat, incident.lon], {
                         icon: newIcon,
                         zIndexOffset: isSelected ? 1000 : 0 // Make selected marker on top
                     }).addTo(map);
                     newMarker.bindPopup(popupContent);
-                    newMarker.on('click', function(e) {
+                    newMarker.on('click', function (e) {
                         if (selectedIncidentId !== incident.id) {
                             selectedIncidentId = incident.id;
                             renderAllIncidents(); // Re-render list and markers
                         }
-                        map.flyTo([incident.lat, incident.lon], map.getZoom()); 
+                        map.flyTo([incident.lat, incident.lon], map.getZoom());
                     });
 
                     markers.set(incident.id, newMarker);
                 }
             });
-            
+
             // --- NEW: Update Active Toggle Button ---
             const activeToggleIconText = isActiveSectionOpen ? '▲' : '▼';
             activeToggleBtn.innerHTML = `Aktive Einsätze (${activeIncidents.length}) <span class="text-lg font-mono">${activeToggleIconText}</span>`;
@@ -2196,7 +2351,7 @@
 
             const completedToggleIconText = isCompletedSectionOpen ? '▲' : '▼';
             completedToggleBtn.innerHTML = `Abgeschlossene Einsätze (${completedIncidents.length}) <span class="text-lg font-mono">${completedToggleIconText}</span>`;
-            
+
             updateUndoButtonState();
         }
 
@@ -2211,19 +2366,19 @@
             // Find the closest *button* to the click target
             const target = e.target.closest('button');
             if (!target) return;
-            
+
             const id = target.dataset.id;
             const incident = incidents.get(id);
-            
+
             if (target.classList.contains('save-notes-btn')) {
                 const notesTextarea = document.getElementById(`notes-${id}`);
                 if (!incident || !notesTextarea) return;
 
                 incident.notes = notesTextarea.value.trim();
                 incidents.set(id, incident);
-                
+
                 saveState();
-                
+
                 const originalText = target.textContent;
                 target.textContent = 'Gespeichert!';
                 target.disabled = true;
@@ -2232,49 +2387,49 @@
                     target.textContent = originalText;
                     target.disabled = false;
                 }, 1500);
-                
-                selectedIncidentId = id; 
+
+                selectedIncidentId = id;
                 showMessage("Notizen erfolgreich gespeichert.", false);
-                
+
             } else if (target.classList.contains('unassign-section-btn')) {
                 if (!incident) return;
-                
+
                 const oldSectionName = (incident.sectionId && sections.get(incident.sectionId)) ? sections.get(incident.sectionId).name : 'Unbekannt';
-                incident.sectionId = null; 
+                incident.sectionId = null;
                 incidents.set(id, incident);
-                
+
                 saveState();
                 selectedIncidentId = null; // NEW: Collapse card
                 renderAll();
-                
+
                 showMessage(`EA-Zuordnung für Einsatz ${id.substring(0, 4)}... (vormals ${oldSectionName}) manuell aufgehoben.`, false);
-                
+
             } else if (target.classList.contains('edit-incident-btn')) { // NEW: Open Edit Modal
                 if (!incident) return;
-                
+
                 editingIncidentId = id;
-                
+
                 // Populate modal
                 editKeywordInput.value = incident.keyword;
                 editAddressInput.value = incident.formattedAddress;
                 editLatInput.value = incident.lat;
                 editLonInput.value = incident.lon;
-                
+
                 // FIX: Use new button state function instead of select
                 setEditStatusButtonState(incident.status);
-                
+
                 // Set initial EA display
                 updateAutoAssignment(incident.lat, incident.lon, 'edit-auto-section-display');
-                
+
                 // Clear suggestions
                 editAddressSuggestions.classList.add('hidden');
                 editKeywordSuggestions.classList.add('hidden');
-                
+
                 incidentEditModal.classList.remove('hidden');
-                
+
             } else if (target.classList.contains('update-status-btn')) { // Status Update
                 if (!incident) return;
-            
+
                 let oldStatus = incident.status;
                 let newStatus;
                 let message = '';
@@ -2283,10 +2438,10 @@
                     newStatus = 'dispatched';
                     message = 'entsandt.';
                 } else if (target.classList.contains('complete-btn')) {
-                    newStatus = 'completed'; 
+                    newStatus = 'completed';
                     message = 'als abgeschlossen markiert.';
                 } else {
-                    return; 
+                    return;
                 }
 
                 if (oldStatus !== newStatus) {
@@ -2296,18 +2451,18 @@
                         newStatus: newStatus
                     });
                 }
-                
+
                 incident.status = newStatus;
-                
+
                 // MODIFICATION: Commented out to preserve EA on completion
                 // if (newStatus === 'completed') {
                 //     incident.sectionId = null; // Un-assign from EA on completion
                 // }
-                
+
                 incidents.set(id, incident);
                 selectedIncidentId = null; // NEW: Collapse card
                 saveState();
-                renderAll(); 
+                renderAll();
                 showMessage(`Einsatz ${id.substring(0, 4)}... ${message}`, false);
             }
         });
@@ -2324,7 +2479,7 @@
         function buildOfflineIncidentCategory(title, incidentArray, titleColorClass) {
             let html = `<div class="mb-4">
                             <h4 class="text-lg font-bold ${titleColorClass} mb-2 pb-1 border-b border-gray-300">${title} (${incidentArray.length})</h4>`;
-            
+
             if (incidentArray.length > 0) {
                 html += '<div class="space-y-3">';
                 // MODIFICATION: Sort offline report by time as well
@@ -2334,7 +2489,7 @@
                     const section = incident.sectionId ? sections.get(incident.sectionId) : null;
                     // MODIFICATION: Handle display for completed incidents
                     const sectionName = section ? `${section.name} (${section.responsible})` : (incident.status === 'completed' ? 'N/A (Zugehörigkeit beibehalten)' : 'Kein EA');
-                    
+
                     let notesHTML = '';
                     if (incident.notes && incident.notes.trim() !== '') {
                         notesHTML = `
@@ -2367,16 +2522,16 @@
 
 
         // --- Network and Address Lookup Management (REBUILT FOR SAFE STATE) ---
-        
+
         function setOnlineStatus(isOnline) {
             if (isOnline) {
                 // --- RE-ENABLE THE APP ---
                 statusIndicator.textContent = 'Online: Adresssuche aktiv';
                 statusIndicator.className = 'text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700';
-                
+
                 // Hide the overlay
                 offlineOverlay.classList.add('hidden');
-                
+
                 // Clear the report data
                 offlineEaList.innerHTML = '';
                 offlineIncidentReport.innerHTML = '';
@@ -2397,13 +2552,13 @@
                 if (drawingSectionId) setDrawMode(false);
                 if (isIncidentAddMode) setIncidentAddMode(false);
                 if (isIncidentEditMode) setIncidentEditMode(false); // NEW
-                
+
                 // Close modals
                 eaManagementModal.classList.add('hidden');
                 incidentCreationModal.classList.add('hidden');
                 incidentEditModal.classList.add('hidden'); // NEW
                 endShiftModal.classList.add('hidden');
-                
+
                 // Ensure no incident is selected (to close notes)
                 if (selectedIncidentId) {
                     selectedIncidentId = null;
@@ -2411,11 +2566,11 @@
                 }
 
                 // --- POPULATE OFFLINE REPORT ---
-                
+
                 // 1. Clear old data
                 offlineEaList.innerHTML = '';
                 offlineIncidentReport.innerHTML = '';
-                
+
                 // 2. Populate EAs
                 if (sections.size > 0) {
                     sections.forEach(section => {
@@ -2451,9 +2606,9 @@
                 offlineIncidentReport.innerHTML += buildOfflineIncidentCategory('Offene Einsätze', openIncidents, 'text-red-700');
                 offlineIncidentReport.innerHTML += buildOfflineIncidentCategory('Entsandte Einsätze', dispatchedIncidents, 'text-blue-700');
                 offlineIncidentReport.innerHTML += buildOfflineIncidentCategory('Abgeschlossene Einsätze', completedIncidents, 'text-amber-700');
-                
+
                 // --- END POPULATE OFFLINE REPORT ---
-                
+
                 // Show the overlay to block all clicks
                 offlineOverlay.classList.remove('hidden');
 
@@ -2463,12 +2618,12 @@
                 map.doubleClickZoom.disable();
                 map.scrollWheelZoom.disable();
                 map.boxZoom.disable();
-                
+
                 // Save state one last time (just in case)
                 saveState();
             }
         }
-        
+
         window.addEventListener('online', () => setOnlineStatus(true));
         window.addEventListener('offline', () => setOnlineStatus(false));
         // Initial check on load
@@ -2486,7 +2641,7 @@
             if (!displayElement) return;
 
             const sectionId = findContainingSection(lat, lon);
-            
+
             if (sectionId) {
                 const section = sections.get(sectionId);
                 const sectionColor = section.color || '#4f46e5';
@@ -2505,25 +2660,25 @@
         function validateIncidentForm() {
             const address = addressInput.value.trim();
             const keyword = keywordInput.value.trim();
-            
+
             if (address !== '' && keyword !== '') {
                 submitBtn.disabled = false;
             } else {
                 submitBtn.disabled = true;
             }
         }
-        
+
         // --- Address Autocomplete (Creation Modal) ---
         // --- START ADRESSSUCHE-LISTENER FIX ---
         addressInput.addEventListener('input', () => {
             validateIncidentForm(); // Validate on input
-            
+
             clearTimeout(debounceTimer);
             const query = addressInput.value;
-            
+
             latInput.value = '';
             lonInput.value = '';
-            
+
             updateAutoAssignment(0, 0, 'auto-section-display'); // Reset display
             autoSectionDisplay.textContent = 'Wird nach Adresse bestimmt...';
             autoSectionDisplay.classList.add('text-gray-700');
@@ -2536,7 +2691,7 @@
                 suggestionsContainer.classList.add('hidden');
                 return;
             }
-            
+
             debounceTimer = setTimeout(async () => {
                 const dataArray = await geocodeAddress(query); // This is now an array
 
@@ -2547,7 +2702,7 @@
                     dataArray.forEach(data => { // Loop over the array
                         if (!data.address) return; // Safety check
                         const formattedAddress = formatGermanAddress(data.address);
-                        
+
                         // NEW: Highlight 76351 and 76... postcodes
                         const post = data.address.postcode || '';
                         const isLiHo = post === '76351';
@@ -2555,7 +2710,7 @@
 
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = formattedAddress;
-                        
+
                         let classes = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
                         if (isLiHo) {
                             classes += ' font-bold text-indigo-700';
@@ -2563,15 +2718,15 @@
                             classes += ' font-semibold text-indigo-600';
                         }
                         suggestionItem.className = classes;
-                        
+
                         suggestionItem.addEventListener('click', () => {
                             addressInput.value = formattedAddress;
-                            latInput.value = data.lat; 
+                            latInput.value = data.lat;
                             lonInput.value = data.lon;
 
                             suggestionsContainer.classList.add('hidden');
                             suggestionsContainer.innerHTML = '';
-                            
+
                             const lat = parseFloat(data.lat);
                             const lon = parseFloat(data.lon);
                             updateAutoAssignment(lat, lon, 'auto-section-display');
@@ -2587,12 +2742,12 @@
                 }
             }, 300);
         });
-        
+
         // --- NEW: Address Autocomplete (Edit Modal) ---
         editAddressInput.addEventListener('input', () => {
             clearTimeout(editDebounceTimer);
             const query = editAddressInput.value;
-            
+
             editLatInput.value = '';
             editLonInput.value = '';
 
@@ -2602,13 +2757,13 @@
             editAutoSectionDisplay.classList.remove('text-red-700');
             if (editAutoSectionDisplay.style.color) editAutoSectionDisplay.style.color = '';
 
-            
+
             if (query.length < 3 || !navigator.onLine) {
                 editAddressSuggestions.innerHTML = '';
                 editAddressSuggestions.classList.add('hidden');
                 return;
             }
-            
+
             editDebounceTimer = setTimeout(async () => {
                 const dataArray = await geocodeAddress(query); // This is now an array
 
@@ -2616,18 +2771,18 @@
                 editAddressSuggestions.classList.remove('hidden');
 
                 if (dataArray && dataArray.length > 0) { // Check array length
-                     dataArray.forEach(data => { // Loop over the array
+                    dataArray.forEach(data => { // Loop over the array
                         if (!data.address) return; // Safety check
                         const formattedAddress = formatGermanAddress(data.address);
-                        
+
                         // NEW: Highlight 76351 and 76... postcodes
                         const post = data.address.postcode || '';
                         const isLiHo = post === '76351';
                         const is76 = post.startsWith('76');
-                        
+
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = formattedAddress;
-                        
+
                         let classes = 'p-2 cursor-pointer hover:bg-gray-100 transition duration-100 suggestion-item';
                         if (isLiHo) {
                             classes += ' font-bold text-indigo-700';
@@ -2635,15 +2790,15 @@
                             classes += ' font-semibold text-indigo-600';
                         }
                         suggestionItem.className = classes;
-                        
+
                         suggestionItem.addEventListener('click', () => {
                             editAddressInput.value = formattedAddress;
-                            editLatInput.value = data.lat; 
+                            editLatInput.value = data.lat;
                             editLonInput.value = data.lon;
 
                             editAddressSuggestions.classList.add('hidden');
                             editAddressSuggestions.innerHTML = '';
-                            
+
                             const lat = parseFloat(data.lat);
                             const lon = parseFloat(data.lon);
                             updateAutoAssignment(lat, lon, 'edit-auto-section-display');
@@ -2659,7 +2814,7 @@
             }, 300);
         });
         // --- END ADRESSSUCHE-LISTENER FIX ---
-        
+
         // --- Global click listener to hide suggestion boxes ---
         document.addEventListener('click', (e) => {
             if (suggestionsContainer && !suggestionsContainer.contains(e.target) && e.target !== addressInput) {
@@ -2668,7 +2823,7 @@
             if (keywordSuggestionsContainer && !keywordSuggestionsContainer.contains(e.target) && e.target !== keywordInput) {
                 keywordSuggestionsContainer.classList.add('hidden');
             }
-            
+
             // NEW: For edit modal
             if (editAddressSuggestions && !editAddressSuggestions.contains(e.target) && e.target !== editAddressInput) {
                 editAddressSuggestions.classList.add('hidden');
@@ -2699,13 +2854,13 @@
             for (const category in AAO_KEYWORD_CATEGORIES) {
                 const keywords = AAO_KEYWORD_CATEGORIES[category];
                 const categoryMatchesQuery = category.toLowerCase().includes(query);
-                
+
                 let matchesInThisCategory = [];
 
                 if (categoryMatchesQuery) {
                     matchesInThisCategory = keywords;
                 } else {
-                    matchesInThisCategory = keywords.filter(keyword => 
+                    matchesInThisCategory = keywords.filter(keyword =>
                         keyword.toLowerCase().includes(query)
                     );
                 }
@@ -2723,12 +2878,12 @@
                         const suggestionItem = document.createElement('div');
                         suggestionItem.textContent = keyword;
                         suggestionItem.className = `p-2 cursor-pointer ${colors.hover} transition duration-100 text-sm text-gray-800 border-b border-gray-100 last:border-b-0 pl-4`;
-                        
+
                         suggestionItem.addEventListener('click', () => {
                             inputElement.value = keyword;
                             container.classList.add('hidden');
                             container.innerHTML = '';
-                            inputElement.focus(); 
+                            inputElement.focus();
                             if (onClickCallback) onClickCallback();
                         });
                         fragment.appendChild(suggestionItem);
@@ -2743,14 +2898,14 @@
                 container.classList.add('hidden');
             }
         }
-        
+
         // --- Keyword Autocomplete (Creation Modal) ---
         keywordInput.addEventListener('input', () => {
             validateIncidentForm(); // Validate on input
             const query = keywordInput.value.trim().toLowerCase();
             renderKeywordAutocomplete(query, keywordSuggestionsContainer, keywordInput, validateIncidentForm);
         });
-        
+
         // --- NEW: Keyword Autocomplete (Edit Modal) ---
         editKeywordInput.addEventListener('input', () => {
             const query = editKeywordInput.value.trim().toLowerCase();
@@ -2768,23 +2923,23 @@
             setIncidentAddMode(false);
             incidentCreationModal.classList.remove('hidden'); // RE-OPEN MODAL
         });
-        
+
         // --- NEW: Event Listeners for Incident Edit Mode ---
         editIncidentMapBtn.addEventListener('click', () => {
             setIncidentEditMode(true);
             incidentEditModal.classList.add('hidden'); // CLOSE MODAL
         });
-        
+
         cancelEditIncidentBtn.addEventListener('click', () => {
             setIncidentEditMode(false);
             incidentEditModal.classList.remove('hidden'); // RE-OPEN MODAL
         });
-        
+
         // --- NEW: Listeners for Incident Creation Modal ---
         openCreateIncidentModalBtn.addEventListener('click', () => {
             selectedIncidentId = null; // NEW: Collapse incident
             renderAllIncidents(); // NEW: Update UI
-            
+
             // Reset form
             dispatchForm.reset();
             latInput.value = '';
@@ -2796,29 +2951,29 @@
             autoSectionDisplay.classList.add('text-gray-700');
             autoSectionDisplay.classList.remove('text-red-700');
             if (autoSectionDisplay.style.color) autoSectionDisplay.style.color = '';
-            
+
             // Show modal and set initial validation state
             incidentCreationModal.classList.remove('hidden');
-            validateIncidentForm(); 
+            validateIncidentForm();
         });
-        
+
         closeIncidentModalBtn.addEventListener('click', () => {
             if (isIncidentAddMode) {
                 setIncidentAddMode(false); // Cancel add mode if modal is closed
             }
             incidentCreationModal.classList.add('hidden');
         });
-        
+
         // FIX: Add click-off-to-close listener
         incidentCreationModal.addEventListener('click', (e) => {
             if (e.target === incidentCreationModal) {
                 if (isIncidentAddMode) {
-                    setIncidentAddMode(false); 
+                    setIncidentAddMode(false);
                 }
                 incidentCreationModal.classList.add('hidden');
             }
         });
-        
+
         // --- NEW: Listeners for Incident Edit Modal ---
         closeIncidentEditModalBtn.addEventListener('click', () => {
             if (isIncidentEditMode) {
@@ -2827,12 +2982,12 @@
             incidentEditModal.classList.add('hidden');
             editingIncidentId = null;
         });
-        
+
         // FIX: Add click-off-to-close listener
         incidentEditModal.addEventListener('click', (e) => {
             if (e.target === incidentEditModal) {
                 if (isIncidentEditMode) {
-                    setIncidentEditMode(false); 
+                    setIncidentEditMode(false);
                 }
                 incidentEditModal.classList.add('hidden');
                 editingIncidentId = null;
@@ -2872,7 +3027,7 @@
                 setEditStatusButtonState(status);
             }
         });
-        
+
         // Save Changes
         // --- START ADRESSSUCHE-FALLBACK-FIX ---
         incidentEditForm.addEventListener('submit', async (e) => {
@@ -2881,7 +3036,7 @@
 
             const incident = incidents.get(editingIncidentId);
             if (!incident) return;
-            
+
             saveIncidentBtn.disabled = true;
             saveIncidentBtn.textContent = 'Speichere...';
 
@@ -2891,7 +3046,7 @@
             const newStatus = document.getElementById('edit-status-hidden').value;
             let newLat = parseFloat(editLatInput.value);
             let newLon = parseFloat(editLonInput.value);
-            
+
             if (!newKeyword || !newAddress) {
                 showMessage("Stichwort und Adresse dürfen nicht leer sein.", true);
                 saveIncidentBtn.disabled = false;
@@ -2907,30 +3062,30 @@
                     saveIncidentBtn.textContent = 'Änderungen speichern';
                     return;
                 }
-                
+
                 showMessage("Suche Koordinaten für neue Adresse...", false);
                 const fallbackLocations = await geocodeAddress(newAddress); // Gets sorted array
-                
+
                 // NEW: Pick the first one
-                const fallbackLocation = (fallbackLocations && fallbackLocations.length > 0) ? fallbackLocations[0] : null; 
-                
+                const fallbackLocation = (fallbackLocations && fallbackLocations.length > 0) ? fallbackLocations[0] : null;
+
                 if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
                     showMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
                     saveIncidentBtn.disabled = false;
                     saveIncidentBtn.textContent = 'Änderungen speichern';
                     return;
                 }
-                
+
                 newLat = parseFloat(fallbackLocation.lat);
                 newLon = parseFloat(fallbackLocation.lon);
             }
-            
+
             // Update incident
             incident.keyword = newKeyword;
             incident.formattedAddress = newAddress;
             incident.lat = newLat;
             incident.lon = newLon;
-            
+
             // Handle status change
             if (incident.status !== newStatus) {
                 // Do not add to undo history, as this is an explicit edit
@@ -2941,41 +3096,41 @@
             if (incident.status === 'completed') {
                 // MODIFICATION: Commented out to preserve EA
                 // incident.sectionId = null; // Completed incidents have no EA
-                
+
                 // But we still need to check if the *location* changed
                 const newSectionId = findContainingSection(newLat, newLon);
                 if (incident.sectionId !== newSectionId) {
-                     incident.sectionId = newSectionId;
+                    incident.sectionId = newSectionId;
                 }
             } else {
                 incident.sectionId = findContainingSection(newLat, newLon);
             }
-            
+
             incidents.set(editingIncidentId, incident);
             saveState();
-            
+
             // Reset UI
             saveIncidentBtn.disabled = false;
             saveIncidentBtn.textContent = 'Änderungen speichern';
             incidentEditModal.classList.add('hidden');
             editingIncidentId = null;
             selectedIncidentId = null; // Deselect
-            
+
             renderAll();
             showMessage("Einsatz erfolgreich aktualisiert.", false);
         });
         // --- END ADRESSSUCHE-FALLBACK-FIX ---
-        
+
         // Delete Incident
         deleteIncidentBtn.addEventListener('click', () => {
             if (!editingIncidentId) return;
-            
+
             const incident = incidents.get(editingIncidentId);
             if (!incident) return;
-            
+
             const toastMessage = `SIND SIE SICHER, dass Sie "${incident.keyword}" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
                 <button id="confirm-delete-incident-${incident.id}" class="mt-2 bg-red-700 text-white px-3 py-1 rounded text-xs font-bold w-full hover:bg-red-800">JA, DAUERHAFT LÖSCHEN</button>`;
-            
+
             showMessage(toastMessage, true, 0); // Permanent toast
 
             setTimeout(() => {
@@ -2983,21 +3138,21 @@
                 if (confirmBtn) {
                     confirmBtn.onclick = (e) => {
                         e.stopPropagation();
-                        
+
                         incidents.delete(incident.id);
-                        
+
                         // Clear from history as well
                         statusHistory = statusHistory.filter(h => h.id !== incident.id);
-                        
+
                         saveState();
-                        
+
                         // Close modal and reset state
                         incidentEditModal.classList.add('hidden');
                         editingIncidentId = null;
                         selectedIncidentId = null;
-                        
+
                         renderAll();
-                        
+
                         // Manually close the toast
                         const parentToast = confirmBtn.closest('.toast-notification');
                         if (parentToast) {
@@ -3009,7 +3164,7 @@
                                 }
                             }, { once: true });
                         }
-                        
+
                         showMessage("Einsatz gelöscht.", false);
                     };
                 }
@@ -3021,15 +3176,15 @@
         // --- START ADRESSSUCHE-FALLBACK-FIX ---
         dispatchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const keyword = keywordInput.value.trim();
             const addressText = addressInput.value.trim();
             let incidentLat = parseFloat(latInput.value);
             let incidentLon = parseFloat(lonInput.value);
-            
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Verarbeite...';
-            
+
             if (!keyword || !addressText) {
                 // This check is redundant due to validateIncidentForm, but good for safety
                 showMessage("Bitte geben Sie sowohl eine Adresse als auch ein Alarmstichwort ein.", true);
@@ -3038,7 +3193,7 @@
                 validateIncidentForm(); // Re-run validation
                 return;
             }
-            
+
             if (isNaN(incidentLat) || isNaN(incidentLon)) {
                 if (!navigator.onLine) {
                     showMessage("Adresse konnte im Offline-Modus nicht finalisiert werden.", true);
@@ -3047,13 +3202,13 @@
                     validateIncidentForm();
                     return;
                 }
-                
+
                 showMessage("Suche Koordinaten für Adresse...", false);
                 const fallbackLocations = await geocodeAddress(addressText); // Gets sorted array
-                
+
                 // NEW: Pick the first one
                 const fallbackLocation = (fallbackLocations && fallbackLocations.length > 0) ? fallbackLocations[0] : null;
-                
+
                 if (!fallbackLocation || !fallbackLocation.lat || !fallbackLocation.lon) {
                     showMessage("Kartenkoordinaten konnten nicht gefunden werden. Bitte klicken Sie auf den Adressvorschlag oder auf die Karte.", true);
                     submitBtn.disabled = false;
@@ -3061,36 +3216,36 @@
                     validateIncidentForm();
                     return;
                 }
-                
+
                 incidentLat = parseFloat(fallbackLocation.lat);
                 incidentLon = parseFloat(fallbackLocation.lon);
-                
+
                 latInput.value = incidentLat;
                 lonInput.value = incidentLon;
             }
-            
+
             try {
                 // Final check for section assignment, now that we guarantee lat/lon
                 const finalSectionId = findContainingSection(incidentLat, incidentLon);
-                
+
                 const newIncident = {
                     id: generateUUID(),
-                    formattedAddress: addressText,        
+                    formattedAddress: addressText,
                     keyword: keyword,
                     lat: incidentLat,
                     lon: incidentLon,
                     status: 'open',
-                    notes: '', 
-                    sectionId: finalSectionId, 
+                    notes: '',
+                    sectionId: finalSectionId,
                     createdAt: new Date().toISOString() // NEW: Add creation timestamp
                 };
-                
+
                 incidents.set(newIncident.id, newIncident);
                 saveState();
-                
+
                 selectedIncidentId = null; // NEW: Collapse any open card
-                renderAll(); 
-                
+                renderAll();
+
                 // Reset form, disable button, and close modal
                 dispatchForm.reset();
                 latInput.value = '';
@@ -3102,10 +3257,10 @@
                 autoSectionDisplay.classList.add('text-gray-700');
                 autoSectionDisplay.classList.remove('text-red-700');
                 if (autoSectionDisplay.style.color) autoSectionDisplay.style.color = '';
-                
+
                 submitBtn.disabled = true; // Disable after successful submit
                 incidentCreationModal.classList.add('hidden'); // Close modal
-                
+
                 showMessage("Einsatz erfolgreich erstellt und automatisch zugeordnet.", false);
 
             } catch (error) {
@@ -3114,14 +3269,14 @@
             } finally {
                 // Ensure button is re-enabled if error occurred, but stays disabled on success
                 if (!incidentCreationModal.classList.contains('hidden')) {
-                     submitBtn.disabled = false;
-                     validateIncidentForm(); // Re-validate
+                    submitBtn.disabled = false;
+                    validateIncidentForm(); // Re-validate
                 }
                 submitBtn.textContent = 'Einsatz erstellen';
             }
         });
         // --- END ADRESSSUCHE-FALLBACK-FIX ---
-        
+
         // --- Completed Section Toggle Logic ---
         completedToggleBtn.addEventListener('click', () => {
             isCompletedSectionOpen = !isCompletedSectionOpen;
@@ -3134,7 +3289,7 @@
             const icon = completedToggleBtn.querySelector('.font-mono');
             if (icon) icon.textContent = isCompletedSectionOpen ? '▲' : '▼';
         });
-        
+
         // --- NEW: Active Section Toggle Logic ---
         activeToggleBtn.addEventListener('click', () => {
             isActiveSectionOpen = !isActiveSectionOpen;
@@ -3147,7 +3302,7 @@
             const icon = activeToggleBtn.querySelector('.font-mono');
             if (icon) icon.textContent = isActiveSectionOpen ? '▲' : '▼';
         });
-        
+
         // --- NEW: Sort Bar Logic ---
         const sortBar = document.getElementById('sort-bar');
         if (sortBar) {
@@ -3156,7 +3311,7 @@
                 if (!target) return;
 
                 currentSortCriteria = target.dataset.sort;
-                
+
                 // Update button styles
                 sortBar.querySelectorAll('.sort-btn').forEach(btn => {
                     btn.classList.remove('bg-indigo-600', 'text-white');
@@ -3164,7 +3319,7 @@
                 });
                 target.classList.add('bg-indigo-600', 'text-white');
                 target.classList.remove('bg-white', 'text-gray-700');
-                
+
                 // Re-render
                 renderAllIncidents();
             });
@@ -3176,7 +3331,7 @@
         function showEndShiftModal() {
             selectedIncidentId = null; // NEW: Collapse incident
             renderAllIncidents(); // NEW: Update UI
-            
+
             // Calculate stats
             let openCount = 0;
             let dispatchedCount = 0;
@@ -3194,9 +3349,9 @@
             reportStatsIncidents.textContent = `${totalCount} (Offen: ${openCount}, Entsandt: ${dispatchedCount}, Abgeschl.: ${completedCount})`;
             reportStatsEas.textContent = `${eaCount}`;
             reportStatsDate.textContent = date;
-            
+
             lagezeichnerInput.value = '';
-            
+
             // Show modal
             endShiftModal.classList.remove('hidden');
         }
@@ -3210,16 +3365,16 @@
             const reportDate = new Date().toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'short' });
             const allIncidentsArray = Array.from(incidents.values());
             const allSectionsArray = Array.from(sections.values());
-            
+
             let openCount = 0;
             let dispatchedCount = 0;
             let completedCount = 0;
-            
+
             let incidentsHtml = '';
-            
+
             // MODIFICATION: Sort incidents in report by time
             allIncidentsArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            
+
             allIncidentsArray.forEach(incident => {
                 let statusColorClass = '';
                 if (incident.status === 'open') {
@@ -3232,12 +3387,12 @@
                     completedCount++;
                     statusColorClass = 'bg-amber-100 text-amber-800 border-amber-500';
                 }
-                
+
                 const section = incident.sectionId ? allSectionsArray.find(s => s.id === incident.sectionId) : null;
                 // MODIFICATION: Handle completed EA display
                 const sectionName = section ? `${section.name} (V: ${section.responsible})` : (incident.status === 'completed' ? 'N/A (Zugehörigkeit beibehalten)' : 'Kein EA');
                 const sectionColor = section ? (section.color || '#4f46e5') : '#6b7280';
-                
+
                 incidentsHtml += `
                     <div class="p-4 bg-white border border-gray-300 rounded-lg shadow-sm ${statusColorClass} border-l-4">
                         <p class="font-bold text-lg text-gray-900">${incident.keyword}</p>
@@ -3258,7 +3413,7 @@
             if (allSectionsArray.length > 0) {
                 allSectionsArray.forEach(section => {
                     const sectionColor = section.color || '#4f46e5';
-                    
+
                     // NEW: Calculate counts for the report
                     const currentCount = allIncidentsArray.filter(i => i.sectionId === section.id && (i.status === 'open' || i.status === 'dispatched')).length;
                     const previousCount = allIncidentsArray.filter(i => i.sectionId === section.id && i.status === 'completed').length;
@@ -3289,9 +3444,9 @@
                 const keyword = incident.keyword || 'Unbekannt';
                 keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
             });
-            
+
             const sortedKeywords = Array.from(keywordCounts.entries()).sort((a, b) => b[1] - a[1]);
-            
+
             let keywordHtml = '<ul class="space-y-1 text-sm">';
             sortedKeywords.forEach(([keyword, count]) => {
                 keywordHtml += `<li class="flex justify-between items-center p-1 bg-gray-50 rounded">
@@ -3513,21 +3668,21 @@
 </body>
 </html>
             `;
-            
+
             // --- Create and Trigger Download ---
             try {
                 const blob = new Blob([htmlContent], { type: 'text/html' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                
+
                 const dateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
                 a.download = `Einsatzprotokoll_${dateString}.html`;
-                
+
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(a.href);
-                
+
                 hideEndShiftModal();
 
             } catch (error) {
@@ -3544,7 +3699,7 @@
                 hideEndShiftModal();
             }
         });
-        
+
         createReportBtn.addEventListener('click', () => {
             const lagezeichner = lagezeichnerInput.value.trim();
             if (!lagezeichner) {
@@ -3560,24 +3715,25 @@
         // --- Initialize on Load ---
         window.onload = () => {
             loadState();
-            
+
             // Set initial toggle states
             if (isActiveSectionOpen) {
                 incidentList.classList.remove('hidden');
             } else {
                 incidentList.classList.add('hidden');
             }
-            
+
             if (isCompletedSectionOpen) {
                 completedIncidentList.classList.remove('hidden');
             } else {
                 completedIncidentList.classList.add('hidden');
             }
-            
+
             // Check network status on load
             setOnlineStatus(navigator.onLine);
         };
 
     </script>
 </body>
+
 </html>

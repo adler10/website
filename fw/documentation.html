@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,72 +11,155 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
         .content h2 {
-            font-size: 1.5rem; /* text-2xl */
-            font-weight: 700; /* font-bold */
-            color: #b91c1c; /* text-red-700 */
-            margin-top: 2rem; /* mt-8 */
-            margin-bottom: 1rem; /* mb-4 */
-            border-bottom: 2px solid #fee2e2; /* border-b-2 border-red-100 */
-            padding-bottom: 0.5rem; /* pb-2 */
+            font-size: 1.5rem;
+            /* text-2xl */
+            font-weight: 700;
+            /* font-bold */
+            color: #b91c1c;
+            /* text-red-700 */
+            margin-top: 2rem;
+            /* mt-8 */
+            margin-bottom: 1rem;
+            /* mb-4 */
+            border-bottom: 2px solid #fee2e2;
+            /* border-b-2 border-red-100 */
+            padding-bottom: 0.5rem;
+            /* pb-2 */
         }
+
         .content h3 {
-            font-size: 1.25rem; /* text-xl */
-            font-weight: 600; /* font-semibold */
-            color: #1f2937; /* text-gray-800 */
-            margin-top: 1.5rem; /* mt-6 */
-            margin-bottom: 0.5rem; /* mb-2 */
+            font-size: 1.25rem;
+            /* text-xl */
+            font-weight: 600;
+            /* font-semibold */
+            color: #1f2937;
+            /* text-gray-800 */
+            margin-top: 1.5rem;
+            /* mt-6 */
+            margin-bottom: 0.5rem;
+            /* mb-2 */
         }
+
         .content p {
-            font-size: 1rem; /* text-base */
-            color: #374151; /* text-gray-700 */
-            line-height: 1.6; /* leading-relaxed */
-            margin-bottom: 1rem; /* mb-4 */
+            font-size: 1rem;
+            /* text-base */
+            color: #374151;
+            /* text-gray-700 */
+            line-height: 1.6;
+            /* leading-relaxed */
+            margin-bottom: 1rem;
+            /* mb-4 */
         }
+
         .content ul {
             list-style-type: disc;
-            margin-left: 1.5rem; /* ml-6 */
-            margin-bottom: 1rem; /* mb-4 */
-            color: #374151; /* text-gray-700 */
+            margin-left: 1.5rem;
+            /* ml-6 */
+            margin-bottom: 1rem;
+            /* mb-4 */
+            color: #374151;
+            /* text-gray-700 */
         }
+
         .content li {
-            margin-bottom: 0.5rem; /* mb-2 */
+            margin-bottom: 0.5rem;
+            /* mb-2 */
         }
+
         .content code {
-            background-color: #f3f4f6; /* bg-gray-100 */
-            color: #b91c1c; /* text-red-700 */
-            padding: 0.125rem 0.375rem; /* px-1.5 py-0.5 */
-            border-radius: 0.25rem; /* rounded */
+            background-color: #f3f4f6;
+            /* bg-gray-100 */
+            color: #b91c1c;
+            /* text-red-700 */
+            padding: 0.125rem 0.375rem;
+            /* px-1.5 py-0.5 */
+            border-radius: 0.25rem;
+            /* rounded */
             font-family: monospace;
             font-weight: 600;
         }
+
         .badge {
             display: inline-block;
-            background-color: #fef3c7; /* bg-yellow-100 */
-            color: #92400e; /* text-yellow-800 */
-            padding: 0.25rem 0.75rem; /* px-3 py-1 */
-            border-radius: 9999px; /* rounded-full */
+            background-color: #fef3c7;
+            /* bg-yellow-100 */
+            color: #92400e;
+            /* text-yellow-800 */
+            padding: 0.25rem 0.75rem;
+            /* px-3 py-1 */
+            border-radius: 9999px;
+            /* rounded-full */
             font-weight: 600;
-            font-size: 0.875rem; /* text-sm */
-            margin-bottom: 0.5rem; /* mb-2 */
+            font-size: 0.875rem;
+            /* text-sm */
+            margin-bottom: 0.5rem;
+            /* mb-2 */
         }
     </style>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body class="bg-gray-100">
 
     <div class="container mx-auto max-w-4xl p-4 sm:p-8">
         <div class="bg-white p-6 sm:p-10 rounded-lg shadow-xl content">
-            
+
             <h1 class="text-4xl font-bold text-red-800 mb-4">Anleitung: Lokale Einsatzkonsole</h1>
-            
-            <p class="text-lg text-gray-600 mb-6">Willkommen bei der Anleitung für Ihre lokale Einsatzkonsole. Diese Anwendung hilft Ihnen, Einsätze zu verwalten, sie geografischen Abschnitten zuzuordnen und am Ende Ihrer Schicht einen Bericht zu erstellen. Alle Daten werden <strong>nur lokal in Ihrem Browser</strong> gespeichert.</p>
+
+            <p class="text-lg text-gray-600 mb-6">Willkommen bei der Anleitung für Ihre lokale Einsatzkonsole. Diese
+                Anwendung hilft Ihnen, Einsätze zu verwalten, sie geografischen Abschnitten zuzuordnen und am Ende Ihrer
+                Schicht einen Bericht zu erstellen. Alle Daten werden <strong>nur lokal in Ihrem Browser</strong>
+                gespeichert.</p>
 
             <!-- Abschnitt 1: Interface -->
             <h2>1. Die Benutzeroberfläche</h2>
             <p>Die Anwendung ist in zwei Hauptbereiche unterteilt:</p>
             <ul>
-                <li><strong>Linke Seitenleiste:</strong> Hier erstellen und verwalten Sie Einsätze und Einsatzabschnitte (EAs). Sie sehen Listen aller aktiven und abgeschlossenen Einsätze.</li>
-                <li><strong>Rechte Kartenansicht:</strong> Eine interaktive Karte (basierend auf OpenStreetMap), auf der die Standorte der Einsätze und die Grenzen Ihrer EAs angezeigt werden.</li>
+                <li><strong>Linke Seitenleiste:</strong> Hier erstellen und verwalten Sie Einsätze und Einsatzabschnitte
+                    (EAs). Sie sehen Listen aller aktiven und abgeschlossenen Einsätze.</li>
+                <li><strong>Rechte Kartenansicht:</strong> Eine interaktive Karte (basierend auf OpenStreetMap), auf der
+                    die Standorte der Einsätze und die Grenzen Ihrer EAs angezeigt werden.</li>
             </ul>
 
             <!-- Abschnitt 2: EAs -->
@@ -83,52 +167,77 @@
             <p class="mb-4">
                 <span class="badge">Erster Schritt</span>
             </p>
-            <p>Bevor Sie Einsätze erstellen, sollten Sie Ihre Einsatzabschnitte (EAs) definieren. Die Konsole ordnet neue Einsätze <strong>automatisch</strong> dem richtigen EA zu, basierend auf den Grenzen, die Sie hier zeichnen.</p>
-            
+            <p>Bevor Sie Einsätze erstellen, sollten Sie Ihre Einsatzabschnitte (EAs) definieren. Die Konsole ordnet
+                neue Einsätze <strong>automatisch</strong> dem richtigen EA zu, basierend auf den Grenzen, die Sie hier
+                zeichnen.</p>
+
             <h3>Schritt 2.1: EA erstellen</h3>
             <ol class="list-decimal ml-6 mb-4 text-gray-700 space-y-2">
-                <li>Klicken Sie in der Seitenleiste auf den Knopf <code>Einsatzabschnitte verwalten</code>. Es öffnet sich ein neues Fenster (Modal).</li>
-                <li>Geben Sie im Formular "Neuen EA erstellen" einen Namen (z.B. "Abschnitt Nord"), einen Verantwortlichen (z.B. "OBM Meier") und eine Farbe für den EA ein.</li>
-                <li>Klicken Sie auf <code>EA erstellen</code>. Der neue EA erscheint nun in der Liste "Bestehende EAs".</li>
+                <li>Klicken Sie in der Seitenleiste auf den Knopf <code>Einsatzabschnitte verwalten</code>. Es öffnet
+                    sich ein neues Fenster (Modal).</li>
+                <li>Geben Sie im Formular "Neuen EA erstellen" einen Namen (z.B. "Abschnitt Nord"), einen
+                    Verantwortlichen (z.B. "OBM Meier") und eine Farbe für den EA ein.</li>
+                <li>Klicken Sie auf <code>EA erstellen</code>. Der neue EA erscheint nun in der Liste "Bestehende EAs".
+                </li>
             </ol>
 
             <h3>Schritt 2.2: EA-Grenze auf der Karte zeichnen</h3>
             <p>Dies ist der wichtigste Teil der EA-Erstellung.</p>
             <ol class="list-decimal ml-6 mb-4 text-gray-700 space-y-2">
-                <li>Finden Sie Ihren neuen EA in der Liste "Bestehende EAs". Da noch keine Grenze gezeichnet wurde, ist er rot markiert.</li>
-                <li>Klicken Sie auf den roten Knopf <code>Grenze zeichnen</code>. Das Modal schließt sich und der Zeichenmodus wird aktiviert.</li>
-                <li>Klicken Sie nun auf die Karte, um die Eckpunkte Ihres Polygons (der EA-Grenze) zu setzen. Sie benötigen mindestens 3 Punkte.</li>
+                <li>Finden Sie Ihren neuen EA in der Liste "Bestehende EAs". Da noch keine Grenze gezeichnet wurde, ist
+                    er rot markiert.</li>
+                <li>Klicken Sie auf den roten Knopf <code>Grenze zeichnen</code>. Das Modal schließt sich und der
+                    Zeichenmodus wird aktiviert.</li>
+                <li>Klicken Sie nun auf die Karte, um die Eckpunkte Ihres Polygons (der EA-Grenze) zu setzen. Sie
+                    benötigen mindestens 3 Punkte.</li>
                 <li>Unten rechts erscheint ein rotes Fenster "EA-Zeichenmodus aktiv".</li>
-                <li>Wenn Sie fertig sind, klicken Sie in diesem Fenster auf <code>Zeichnen beenden</code>. Die Grenze wird gespeichert und auf der Karte angezeigt.</li>
+                <li>Wenn Sie fertig sind, klicken Sie in diesem Fenster auf <code>Zeichnen beenden</code>. Die Grenze
+                    wird gespeichert und auf der Karte angezeigt.</li>
                 <li>Mit <code>Abbrechen</code> verwerfen Sie die aktuelle Zeichnung.</li>
             </ol>
-            <p>Sie können die Grenze jederzeit bearbeiten, indem Sie das EA-Verwaltungsfenster erneut öffnen und auf <code>Grenze bearbeiten</code> klicken.</p>
+            <p>Sie können die Grenze jederzeit bearbeiten, indem Sie das EA-Verwaltungsfenster erneut öffnen und auf
+                <code>Grenze bearbeiten</code> klicken.</p>
 
             <!-- Abschnitt 3: Einsätze -->
             <h2>3. Einsätze erstellen & verwalten</h2>
             <p>Sobald Ihre EAs definiert sind, können Sie mit der Erstellung von Einsätzen beginnen.</p>
 
             <h3>Schritt 3.1: Einsatz erstellen</h3>
-            <p>Klicken Sie auf <code>Neuen Einsatz erstellen</code>, um das Einsatz-Modal zu öffnen. Sie haben zwei Methoden, um eine Adresse hinzuzufügen:</p>
+            <p>Klicken Sie auf <code>Neuen Einsatz erstellen</code>, um das Einsatz-Modal zu öffnen. Sie haben zwei
+                Methoden, um eine Adresse hinzuzufügen:</p>
             <ul>
-                <li><strong>Methode 1 (Tippen):</strong> Geben Sie die Adresse in das Feld <code>Adresse</code> ein. Das System schlägt Ihnen Adressen vor (priorisiert für den Postleitzahlbereich 76...). Wählen Sie einen Vorschlag aus, um die Koordinaten zu übernehmen.</li>
-                <li><strong>Methode 2 (Pin-Tool):</strong> Klicken Sie auf <code>Einsatz auf Karte hinzufügen (Pin-Tool)</code>. Das Modal schließt sich. Klicken Sie jetzt einfach auf die gewünschte Stelle auf der Karte. Das System findet die nächstgelegene Adresse, füllt sie automatisch in das Formular ein und öffnet das Modal wieder.</li>
+                <li><strong>Methode 1 (Tippen):</strong> Geben Sie die Adresse in das Feld <code>Adresse</code> ein. Das
+                    System schlägt Ihnen Adressen vor (priorisiert für den Postleitzahlbereich 76...). Wählen Sie einen
+                    Vorschlag aus, um die Koordinaten zu übernehmen.</li>
+                <li><strong>Methode 2 (Pin-Tool):</strong> Klicken Sie auf
+                    <code>Einsatz auf Karte hinzufügen (Pin-Tool)</code>. Das Modal schließt sich. Klicken Sie jetzt
+                    einfach auf die gewünschte Stelle auf der Karte. Das System findet die nächstgelegene Adresse, füllt
+                    sie automatisch in das Formular ein und öffnet das Modal wieder.</li>
             </ul>
-            <p>Füllen Sie anschließend das <code>Alarmstichwort</code> aus. Das System bietet Ihnen eine detaillierte Autocomplete-Funktion basierend auf AAO-Kategorien.</p>
-            <p>Sobald Adresse und Stichwort vorhanden sind, prüft das System, ob der Einsatzort innerhalb einer Ihrer gezeichneten EA-Grenzen liegt, und zeigt Ihnen die automatische Zuordnung an.</p>
+            <p>Füllen Sie anschließend das <code>Alarmstichwort</code> aus. Das System bietet Ihnen eine detaillierte
+                Autocomplete-Funktion basierend auf AAO-Kategorien.</p>
+            <p>Sobald Adresse und Stichwort vorhanden sind, prüft das System, ob der Einsatzort innerhalb einer Ihrer
+                gezeichneten EA-Grenzen liegt, und zeigt Ihnen die automatische Zuordnung an.</p>
 
             <h3>Schritt 3.2: Einsatz-Workflow</h3>
             <p>Neue Einsätze erscheinen in der Liste "Aktive Einsätze" mit dem Status <code>OFFEN</code>.</p>
             <ul>
-                <li>Klicken Sie auf <code>Einheit entsenden</code>, um den Status auf <code>ENTSANDT</code> zu ändern.</li>
-                <li>Klicken Sie auf <code>Als abgeschlossen markieren</code>, um den Status auf <code>ABGESCHLOSSEN</code> zu setzen. Der Einsatz wird dann in die untere Liste "Abgeschlossene Einsätze" verschoben und vom EA entfernt.</li>
+                <li>Klicken Sie auf <code>Einheit entsenden</code>, um den Status auf <code>ENTSANDT</code> zu ändern.
+                </li>
+                <li>Klicken Sie auf <code>Als abgeschlossen markieren</code>, um den Status auf
+                    <code>ABGESCHLOSSEN</code> zu setzen. Der Einsatz wird dann in die untere Liste "Abgeschlossene
+                    Einsätze" verschoben und vom EA entfernt.</li>
             </ul>
 
             <h3>Schritt 3.3: Einsätze bearbeiten & Notizen</h3>
             <ul>
-                <li><strong>Notizen:</strong> Klicken Sie auf eine Einsatz-Karte (außer auf einen Button), um sie auszuklappen. Es erscheint ein Textfeld, in dem Sie Notizen zum Einsatz eintragen und speichern können.</li>
-                <li><strong>Bearbeiten:</strong> Klicken Sie auf das kleine Stift-Symbol oben rechts auf einer Einsatz-Karte. Es öffnet sich das "Einsatz bearbeiten"-Modal.</li>
-                <li>Hier können Sie Stichwort, Adresse (auch per Pin-Tool) und sogar den Status manuell ändern oder den Einsatz <code>Löschen</code>.</li>
+                <li><strong>Notizen:</strong> Klicken Sie auf eine Einsatz-Karte (außer auf einen Button), um sie
+                    auszuklappen. Es erscheint ein Textfeld, in dem Sie Notizen zum Einsatz eintragen und speichern
+                    können.</li>
+                <li><strong>Bearbeiten:</strong> Klicken Sie auf das kleine Stift-Symbol oben rechts auf einer
+                    Einsatz-Karte. Es öffnet sich das "Einsatz bearbeiten"-Modal.</li>
+                <li>Hier können Sie Stichwort, Adresse (auch per Pin-Tool) und sogar den Status manuell ändern oder den
+                    Einsatz <code>Löschen</code>.</li>
             </ul>
 
             <!-- Abschnitt 4: Zusatzfunktionen -->
@@ -136,8 +245,12 @@
 
             <h3>Offline-Modus (Safe-Modus)</h3>
             <p class="font-bold text-red-700">KEINE PANIK! Diese Anwendung ist offline-fähig.</p>
-            <p>Sollte Ihre Internetverbindung abbrechen, sperrt die Anwendung alle Eingaben, um Datenverluste zu verhindern. Es erscheint ein großes "VERBINDUNG VERLOREN - SAFE-MODUS" Overlay.</p>
-            <p>Dieses Overlay zeigt Ihnen eine <strong>vollständige, schreibgeschützte Übersicht</strong> all Ihrer EAs und Einsätze (inkl. Notizen). Sie können diese Daten zur manuellen Übertragung nutzen. Sobald die Verbindung wiederhergestellt ist, verschwindet das Overlay automatisch und Sie können normal weiterarbeiten.</p>
+            <p>Sollte Ihre Internetverbindung abbrechen, sperrt die Anwendung alle Eingaben, um Datenverluste zu
+                verhindern. Es erscheint ein großes "VERBINDUNG VERLOREN - SAFE-MODUS" Overlay.</p>
+            <p>Dieses Overlay zeigt Ihnen eine <strong>vollständige, schreibgeschützte Übersicht</strong> all Ihrer EAs
+                und Einsätze (inkl. Notizen). Sie können diese Daten zur manuellen Übertragung nutzen. Sobald die
+                Verbindung wiederhergestellt ist, verschwindet das Overlay automatisch und Sie können normal
+                weiterarbeiten.</p>
 
             <h3>Schicht beenden & Bericht erstellen</h3>
             <p>Wenn Ihre Schicht beendet ist:</p>
@@ -145,15 +258,21 @@
                 <li>Klicken Sie auf <code>Schicht beenden & Bericht erstellen</code>.</li>
                 <li>Geben Sie Ihren Namen (oder die Namen der Lagezeichner) in das Feld ein.</li>
                 <li>Klicken Sie auf <code>Bericht erstellen & Herunterladen</code>.</li>
-                <li>Das System generiert eine einzelne, eigenständige <code>.html</code>-Datei, die eine Zusammenfassung aller Einsätze, EAs und eine interaktive Karte enthält. Diese Datei wird in Ihrem Browser heruntergeladen.</li>
+                <li>Das System generiert eine einzelne, eigenständige <code>.html</code>-Datei, die eine Zusammenfassung
+                    aller Einsätze, EAs und eine interaktive Karte enthält. Diese Datei wird in Ihrem Browser
+                    heruntergeladen.</li>
             </ol>
-            <p>Diese Berichtsdatei kann auf jedem Computer mit einem Webbrowser geöffnet werden und dient als Ihr finales Protokoll.</p>
+            <p>Diese Berichtsdatei kann auf jedem Computer mit einem Webbrowser geöffnet werden und dient als Ihr
+                finales Protokoll.</p>
 
             <h3>Rückgängig</h3>
-            <p>Haben Sie einen Einsatz versehentlich als "entsandt" oder "abgeschlossen" markiert? Klicken Sie auf den <code>Rückgängig</code>-Knopf oben in der Seitenleiste, um die <strong>letzte Statusänderung</strong> zurückzunehmen.</p>
+            <p>Haben Sie einen Einsatz versehentlich als "entsandt" oder "abgeschlossen" markiert? Klicken Sie auf den
+                <code>Rückgängig</code>-Knopf oben in der Seitenleiste, um die <strong>letzte Statusänderung</strong>
+                zurückzunehmen.</p>
 
         </div>
     </div>
 
 </body>
+
 </html>

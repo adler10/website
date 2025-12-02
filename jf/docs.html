@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +15,7 @@
             color: #ffffff;
             font-family: Arial, sans-serif;
         }
+
         .container {
             background: #1e1e1e;
             padding: 20px;
@@ -21,6 +23,7 @@
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
             text-align: center;
         }
+
         input {
             padding: 10px;
             margin-top: 10px;
@@ -29,6 +32,7 @@
             background: #333;
             color: #fff;
         }
+
         button {
             padding: 10px 20px;
             margin-top: 10px;
@@ -38,14 +42,17 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
         button:hover {
             background: #0056b3;
         }
+
         .iframe-container {
             display: none;
             width: 100%;
             height: 100vh;
         }
+
         iframe {
             border: none;
             width: 100%;
@@ -64,14 +71,55 @@
             }
         }
         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("password").addEventListener("keypress", function(event) {
+            document.getElementById("password").addEventListener("keypress", function (event) {
                 if (event.key === "Enter") {
                     checkPassword();
                 }
             });
         });
     </script>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body>
     <div class="container">
         <h2>Passwort erforderlich</h2>
@@ -80,7 +128,9 @@
         <button onclick="checkPassword()">Weiter</button>
     </div>
     <div class="iframe-container">
-        <iframe src="https://docs.google.com/document/d/1oSENMS_6xdgdoqWp2lS85umk-9Go6nGZ1-Dt7vvuUWU/edit?usp=sharing"></iframe>
+        <iframe
+            src="https://docs.google.com/document/d/1oSENMS_6xdgdoqWp2lS85umk-9Go6nGZ1-Dt7vvuUWU/edit?usp=sharing"></iframe>
     </div>
 </body>
+
 </html>

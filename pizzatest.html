@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,65 +10,90 @@
     <!-- Lade Inter Font -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
         }
+
         /* Definierte Farben und Schatten für das Pizza-Thema */
-        .pizza-color { color: #f97316; } /* Orange 600 */
-        .pizza-bg { background-color: #f97316; }
-        .pizza-hover-bg:hover { background-color: #ea580c; } /* Orange 700 */
-        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-        .flex-center { display: flex; align-items: center; justify-content: center; }
-        
+        .pizza-color {
+            color: #f97316;
+        }
+
+        /* Orange 600 */
+        .pizza-bg {
+            background-color: #f97316;
+        }
+
+        .pizza-hover-bg:hover {
+            background-color: #ea580c;
+        }
+
+        /* Orange 700 */
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         /* Modale Zentrierung */
         .modal {
             transition: opacity 0.3s ease;
         }
     </style>
-   <!-- FIREBASE AUTH PROTECTION START -->
-<!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
-<style>body { display: none; }</style>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
-        authDomain: "auth-107d8.firebaseapp.com",
-        projectId: "auth-107d8",
-        storageBucket: "auth-107d8.firebasestorage.app",
-        messagingSenderId: "735861054924",
-        appId: "1:735861054924:web:c87c51e6abcb8f48481169",
-        measurementId: "G-SYBYJH5P8D"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // LOGGED IN: Show the page
-            document.body.style.display = 'block';
-            window.dispatchEvent(new Event('resize'));
-        } else {
-            // NOT LOGGED IN: Go back to index.html (Login)
-            sessionStorage.setItem('redirect_to', window.location.href);
-            window.location.replace('https://dbaldauf.org/403');
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
         }
-    });
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-    window.logout = () => {
-        signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
-    };
-</script>
-<!-- END GUARD -->
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body class="min-h-screen p-4 sm:p-8">
 
     <!-- Hauptcontainer -->
     <div class="max-w-7xl mx-auto">
-        
+
         <!-- Header und Globaler Status -->
         <header class="text-center mb-8 p-6 bg-white rounded-xl card-shadow border-t-4 border-pizza-bg">
             <h1 class="text-4xl font-extrabold text-gray-900 mb-2 flex items-center justify-center">
@@ -75,30 +101,33 @@
                 Individuelle Pizza-Konten (LOKAL)
             </h1>
             <p class="text-lg text-gray-600 mb-4">Preis pro Pizza: <span class="font-bold pizza-color">7,00 €</span></p>
-            
+
             <!-- Globaler Kassenstand -->
             <div class="bg-amber-50 p-4 rounded-lg shadow-inner">
-                <p class="text-sm font-medium text-amber-800 uppercase tracking-wider">Gesamter Kassenstand (Alle Konten)</p>
+                <p class="text-sm font-medium text-amber-800 uppercase tracking-wider">Gesamter Kassenstand (Alle
+                    Konten)</p>
                 <p class="text-5xl font-extrabold text-amber-900 mt-1">
                     <span id="global-total-amount">0,00</span> €
                 </p>
             </div>
-             <p id="user-id-display" class="text-xs text-gray-400 mt-4">Daten werden im lokalen Speicher deines Browsers abgelegt.</p>
+            <p id="user-id-display" class="text-xs text-gray-400 mt-4">Daten werden im lokalen Speicher deines Browsers
+                abgelegt.</p>
         </header>
 
         <!-- Hauptbereich: Kontoauswahl & Aktionen (3 Spalten Layout) -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
+
             <!-- Spalte 1: Konto-Management (Auswahl, Guthaben, Alle Konten) -->
             <div class="lg:col-span-1 space-y-8">
-                
+
                 <!-- Mein Konto auswählen & Guthaben -->
                 <div class="bg-white p-6 rounded-xl card-shadow">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Dein Konto</h2>
-                    
-                    <label for="account-selector" class="block text-sm font-medium text-gray-700">Wähle dein Konto</label>
-                    <select id="account-selector" 
-                            class="mt-1 mb-4 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500 bg-white">
+
+                    <label for="account-selector" class="block text-sm font-medium text-gray-700">Wähle dein
+                        Konto</label>
+                    <select id="account-selector"
+                        class="mt-1 mb-4 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500 bg-white">
                         <option value="">--- Wähle ein Konto ---</option>
                     </select>
 
@@ -106,8 +135,8 @@
                     <p class="text-3xl font-extrabold mt-1" id="my-balance">0,00 €</p>
                     <p id="account-status" class="text-sm text-gray-500 italic mt-2"></p>
                 </div>
-                
-                 <!-- Alle Konten (Neu positioniert) -->
+
+                <!-- Alle Konten (Neu positioniert) -->
                 <div class="bg-white p-6 rounded-xl card-shadow">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Alle Kontostände</h2>
                     <ul id="all-accounts-list" class="divide-y divide-gray-200">
@@ -118,18 +147,19 @@
 
             <!-- Spalte 2: Bestellung & Kauf (lg:col-span-2) -->
             <div class="lg:col-span-2 space-y-8">
-                
+
                 <!-- Pizza bestellen -->
                 <div class="bg-white p-6 rounded-xl card-shadow">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Pizza bestellen (Abbuchung von deinem Konto)</h2>
-                    
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Pizza bestellen (Abbuchung von
+                        deinem Konto)</h2>
+
                     <div class="space-y-6">
                         <p id="buy-status" class="text-sm font-medium text-red-500 h-5"></p>
-                        
+
                         <!-- Schnelle Auswahl (Nur 1 Pizza) -->
                         <div class="flex flex-wrap gap-4">
                             <button id="buy-one-pizza" data-count="1" disabled
-                                    class="flex-1 min-w-[120px] py-3 px-4 rounded-lg shadow-md text-base font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 transition transform hover:scale-[1.01]">
+                                class="flex-1 min-w-[120px] py-3 px-4 rounded-lg shadow-md text-base font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 transition transform hover:scale-[1.01]">
                                 1 Pizza (7,00 €)
                             </button>
                         </div>
@@ -137,12 +167,13 @@
                         <!-- Freie Anzahl -->
                         <div class="flex space-x-4 items-end">
                             <div class="flex-1">
-                                <label for="custom-pizza-count" class="block text-sm font-medium text-gray-700">Freie Pizza-Anzahl</label>
+                                <label for="custom-pizza-count" class="block text-sm font-medium text-gray-700">Freie
+                                    Pizza-Anzahl</label>
                                 <input type="number" id="custom-pizza-count" placeholder="z.B. 3" value="1" min="1"
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-green-500 focus:border-green-500">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-green-500 focus:border-green-500">
                             </div>
                             <button id="buy-custom-pizza" disabled
-                                    class="w-full sm:w-auto py-3 px-6 rounded-lg shadow-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition duration-150">
+                                class="w-full sm:w-auto py-3 px-6 rounded-lg shadow-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition duration-150">
                                 Bestellen
                             </button>
                         </div>
@@ -151,18 +182,19 @@
 
                 <!-- Aktuelle Bestellung -->
                 <div class="bg-indigo-50 p-6 rounded-xl card-shadow border border-indigo-200">
-                    <h2 class="text-xl font-semibold text-indigo-800 mb-4 border-b pb-2 flex justify-between items-center">
+                    <h2
+                        class="text-xl font-semibold text-indigo-800 mb-4 border-b pb-2 flex justify-between items-center">
                         Aktuelle Bestellung
                         <span id="order-total" class="text-2xl font-extrabold">0,00 €</span>
                     </h2>
-                    
+
                     <ul id="current-order-list" class="divide-y divide-indigo-200 min-h-[50px]">
                         <p class="text-center text-indigo-500 italic py-2">Noch keine Pizzen bestellt.</p>
                     </ul>
 
                     <div class="mt-4 pt-4 border-t border-indigo-200 flex justify-end">
                         <button id="complete-order-btn" disabled
-                                class="py-2 px-4 rounded-lg shadow-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 transition duration-150">
+                            class="py-2 px-4 rounded-lg shadow-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 transition duration-150">
                             Bestellung abschließen & Zusammenfassung
                         </button>
                     </div>
@@ -172,41 +204,44 @@
 
             <!-- Spalte 3: Einzahlung, Verlauf, Konto Erstellen -->
             <div class="lg:col-span-1 space-y-8">
-                
+
                 <!-- Einzahlung (Neu positioniert) -->
                 <div class="bg-white p-6 rounded-xl card-shadow">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Geld einzahlen</h2>
-                    
+
                     <div class="space-y-4">
                         <div>
-                            <label for="deposit-amount" class="block text-sm font-medium text-gray-700">Betrag (€)</label>
+                            <label for="deposit-amount" class="block text-sm font-medium text-gray-700">Betrag
+                                (€)</label>
                             <input type="number" id="deposit-amount" placeholder="z.B. 10.00" step="0.01" required
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500">
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500">
                         </div>
                         <button id="add-deposit-btn" disabled
-                                class="w-full py-3 px-6 rounded-lg shadow-md text-base font-medium text-white pizza-bg pizza-hover-bg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition duration-150 ease-in-out">
+                            class="w-full py-3 px-6 rounded-lg shadow-md text-base font-medium text-white pizza-bg pizza-hover-bg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition duration-150 ease-in-out">
                             Einzahlen
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Neues Konto erstellen (Neu positioniert) -->
                 <div class="bg-white p-6 rounded-xl card-shadow">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Neues Konto erstellen</h2>
-                     <div>
-                        <label for="new-account-name" class="block text-sm font-medium text-gray-700">Name des neuen Kontos</label>
+                    <div>
+                        <label for="new-account-name" class="block text-sm font-medium text-gray-700">Name des neuen
+                            Kontos</label>
                         <input type="text" id="new-account-name" placeholder="Neuer Name"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500">
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500">
                     </div>
-                    <button id="create-account-btn" 
-                            class="w-full mt-4 py-2 px-4 rounded-lg shadow-sm text-sm font-medium text-white pizza-bg pizza-hover-bg transition duration-150">
+                    <button id="create-account-btn"
+                        class="w-full mt-4 py-2 px-4 rounded-lg shadow-sm text-sm font-medium text-white pizza-bg pizza-hover-bg transition duration-150">
                         Konto erstellen
                     </button>
                 </div>
 
                 <!-- Verlauf des aktiven Kontos -->
                 <div class="bg-white p-6 rounded-xl card-shadow">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Mein Verlauf (<span id="history-name-display">...</span>)</h2>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Mein Verlauf (<span
+                            id="history-name-display">...</span>)</h2>
                     <ul id="transaction-history" class="divide-y divide-gray-200 max-h-60 overflow-y-auto">
                         <p class="text-center text-gray-500 italic">Bitte wähle ein Konto aus.</p>
                     </ul>
@@ -217,8 +252,8 @@
 
         <!-- Admin / Reset Button -->
         <div class="mt-8 text-center">
-            <button id="reset-fund-btn" 
-                    class="py-2 px-4 border border-red-300 rounded-lg shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out">
+            <button id="reset-fund-btn"
+                class="py-2 px-4 border border-red-300 rounded-lg shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out">
                 ⚠️ Alle Konten & aktuelle Bestellung LOKAL löschen
             </button>
         </div>
@@ -229,24 +264,30 @@
     <div id="status-message" class="opacity-0"></div>
 
     <!-- Modals (Bestätigung & Zusammenfassung) -->
-    <div id="confirm-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div id="confirm-modal"
+        class="modal fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4">
             <p id="modal-message" class="text-lg font-medium text-gray-800 mb-6"></p>
             <div class="flex justify-end space-x-4">
-                <button id="confirm-no" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Abbrechen</button>
-                <button id="confirm-yes" class="py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Bestätigen</button>
+                <button id="confirm-no"
+                    class="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Abbrechen</button>
+                <button id="confirm-yes"
+                    class="py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Bestätigen</button>
             </div>
         </div>
     </div>
-    
-    <div id="summary-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+
+    <div id="summary-modal"
+        class="modal fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full mx-4">
             <h2 class="text-2xl font-bold text-gray-900 border-b pb-2 mb-4">Bestell-Zusammenfassung</h2>
             <div id="summary-content">
                 <!-- Inhalt wird von JS eingefügt -->
             </div>
             <div class="flex justify-end mt-6">
-                <button id="close-summary" class="py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Schließen & Bestellung leeren</button>
+                <button id="close-summary"
+                    class="py-2 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Schließen &
+                    Bestellung leeren</button>
             </div>
         </div>
     </div>
@@ -270,7 +311,7 @@
             try {
                 const storedAccounts = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
                 accounts = storedAccounts ? JSON.parse(storedAccounts) : {};
-                
+
                 const storedOrder = localStorage.getItem(STORAGE_KEY_ORDER);
                 currentOrder = storedOrder ? JSON.parse(storedOrder) : [];
             } catch (e) {
@@ -292,12 +333,12 @@
                 showMessage('Fehler beim Speichern der Daten im Browser.', 'error');
             }
         }
-        
+
         // --- UI & EVENT HANDLER ---
 
         function setupUIHandlers() {
             const selector = document.getElementById('account-selector');
-            
+
             selector.addEventListener('change', () => {
                 // Setze activeAccountName auf den neuen Wert (kann leer sein)
                 activeAccountName = selector.value;
@@ -305,7 +346,7 @@
             });
 
             document.getElementById('create-account-btn').onclick = createNewAccount;
-            
+
             document.getElementById('add-deposit-btn').onclick = () => {
                 const amount = parseFloat(document.getElementById('deposit-amount').value) || 0;
                 depositMoney(amount);
@@ -316,7 +357,7 @@
                 const count = parseInt(document.getElementById('custom-pizza-count').value) || 0;
                 buyPizza(count);
             };
-            
+
             document.getElementById('complete-order-btn').onclick = showOrderSummary;
             document.getElementById('close-summary').onclick = completeOrder;
 
@@ -329,14 +370,14 @@
             updateOrderDisplay();
             updateUIForActiveAccount();
         }
-        
+
         /** Aktualisiert die Konten-Liste, den Globalstand und den Selector */
         function updateAccountsListAndGlobalTotal() {
             let globalTotal = 0;
             let accountListHTML = '';
             const selector = document.getElementById('account-selector');
             const selectedValue = activeAccountName;
-            
+
             selector.innerHTML = '<option value="">--- Wähle ein Konto ---</option>';
 
             const accountNames = Object.keys(accounts).sort();
@@ -345,7 +386,7 @@
                 const data = accounts[name];
                 // Wichtig: Null oder undefined Salden als 0 behandeln
                 const balance = data.balance || 0;
-                
+
                 globalTotal += balance;
 
                 const selected = (name === selectedValue) ? 'selected' : '';
@@ -360,15 +401,15 @@
                     </li>
                 `;
             });
-            
+
             // Setze den aktiven Kontonamen im Dropdown zurück (oder behalte ihn, wenn vorhanden)
             if (activeAccountName && accounts[activeAccountName]) {
                 selector.value = activeAccountName;
             } else {
-                 // Wenn das aktive Konto gelöscht wurde oder kein Konto ausgewählt war, setze es auf den aktuellen Wert des Selectors (meist leere Option)
+                // Wenn das aktive Konto gelöscht wurde oder kein Konto ausgewählt war, setze es auf den aktuellen Wert des Selectors (meist leere Option)
                 activeAccountName = selector.value;
             }
-            
+
             document.getElementById('global-total-amount').innerText = globalTotal.toFixed(2).replace('.', ',');
             document.getElementById('all-accounts-list').innerHTML = accountListHTML || '<p class="text-center text-gray-500 italic py-2">Noch keine Konten vorhanden. Erstelle jetzt eines!</p>';
         }
@@ -378,22 +419,22 @@
             const name = activeAccountName;
             const enabled = name !== '';
             const accountData = accounts[name] || {};
-            
+
             // Lade den aktuellen Kontostand aus den lokalen Daten
             currentAccountBalance = accountData.balance || 0;
 
             // Status anzeigen
             document.getElementById('account-status').innerText = name ? `Angemeldet als: ${name}` : 'Bitte wähle ein Konto aus.';
             document.getElementById('history-name-display').innerText = name || '...';
-            
+
             const myBalanceDisplay = document.getElementById('my-balance');
             const historyList = document.getElementById('transaction-history');
 
             if (!enabled) {
-                 // Kein aktives Konto
-                 myBalanceDisplay.innerText = '0,00 €';
-                 myBalanceDisplay.className = 'text-3xl font-extrabold mt-1'; // Klassen zurücksetzen
-                 historyList.innerHTML = '<p class="text-center text-gray-500 italic py-2">Bitte wähle ein Konto aus.</p>';
+                // Kein aktives Konto
+                myBalanceDisplay.innerText = '0,00 €';
+                myBalanceDisplay.className = 'text-3xl font-extrabold mt-1'; // Klassen zurücksetzen
+                historyList.innerHTML = '<p class="text-center text-gray-500 italic py-2">Bitte wähle ein Konto aus.</p>';
             } else {
                 // Balance anzeigen und färben
                 myBalanceDisplay.innerText = currentAccountBalance.toFixed(2).replace('.', ',') + ' €';
@@ -408,9 +449,9 @@
                 } else {
                     history.forEach(h => {
                         const amountAbs = Math.abs(h.amount);
-                        const sign = (h.type === 'Einzahlung' || h.type === 'Rückbuchung') ? '' : '-'; 
+                        const sign = (h.type === 'Einzahlung' || h.type === 'Rückbuchung') ? '' : '-';
                         const color = h.amount >= 0 ? 'text-green-600' : 'text-red-600';
-                        
+
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-center py-2';
                         li.innerHTML = `
@@ -424,14 +465,14 @@
                     });
                 }
             }
-            
+
             // Buttons enablen/disablen basierend auf dem aktiven Status und dem Guthaben
             const canBuy = currentAccountBalance >= PIZZA_COST;
             document.getElementById('add-deposit-btn').disabled = !enabled;
             document.getElementById('buy-one-pizza').disabled = !enabled || !canBuy;
             document.getElementById('buy-custom-pizza').disabled = !enabled || !canBuy;
         }
-        
+
         /** Aktualisiert die Anzeige der aktuellen Bestellung */
         function updateOrderDisplay() {
             let orderTotal = 0;
@@ -446,7 +487,7 @@
             } else {
                 currentOrder.forEach(item => {
                     orderTotal += item.cost;
-                    
+
                     const li = document.createElement('li');
                     li.className = 'flex justify-between items-center py-2 items-start';
                     li.setAttribute('data-name', item.name);
@@ -468,7 +509,7 @@
                     orderList.appendChild(li);
                 });
                 completeBtn.disabled = false;
-                
+
                 // Event-Listener für Lösch-Buttons hinzufügen
                 orderList.querySelectorAll('.remove-item-btn').forEach(btn => {
                     // Verwende einen eindeutigen Handler, um Doppelungen zu vermeiden
@@ -487,7 +528,7 @@
         }
 
         // --- LOKALE GESCHÄFTSLOGIK ---
-        
+
         function createNewAccount() {
             const newNameInput = document.getElementById('new-account-name');
             const newName = newNameInput.value.trim();
@@ -496,23 +537,23 @@
                 showMessage('Bitte gib einen Namen für das neue Konto ein.', 'error');
                 return;
             }
-            
+
             if (accounts[newName]) {
                 showMessage(`Konto "${newName}" existiert bereits. Wähle es bitte in der Liste aus.`, 'error');
                 return;
             }
-            
+
             // Neues Konto erstellen
             accounts[newName] = {
                 name: newName,
                 balance: 0.00,
                 history: []
             };
-            
+
             // Setze das neu erstellte Konto als aktiv
             activeAccountName = newName;
             document.getElementById('new-account-name').value = '';
-            
+
             saveData();
             showMessage(`Konto "${newName}" wurde erfolgreich erstellt.`, 'success');
         }
@@ -523,14 +564,14 @@
                 showMessage('Bitte gib einen gültigen Einzahlungsbetrag (> 0,00 €) ein.', 'error');
                 return;
             }
-            
+
             // Betrag auf 2 Dezimalstellen fixieren
             const fixedAmount = parseFloat(amount.toFixed(2));
             const account = accounts[activeAccountName];
-            
+
             // Saldo-Berechnung
-            account.balance = parseFloat((account.balance + fixedAmount).toFixed(2)); 
-            
+            account.balance = parseFloat((account.balance + fixedAmount).toFixed(2));
+
             // History Eintrag
             const newHistoryItem = {
                 type: 'Einzahlung',
@@ -548,7 +589,7 @@
         function buyPizza(count) {
             const parsedCount = parseInt(count);
             if (!activeAccountName || !accounts[activeAccountName] || parsedCount <= 0) return;
-            
+
             const cost = parsedCount * PIZZA_COST;
             const account = accounts[activeAccountName];
 
@@ -561,7 +602,7 @@
 
             // 1. Konto aktualisieren (Abbuchung)
             account.balance = parseFloat((account.balance - cost).toFixed(2));
-            
+
             // 2. History Eintrag
             const newHistoryItem = {
                 type: 'Bestellung',
@@ -571,7 +612,7 @@
                 date: new Date().toLocaleString('de-DE')
             };
             account.history.unshift(newHistoryItem); // Füge am Anfang hinzu
-            
+
             // 3. Bestellposten hinzufügen
             const orderItem = {
                 name: activeAccountName,
@@ -594,24 +635,24 @@
                 showMessage('Bestellposition nicht gefunden.', 'error');
                 return;
             }
-            
+
             const itemToRemove = currentOrder[itemIndex];
             const removedCost = itemToRemove.cost;
             const removedName = itemToRemove.name;
-            
+
             // 1. Bestellposition entfernen
             currentOrder.splice(itemIndex, 1);
-            
+
             // 2. Konto des Bestellers korrigieren (Geld zurückbuchen)
             const account = accounts[removedName];
             if (!account) {
-                 // Sollte nicht passieren, aber zur Sicherheit
-                 showMessage('Konto des Bestellers für Rückbuchung nicht gefunden.', 'error');
-                 return;
+                // Sollte nicht passieren, aber zur Sicherheit
+                showMessage('Konto des Bestellers für Rückbuchung nicht gefunden.', 'error');
+                return;
             }
-            
+
             account.balance = parseFloat((account.balance + removedCost).toFixed(2));
-            
+
             // 3. History Eintrag
             const newHistoryItem = {
                 type: 'Rückbuchung',
@@ -625,7 +666,7 @@
             saveData();
             showMessage(`Bestellposition von ${removedName} (${removedCost.toFixed(2).replace('.', ',')}€) wurde entfernt und gutgeschrieben.`, 'success');
         }
-        
+
         async function completeOrder() {
             document.getElementById('summary-modal').classList.add('hidden');
             if (!await customConfirm("Soll die aktuelle Bestellung wirklich abgeschlossen und geleert werden?")) return;
@@ -634,19 +675,19 @@
             saveData();
             showMessage('Bestellung abgeschlossen und Korb geleert.', 'success');
         }
-        
+
         function showOrderSummary() {
             if (currentOrder.length === 0) {
                 showMessage('Es gibt noch keine Artikel in der aktuellen Bestellung.', 'error');
                 return;
             }
-            
+
             const totalCost = currentOrder.reduce((sum, item) => sum + item.cost, 0);
-            
+
             const summary = {};
 
             currentOrder.forEach(item => {
-                
+
                 if (summary[item.name]) {
                     summary[item.name].count += item.count;
                     summary[item.name].cost += item.cost;
@@ -661,9 +702,9 @@
             let summaryHTML = `<p class="text-xl font-medium mb-4">Insgesamt wurden <span class="text-indigo-600 font-bold">${totalQuantity} Pizzen</span> für <span class="text-indigo-600 font-bold">${totalCost.toFixed(2).replace('.', ',')} €</span> bestellt.</p>`;
             summaryHTML += `<h3 class="text-lg font-semibold mt-4 mb-2">Bestellungen nach Person:</h3>`;
             summaryHTML += `<ul class="list-disc list-inside space-y-2">`;
-            
+
             const sortedNames = Object.keys(summary).sort();
-            
+
             sortedNames.forEach(name => {
                 const item = summary[name];
                 summaryHTML += `<li><span class="font-bold">${name}:</span> ${item.count} Pizzen (${item.cost.toFixed(2).replace('.', ',')} €)</li>`;
@@ -681,10 +722,10 @@
             accounts = {};
             currentOrder = [];
             activeAccountName = '';
-            
+
             localStorage.removeItem(STORAGE_KEY_ACCOUNTS);
             localStorage.removeItem(STORAGE_KEY_ORDER);
-            
+
             updateAllUI();
             showMessage('Alle Konten und die Bestellung wurden lokal gelöscht.', 'success');
         }
@@ -710,7 +751,7 @@
             }
 
             msgBox.classList.remove('opacity-0');
-            msgBox.classList.add('opacity-100'); 
+            msgBox.classList.add('opacity-100');
 
             messageTimeout = setTimeout(() => {
                 msgBox.classList.remove('opacity-100');
@@ -728,7 +769,7 @@
                 // Entferne alte Listener durch Klonen und Ersetzen (wichtig für Promises)
                 const newConfirmBtn = confirmBtn.cloneNode(true);
                 confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-                
+
                 const newCancelBtn = cancelBtn.cloneNode(true);
                 cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
@@ -749,22 +790,23 @@
                 newCancelBtn.addEventListener('click', cancelHandler, { once: true });
             });
         }
-        
+
         // --- INITIALISIERUNG ---
         function initializeApp() {
             loadData(); // Lade gespeicherte Daten
             setupUIHandlers(); // Setze alle Event-Listener
             updateAllUI(); // Aktualisiere die Oberfläche mit den geladenen Daten
-            
+
             // Zeige eine Willkommensnachricht, wenn die App das erste Mal geladen wird
             if (Object.keys(accounts).length === 0) {
-                 showMessage('Willkommen! Erstelle zuerst ein neues Konto, um loszulegen.', 'info');
+                showMessage('Willkommen! Erstelle zuerst ein neues Konto, um loszulegen.', 'info');
             } else {
-                 showMessage('Daten erfolgreich aus dem lokalen Speicher geladen.', 'success');
+                showMessage('Daten erfolgreich aus dem lokalen Speicher geladen.', 'success');
             }
         }
 
         window.onload = initializeApp;
     </script>
 </body>
+
 </html>

@@ -1,19 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex, nofollow">
     <title>EKG Simulator</title>
-    
+
     <!-- 1. STYLES -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #000; color: #fff; user-select: none; -webkit-user-select: none; margin: 0; overscroll-behavior-y: none; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-        .monitor-mode { overflow: hidden; position: fixed; width: 100%; height: 100%; touch-action: none; }
+        body {
+            background-color: #000;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            overscroll-behavior-y: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+
+        .monitor-mode {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
     </style>
 
     <!-- 2. REACT & BABEL -->
@@ -25,7 +51,48 @@
     <script crossorigin src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script crossorigin src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script crossorigin src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body>
     <div id="root"></div>
 
@@ -35,17 +102,17 @@
 
         // --- ICONS ---
         const ICONS = {
-            Battery: <g><path d="M6 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="M22 11v2"/></g>,
-            Wifi: <g><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></g>,
-            Bell: <g><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></g>,
-            Activity: <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>,
-            X: <g><path d="M18 6 6 18"/><path d="m6 6 12 12"/></g>,
-            Menu: <g><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></g>,
-            Monitor: <g><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></g>,
-            Smartphone: <g><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></g>,
+            Battery: <g><path d="M6 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" /><path d="M22 11v2" /></g>,
+            Wifi: <g><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" x2="12.01" y1="20" y2="20" /></g>,
+            Bell: <g><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></g>,
+            Activity: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+            X: <g><path d="M18 6 6 18" /><path d="m6 6 12 12" /></g>,
+            Menu: <g><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></g>,
+            Monitor: <g><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></g>,
+            Smartphone: <g><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></g>,
             Heart: <path d="M19 14c1.49-1.28 3.6-2.34 4.5-4.25A3.94 3.94 0 0 0 12 10.5c-3.28-3.25-8.53-8.6-11 1.25-1 3.95.5 7.25 4.5 11.25 5.73 5.74 11.42 1.56 13.5-.5Z" />,
-            Trend: <g><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></g>,
-            Patient: <g><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>,
+            Trend: <g><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></g>,
+            Patient: <g><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></g>,
             Moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         };
         const Icon = ({ name, size = 24, className = "" }) => (
@@ -66,23 +133,23 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        const APP_ID = "corpuls-gh-pages-v1"; 
+        const APP_ID = "corpuls-gh-pages-v1";
 
         // --- WAVEFORM LOGIC ---
         const getPQRSTValue = (progress, rhythmType, variationSeed, lead = 'II') => {
-          if (rhythmType === 'Asystole') return (Math.random() - 0.5) * 0.05;
-          if (rhythmType === 'VFib') return Math.sin(progress * 50) * 0.5 + (Math.random() - 0.5) * 0.4;
-          const p = progress;
-          let y = (Math.random() - 0.5) * 0.04; 
-          let amp = 1.0; let sDepth = 1.0;
-          if (lead === 'I') { amp = 0.6; sDepth = 0.5; } else if (lead === 'II') { amp = 1.2; sDepth = 1.0; } else if (lead === 'III') { amp = 0.7; sDepth = 1.8; }
-          const rHeight = (amp * 1.0) + (Math.sin(variationSeed) * 0.05); 
-          if (p > 0.1 && p < 0.2) y += 0.1 * Math.sin((p - 0.1) * Math.PI * 10); 
-          else if (p > 0.43 && p < 0.45) y -= 0.15 * rHeight; 
-          else if (p >= 0.45 && p < 0.48) y += rHeight * Math.sin(((p - 0.45) / 0.03) * Math.PI);
-          else if (p >= 0.48 && p < 0.50) y -= 0.25 * rHeight * sDepth; 
-          else if (p > 0.7 && p < 0.85) y += 0.15 * Math.sin((p - 0.7) * Math.PI * 6.6); 
-          return y;
+            if (rhythmType === 'Asystole') return (Math.random() - 0.5) * 0.05;
+            if (rhythmType === 'VFib') return Math.sin(progress * 50) * 0.5 + (Math.random() - 0.5) * 0.4;
+            const p = progress;
+            let y = (Math.random() - 0.5) * 0.04;
+            let amp = 1.0; let sDepth = 1.0;
+            if (lead === 'I') { amp = 0.6; sDepth = 0.5; } else if (lead === 'II') { amp = 1.2; sDepth = 1.0; } else if (lead === 'III') { amp = 0.7; sDepth = 1.8; }
+            const rHeight = (amp * 1.0) + (Math.sin(variationSeed) * 0.05);
+            if (p > 0.1 && p < 0.2) y += 0.1 * Math.sin((p - 0.1) * Math.PI * 10);
+            else if (p > 0.43 && p < 0.45) y -= 0.15 * rHeight;
+            else if (p >= 0.45 && p < 0.48) y += rHeight * Math.sin(((p - 0.45) / 0.03) * Math.PI);
+            else if (p >= 0.48 && p < 0.50) y -= 0.25 * rHeight * sDepth;
+            else if (p > 0.7 && p < 0.85) y += 0.15 * Math.sin((p - 0.7) * Math.PI * 6.6);
+            return y;
         };
         const getPlethValue = (progress, type) => {
             if (type === 'Asystole' || type === 'VFib') return 0;
@@ -94,8 +161,8 @@
         const getCapnoValue = (progress, type) => {
             if (type === 'Asystole') return 0;
             const p = progress; let y = 0;
-            if (p >= 0.1 && p < 0.2) y = (p - 0.1) * 10; 
-            else if (p >= 0.2 && p < 0.5) y = 1.0 + (p - 0.2) * 0.1; 
+            if (p >= 0.1 && p < 0.2) y = (p - 0.1) * 10;
+            else if (p >= 0.2 && p < 0.5) y = 1.0 + (p - 0.2) * 0.1;
             else if (p >= 0.5 && p < 0.6) y = 1.0 - ((p - 0.5) * 10);
             if (y > 0) y += (Math.random() - 0.5) * 0.05;
             return Math.max(0, y);
@@ -135,15 +202,15 @@
                 const ctx = canvas.getContext('2d');
                 const { width, height, buffer } = stateRef.current;
 
-                const target = targetRate.current; 
+                const target = targetRate.current;
                 const diff = target - stateRef.current.currentSmoothedRate;
-                stateRef.current.currentSmoothedRate += diff * 0.05; 
+                stateRef.current.currentSmoothedRate += diff * 0.05;
                 let effectiveRate = stateRef.current.currentSmoothedRate;
-                if (rhythmType !== 'Asystole' && rhythmType !== 'VFib') effectiveRate += Math.sin(Date.now() / 500) * 2; 
+                if (rhythmType !== 'Asystole' && rhythmType !== 'VFib') effectiveRate += Math.sin(Date.now() / 500) * 2;
                 if (waveType === 'co2') effectiveRate = effectiveRate / 4;
                 if (waveType === 'ecg' && rhythmType === 'VFib') effectiveRate = 300;
 
-                const eventsPerSecond = effectiveRate / 60; const phaseStep = eventsPerSecond / 60; 
+                const eventsPerSecond = effectiveRate / 60; const phaseStep = eventsPerSecond / 60;
                 stateRef.current.phase += phaseStep;
                 if (stateRef.current.phase >= 1) { stateRef.current.phase -= 1; stateRef.current.variation = Math.random() * 100; }
 
@@ -153,7 +220,7 @@
                 else if (waveType === 'co2') { newValue = getCapnoValue(stateRef.current.phase, rhythmType); }
 
                 const speed = 2;
-                for(let s=0; s<speed; s++) {
+                for (let s = 0; s < speed; s++) {
                     stateRef.current.cursor++;
                     if (stateRef.current.cursor >= width) stateRef.current.cursor = 0;
                     buffer[stateRef.current.cursor] = newValue;
@@ -186,7 +253,8 @@
                 const gradient = ctx.createLinearGradient(newCursor, 0, newCursor - 15, 0);
                 gradient.addColorStop(0, color); gradient.addColorStop(1, "transparent");
                 ctx.fillStyle = gradient; ctx.globalAlpha = 0.4; ctx.fillRect(newCursor - 15, 0, 15, height); ctx.globalAlpha = 1.0;
-                if (newCursor + eraserGap > width) { ctx.fillStyle = '#000'; ctx.fillRect(newCursor, 0, width - newCursor, height); ctx.fillRect(0, 0, (newCursor + eraserGap) - width, height);
+                if (newCursor + eraserGap > width) {
+                    ctx.fillStyle = '#000'; ctx.fillRect(newCursor, 0, width - newCursor, height); ctx.fillRect(0, 0, (newCursor + eraserGap) - width, height);
                 } else { ctx.fillStyle = '#000'; ctx.fillRect(newCursor, 0, eraserGap, height); }
                 requestRef.current = requestAnimationFrame(animate);
             };
@@ -216,7 +284,7 @@
 
         const SoftKey = ({ label, active, onClick, color = "text-gray-300", icon }) => (
             <button onClick={onClick} className={`flex-1 border-r border-gray-700 h-14 flex flex-col items-center justify-center text-xs font-bold transition-colors uppercase tracking-wide cursor-pointer active:bg-gray-800 ${active ? 'bg-gray-200 text-black' : 'bg-gray-900 hover:bg-gray-800'} ${active ? '' : color}`}>
-                {icon && <Icon name={icon} size={14} className="mb-1"/>}
+                {icon && <Icon name={icon} size={14} className="mb-1" />}
                 {label}
             </button>
         );
@@ -224,7 +292,7 @@
         // --- MONITOR VIEW ---
         const MonitorView = ({ sessionData }) => {
             const [nibpState, setNibpState] = useState({ status: 'IDLE', pressure: 0 });
-            const [activeModal, setActiveModal] = useState(null); 
+            const [activeModal, setActiveModal] = useState(null);
             const liveHRRef = useRef(80);
             const [displayHR, setDisplayHR] = useState(80);
 
@@ -238,14 +306,14 @@
                     db.doc(`artifacts/${APP_ID}/public/data/sessions/default`).update({ nibpCommand: 'ACK' });
                 }
                 let target = sessionData.targetHR || 80;
-                if (sessionData.rhythm === 'VFib') target = 300; 
+                if (sessionData.rhythm === 'VFib') target = 300;
                 else if (sessionData.rhythm === 'Asystole') target = 0;
-                
+
                 liveHRRef.current = target;
                 const timer = setInterval(() => {
                     if (sessionData.rhythm === 'VFib') setDisplayHR('---');
                     else if (sessionData.rhythm === 'Asystole') setDisplayHR(0);
-                    else setDisplayHR(Math.round(target + (Math.random()*2-1)));
+                    else setDisplayHR(Math.round(target + (Math.random() * 2 - 1)));
                 }, 1000);
                 return () => clearInterval(timer);
             }, [sessionData, nibpState.status]);
@@ -253,12 +321,12 @@
             useEffect(() => {
                 let interval;
                 if (nibpState.status === 'INFLATING') {
-                    interval = setInterval(() => setNibpState(p => { if(p.pressure >= 170) return { status: 'MEASURING', pressure: 170 }; return { ...p, pressure: p.pressure + 8 }; }), 100);
+                    interval = setInterval(() => setNibpState(p => { if (p.pressure >= 170) return { status: 'MEASURING', pressure: 170 }; return { ...p, pressure: p.pressure + 8 }; }), 100);
                 } else if (nibpState.status === 'MEASURING') {
                     interval = setInterval(() => setNibpState(p => {
-                        if(p.pressure <= 80) {
-                            const noise = Math.floor(Math.random()*10)-5;
-                            const newBP = { sys: 120+noise, dia: 80+noise, lastTime: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) };
+                        if (p.pressure <= 80) {
+                            const noise = Math.floor(Math.random() * 10) - 5;
+                            const newBP = { sys: 120 + noise, dia: 80 + noise, lastTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
                             db.doc(`artifacts/${APP_ID}/public/data/sessions/default`).update({ nibp: newBP, nibpCommand: 'IDLE' });
                             return { status: 'IDLE', pressure: 0 };
                         }
@@ -269,7 +337,7 @@
             }, [nibpState.status]);
 
             if (!sessionData) return <div className="flex items-center justify-center h-screen bg-black text-white">Connecting...</div>;
-            
+
             // Alarm Logic
             const limits = sessionData.alarms || { hrHigh: 120, hrLow: 50, spo2Low: 90 };
             const isHrAlarm = displayHR !== '---' && (displayHR > limits.hrHigh || (displayHR < limits.hrLow && displayHR !== 0));
@@ -281,7 +349,7 @@
                 if (!activeModal) return null;
                 const close = () => setActiveModal(null);
                 const wrapperClass = "absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8";
-                
+
                 if (activeModal === 'PATIENT') return (
                     <div className={wrapperClass} onClick={close}>
                         <div className="bg-gray-800 border border-gray-600 rounded p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -292,20 +360,20 @@
                 );
                 if (activeModal === 'ALARMS') return (
                     <div className={wrapperClass} onClick={close}>
-                         <div className="bg-gray-800 border border-gray-600 rounded p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gray-800 border border-gray-600 rounded p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-between items-center border-b border-gray-600 pb-2 mb-4"><h2 className="text-lg font-bold text-red-500 flex items-center gap-2"><Icon name="Bell" /> Alarm Limits</h2><button onClick={close}><Icon name="X" /></button></div>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center bg-black p-3 rounded border border-gray-700"><span>HR High</span> <span className="text-xl font-mono font-bold">{limits.hrHigh}</span></div>
                                 <div className="flex justify-between items-center bg-black p-3 rounded border border-gray-700"><span>HR Low</span> <span className="text-xl font-mono font-bold">{limits.hrLow}</span></div>
                                 <div className="flex justify-between items-center bg-black p-3 rounded border border-gray-700"><span>SpO2 Low</span> <span className="text-xl font-mono font-bold">{limits.spo2Low}</span></div>
                             </div>
-                         </div>
+                        </div>
                     </div>
                 );
                 if (activeModal === 'MENU') return (
                     <div className="absolute inset-0 z-50" onClick={close}>
                         <div className="absolute bottom-16 right-0 w-64 bg-gray-800 border border-gray-600 shadow-xl rounded-tl-lg overflow-hidden" onClick={e => e.stopPropagation()}>
-                            <div className="p-3 border-b border-gray-700 font-bold text-xs uppercase bg-gray-700 flex items-center gap-2"><Icon name="Menu"/> System</div>
+                            <div className="p-3 border-b border-gray-700 font-bold text-xs uppercase bg-gray-700 flex items-center gap-2"><Icon name="Menu" /> System</div>
                             <div className="flex flex-col divide-y divide-gray-700">
                                 <div className="flex items-center justify-between p-4 bg-gray-900 text-sm font-bold"><span>Night Mode</span><div className={`w-3 h-3 rounded-full ${isNightMode ? 'bg-green-500' : 'bg-gray-600'}`}></div></div>
                             </div>
@@ -320,7 +388,7 @@
                     {renderModal()}
                     <div className="flex justify-between items-center px-4 py-2 bg-gray-900 text-white border-b border-gray-700 text-sm font-bold uppercase tracking-wider shrink-0">
                         <div className="flex items-center space-x-4"><span className="text-yellow-500">{sessionData.patient?.age || 'Adult'}</span><span className="text-white">{sessionData.patient?.name || 'No Patient'}</span></div>
-                        <div className="flex items-center space-x-4"><span className="text-green-500 flex gap-2 items-center"><Icon name="Wifi" size={16}/> ONLINE</span><span className="text-green-500 flex gap-2 items-center"><Icon name="Battery" size={16}/> 98%</span></div>
+                        <div className="flex items-center space-x-4"><span className="text-green-500 flex gap-2 items-center"><Icon name="Wifi" size={16} /> ONLINE</span><span className="text-green-500 flex gap-2 items-center"><Icon name="Battery" size={16} /> 98%</span></div>
                     </div>
                     <div className="flex flex-1 relative min-h-0">
                         <div className="flex-1 flex flex-col border-r border-gray-800 min-h-0">
@@ -336,9 +404,9 @@
                         </div>
                     </div>
                     <div className="flex border-t border-gray-800 bg-gray-900 h-16 shrink-0 z-40 relative">
-                        <SoftKey label="Start NIBP" onClick={() => setNibpState({status: 'INFLATING', pressure: 0})} active={nibpState.status !== 'IDLE'} color="text-blue-400" icon="Activity" />
+                        <SoftKey label="Start NIBP" onClick={() => setNibpState({ status: 'INFLATING', pressure: 0 })} active={nibpState.status !== 'IDLE'} color="text-blue-400" icon="Activity" />
                         <SoftKey label="Patient" onClick={() => setActiveModal('PATIENT')} active={activeModal === 'PATIENT'} icon="Patient" />
-                        <SoftKey label="Trend" onClick={() => {}} active={false} icon="Trend" />
+                        <SoftKey label="Trend" onClick={() => { }} active={false} icon="Trend" />
                         <SoftKey label="Alarms" onClick={() => setActiveModal('ALARMS')} active={activeModal === 'ALARMS'} icon="Bell" />
                         <SoftKey label="Menu" onClick={() => setActiveModal('MENU')} active={activeModal === 'MENU'} icon="Menu" />
                     </div>
@@ -356,7 +424,7 @@
 
             // Local state for sliders (debounced)
             const [alarmLimits, setAlarmLimits] = useState({ hrHigh: 120, hrLow: 50, spo2Low: 90 });
-            
+
             // Sync from DB on load
             useEffect(() => {
                 if (sessionData?.alarms) setAlarmLimits(sessionData.alarms);
@@ -367,8 +435,8 @@
             return (
                 <div className="min-h-screen bg-gray-900 text-white p-4 pb-20 font-sans overflow-y-auto">
                     <div className="mb-6 flex items-center justify-between">
-                        <h1 className="text-xl font-bold flex items-center gap-2"><Icon name="Smartphone" size={24} className="text-blue-400"/> Remote Control</h1>
-                        <div className="text-xs text-green-400 flex items-center gap-1"><Icon name="Wifi" size={12}/> Connected</div>
+                        <h1 className="text-xl font-bold flex items-center gap-2"><Icon name="Smartphone" size={24} className="text-blue-400" /> Remote Control</h1>
+                        <div className="text-xs text-green-400 flex items-center gap-1"><Icon name="Wifi" size={12} /> Connected</div>
                     </div>
 
                     <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
@@ -385,41 +453,41 @@
                         <div className="space-y-5">
                             <div>
                                 <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-bold text-gray-300 flex items-center gap-2"><Icon name="Heart" size={14} className="text-green-500"/> Heart Rate</span> 
+                                    <span className="text-sm font-bold text-gray-300 flex items-center gap-2"><Icon name="Heart" size={14} className="text-green-500" /> Heart Rate</span>
                                     <span className="font-mono font-bold text-green-400">{sessionData?.targetHR ? sessionData.targetHR : '(Auto)'}</span>
                                 </div>
                                 <div className="flex gap-2">
                                     <input type="number" placeholder="Manual HR..." className="flex-1 bg-black border border-gray-600 rounded p-2 text-white font-mono" value={manualHR} onChange={(e) => setManualHR(e.target.value)} />
                                     <button onClick={applyManualHR} className="bg-green-700 text-white px-4 rounded font-bold text-sm">SET</button>
-                                    {sessionData?.targetHR && (<button onClick={() => updateSession({targetHR: null})} className="bg-gray-700 text-white px-3 rounded font-bold text-xs">AUTO</button>)}
+                                    {sessionData?.targetHR && (<button onClick={() => updateSession({ targetHR: null })} className="bg-gray-700 text-white px-3 rounded font-bold text-xs">AUTO</button>)}
                                 </div>
                             </div>
-                            <div><div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">SpO2</span> <span className="font-mono font-bold text-cyan-400">{sessionData?.spo2}%</span></div><input type="range" min="50" max="100" value={sessionData?.spo2 || 98} onChange={(e) => updateSession({ spo2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"/></div>
-                            <div><div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">EtCO2</span> <span className="font-mono font-bold text-yellow-400">{sessionData?.etco2}</span></div><input type="range" min="0" max="60" value={sessionData?.etco2 || 38} onChange={(e) => updateSession({ etco2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"/></div>
+                            <div><div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">SpO2</span> <span className="font-mono font-bold text-cyan-400">{sessionData?.spo2}%</span></div><input type="range" min="50" max="100" value={sessionData?.spo2 || 98} onChange={(e) => updateSession({ spo2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" /></div>
+                            <div><div className="flex justify-between mb-1"><span className="text-sm font-bold text-gray-300">EtCO2</span> <span className="font-mono font-bold text-yellow-400">{sessionData?.etco2}</span></div><input type="range" min="0" max="60" value={sessionData?.etco2 || 38} onChange={(e) => updateSession({ etco2: parseInt(e.target.value) })} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500" /></div>
                         </div>
                     </div>
 
                     <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
-                         <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">Alarm Limits Configuration</h2>
-                         <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">Alarm Limits Configuration</h2>
+                        <div className="space-y-4">
                             <div>
                                 <div className="flex justify-between mb-1 text-sm"><span>HR High</span> <span className="font-mono">{alarmLimits.hrHigh}</span></div>
-                                <input type="range" min="60" max="200" value={alarmLimits.hrHigh} onChange={(e) => setAlarmLimits({...alarmLimits, hrHigh: parseInt(e.target.value)})} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500"/>
+                                <input type="range" min="60" max="200" value={alarmLimits.hrHigh} onChange={(e) => setAlarmLimits({ ...alarmLimits, hrHigh: parseInt(e.target.value) })} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500" />
                             </div>
                             <div>
                                 <div className="flex justify-between mb-1 text-sm"><span>HR Low</span> <span className="font-mono">{alarmLimits.hrLow}</span></div>
-                                <input type="range" min="20" max="100" value={alarmLimits.hrLow} onChange={(e) => setAlarmLimits({...alarmLimits, hrLow: parseInt(e.target.value)})} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500"/>
+                                <input type="range" min="20" max="100" value={alarmLimits.hrLow} onChange={(e) => setAlarmLimits({ ...alarmLimits, hrLow: parseInt(e.target.value) })} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500" />
                             </div>
                             <div>
                                 <div className="flex justify-between mb-1 text-sm"><span>SpO2 Low</span> <span className="font-mono">{alarmLimits.spo2Low}</span></div>
-                                <input type="range" min="50" max="99" value={alarmLimits.spo2Low} onChange={(e) => setAlarmLimits({...alarmLimits, spo2Low: parseInt(e.target.value)})} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500"/>
+                                <input type="range" min="50" max="99" value={alarmLimits.spo2Low} onChange={(e) => setAlarmLimits({ ...alarmLimits, spo2Low: parseInt(e.target.value) })} onMouseUp={updateAlarms} onTouchEnd={updateAlarms} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500" />
                             </div>
-                         </div>
+                        </div>
                     </div>
 
                     <div className="bg-gray-800 rounded-xl p-4 mb-4 shadow-lg border border-gray-700">
                         <h2 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">System Settings</h2>
-                         <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                             <span>Night Mode</span>
                             <button onClick={() => updateSession({ settings: { nightMode: !sessionData?.settings?.nightMode } })} className={`px-4 py-2 rounded font-bold text-sm ${sessionData?.settings?.nightMode ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
                                 {sessionData?.settings?.nightMode ? 'ON' : 'OFF'}
@@ -438,7 +506,7 @@
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <button onClick={() => updateSession({ nibpCommand: 'START' })} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 border border-gray-700"><Icon name="Activity" className="mb-2 text-blue-400" /><span className="font-bold text-sm">Start NIBP</span></button>
-                        <button onClick={() => updateSession({ nibp: { sys: '---', dia: '---', lastTime: '--:--' }})} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 border border-gray-700"><Icon name="Bell" className="mb-2 text-red-400" /><span className="font-bold text-sm">Reset NIBP</span></button>
+                        <button onClick={() => updateSession({ nibp: { sys: '---', dia: '---', lastTime: '--:--' } })} className="bg-gray-800 p-4 rounded-xl flex flex-col items-center justify-center active:bg-gray-700 border border-gray-700"><Icon name="Bell" className="mb-2 text-red-400" /><span className="font-bold text-sm">Reset NIBP</span></button>
                     </div>
                 </div>
             );
@@ -446,7 +514,7 @@
 
         // --- MAIN APP ---
         const App = () => {
-            const [view, setView] = useState('landing'); 
+            const [view, setView] = useState('landing');
             const [user, setUser] = useState(null);
             const [sessionData, setSessionData] = useState(null);
 
@@ -458,16 +526,16 @@
             useEffect(() => {
                 if (!user) return;
                 const docRef = db.doc(`artifacts/${APP_ID}/public/data/sessions/default`);
-                docRef.set({ 
-                    rhythm: 'Sinus', spo2: 98, etco2: 38, 
-                    nibp: { sys: 120, dia: 80, lastTime: '--:--' }, 
+                docRef.set({
+                    rhythm: 'Sinus', spo2: 98, etco2: 38,
+                    nibp: { sys: 120, dia: 80, lastTime: '--:--' },
                     patient: { name: '', age: '' },
                     alarms: { hrHigh: 120, hrLow: 50, spo2Low: 90 },
                     settings: { nightMode: false }
                 }, { merge: true });
 
-                const unsub = docRef.onSnapshot((snap) => { 
-                    if (snap.exists) setSessionData(snap.data()); 
+                const unsub = docRef.onSnapshot((snap) => {
+                    if (snap.exists) setSessionData(snap.data());
                 });
                 return () => unsub();
             }, [user]);
@@ -476,16 +544,16 @@
 
             if (view === 'landing') {
                 return (
-                  <div className="h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 font-sans overflow-y-auto">
-                      <div className="text-center mb-10">
-                          <h1 className="text-4xl font-bold mb-2 text-blue-400 tracking-tight">C3 SIMULATOR</h1>
-                          <p className="text-gray-400">Distributed Training Environment</p>
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl">
-                          <button onClick={() => setView('monitor')} className="group relative bg-gray-800 border border-gray-700 hover:border-blue-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/20"><Icon name="Monitor" size={64} className="mb-4 text-gray-300 group-hover:text-blue-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Monitor</h2><p className="text-sm text-gray-500 text-center">Open this on the main display screen.</p></button>
-                          <button onClick={() => setView('remote')} className="group relative bg-gray-800 border border-gray-700 hover:border-green-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-green-900/20"><Icon name="Smartphone" size={64} className="mb-4 text-gray-300 group-hover:text-green-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Remote</h2><p className="text-sm text-gray-500 text-center">Open this on a tablet or mobile device.</p></button>
-                      </div>
-                  </div>
+                    <div className="h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 font-sans overflow-y-auto">
+                        <div className="text-center mb-10">
+                            <h1 className="text-4xl font-bold mb-2 text-blue-400 tracking-tight">C3 SIMULATOR</h1>
+                            <p className="text-gray-400">Distributed Training Environment</p>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl">
+                            <button onClick={() => setView('monitor')} className="group relative bg-gray-800 border border-gray-700 hover:border-blue-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/20"><Icon name="Monitor" size={64} className="mb-4 text-gray-300 group-hover:text-blue-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Monitor</h2><p className="text-sm text-gray-500 text-center">Open this on the main display screen.</p></button>
+                            <button onClick={() => setView('remote')} className="group relative bg-gray-800 border border-gray-700 hover:border-green-500 p-8 rounded-2xl flex flex-col items-center transition-all hover:scale-105 hover:shadow-2xl hover:shadow-green-900/20"><Icon name="Smartphone" size={64} className="mb-4 text-gray-300 group-hover:text-green-400 transition-colors" /><h2 className="text-2xl font-bold mb-2">Launch Remote</h2><p className="text-sm text-gray-500 text-center">Open this on a tablet or mobile device.</p></button>
+                        </div>
+                    </div>
                 );
             }
             if (view === 'monitor') return <MonitorView sessionData={sessionData} />;
@@ -496,4 +564,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>

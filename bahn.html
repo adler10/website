@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html lang="de" class="h-full bg-gray-900">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Abfahrtsmonitor</title>
-    
+
     <!-- Turbo: Verbindung zum KVV Server vorab aufbauen -->
     <link rel="preconnect" href="https://projekte.kvv-efa.de">
     <link rel="dns-prefetch" href="https://projekte.kvv-efa.de">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="S-Bahn Monitor">
     <meta name="theme-color" content="#1F2937">
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
         /* Optimierter Spinner: Kleiner und feiner */
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.1);
@@ -28,31 +32,108 @@
             height: 24px;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .tab-nav { display: flex; gap: 8px; margin-bottom: 20px; }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
         .tab-btn {
-            flex-grow: 1; padding: 12px; font-size: 15px; font-weight: 600;
-            cursor: pointer; border: 1px solid #374151;
-            background-color: #1F2937; color: #9CA3AF;
-            border-radius: 8px; transition: all 0.15s ease-out;
+            flex-grow: 1;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #374151;
+            background-color: #1F2937;
+            color: #9CA3AF;
+            border-radius: 8px;
+            transition: all 0.15s ease-out;
             /* Touch-Feedback beschleunigen */
             touch-action: manipulation;
         }
+
         .tab-btn.active {
-            background-color: #4F46E5; color: #FFFFFF; border-color: #4F46E5;
+            background-color: #4F46E5;
+            color: #FFFFFF;
+            border-color: #4F46E5;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
+
         /* Nur hovern wenn Maus vorhanden (vermeidet Sticky-Hover auf Mobile) */
         @media (hover: hover) {
-            .tab-btn:not(.active):hover { background-color: #374151; color: #F3F4F6; }
+            .tab-btn:not(.active):hover {
+                background-color: #374151;
+                color: #F3F4F6;
+            }
         }
-        
+
         /* Sanfte Animation für neue Listenelemente */
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body class="h-full flex items-start justify-center py-6 md:py-16 px-4 bg-gray-900">
     <div class="w-full max-w-md mx-auto"> <!-- max-w-md für besseren Mobile-Look -->
         <h1 class="text-2xl font-bold text-white text-center mb-5 tracking-tight">Pendel-Monitor</h1>
@@ -68,34 +149,42 @@
         </nav>
 
         <!-- Panel: Grenzstraße -->
-        <div id="panel-grenzstrasse" class="tab-panel bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-gray-700">
+        <div id="panel-grenzstrasse"
+            class="tab-panel bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-gray-700">
             <div class="px-4 pt-5 pb-3 flex justify-between items-end">
                 <div>
                     <h2 class="text-xl text-indigo-400 font-bold leading-tight">Grenzstraße</h2>
                     <p class="text-xs text-gray-400 mt-1">Richtung Karlsruhe</p>
                 </div>
-                <div id="status-icon-grenzstrasse" class="hidden"><div class="spinner"></div></div>
+                <div id="status-icon-grenzstrasse" class="hidden">
+                    <div class="spinner"></div>
+                </div>
             </div>
-            <div id="error-message-grenzstrasse" class="hidden px-4 py-3 bg-red-900/30 text-red-300 text-sm mx-4 rounded-lg mb-3"></div>
+            <div id="error-message-grenzstrasse"
+                class="hidden px-4 py-3 bg-red-900/30 text-red-300 text-sm mx-4 rounded-lg mb-3"></div>
             <ul id="departures-list-grenzstrasse" role="list" class="divide-y divide-gray-700/50"></ul>
         </div>
 
         <!-- Panel: Europahalle -->
-        <div id="panel-europahalle" class="tab-panel hidden bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-gray-700">
+        <div id="panel-europahalle"
+            class="tab-panel hidden bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-gray-700">
             <div class="px-4 pt-5 pb-3 flex justify-between items-end">
                 <div>
                     <h2 class="text-xl text-indigo-400 font-bold leading-tight">Europahalle</h2>
                     <p class="text-xs text-gray-400 mt-1">Richtung Waldstadt</p>
                 </div>
-                <div id="status-icon-europahalle" class="hidden"><div class="spinner"></div></div>
+                <div id="status-icon-europahalle" class="hidden">
+                    <div class="spinner"></div>
+                </div>
             </div>
-            <div id="error-message-europahalle" class="hidden px-4 py-3 bg-red-900/30 text-red-300 text-sm mx-4 rounded-lg mb-3"></div>
+            <div id="error-message-europahalle"
+                class="hidden px-4 py-3 bg-red-900/30 text-red-300 text-sm mx-4 rounded-lg mb-3"></div>
             <ul id="departures-list-europahalle" role="list" class="divide-y divide-gray-700/50"></ul>
         </div>
-        
+
         <footer class="mt-6 text-center">
-             <p id="footer-distance-text" class="text-xs text-gray-500 font-medium"></p>
-             <p id="data-source-info" class="text-[10px] text-gray-600 mt-1">Daten: KVV/EFA (Live)</p>
+            <p id="footer-distance-text" class="text-xs text-gray-500 font-medium"></p>
+            <p id="data-source-info" class="text-[10px] text-gray-600 mt-1">Daten: KVV/EFA (Live)</p>
         </footer>
     </div>
 
@@ -156,12 +245,12 @@
                 refreshTimer: null,
             }
         };
-        
+
         let activeMonitorKey = null;
         const footerDistanceText = document.getElementById('footer-distance-text');
 
         // --- Cache Logic ---
-        
+
         function saveToCache(key, data) {
             try {
                 const payload = { timestamp: Date.now(), data: data };
@@ -188,7 +277,7 @@
 
             const cacheKey = `station_id_${monitor.queryName}`;
             const cachedId = localStorage.getItem(cacheKey);
-            
+
             if (cachedId) {
                 monitor.stationId = cachedId;
                 return cachedId;
@@ -211,7 +300,7 @@
                         return id;
                     }
                 }
-            } catch(e) { console.error(e); }
+            } catch (e) { console.error(e); }
             return null;
         }
 
@@ -220,7 +309,7 @@
 
         async function updateDepartures(monitor, useCacheOnly = false) {
             const dataCacheKey = `deps_${monitor.stationId}`;
-            
+
             // 1. Zuerst Cache prüfen & rendern (Sofort-Anzeige)
             const cachedData = loadFromCache(dataCacheKey);
             if (cachedData) {
@@ -238,11 +327,11 @@
                 if (!id) throw new Error("Haltestelle nicht gefunden");
 
                 // 3. Netzwerk-Request
-                const params = new URLSearchParams({ 
-                    outputFormat: 'JSON', depType: 'stopEvents', locationServerActive: 1, 
-                    mode: 'direct', type_dm: 'stop', useOnlyStops: 1, useRealtime: 1, name_dm: id 
+                const params = new URLSearchParams({
+                    outputFormat: 'JSON', depType: 'stopEvents', locationServerActive: 1,
+                    mode: 'direct', type_dm: 'stop', useOnlyStops: 1, useRealtime: 1, name_dm: id
                 });
-                
+
                 const res = await fetch(`${DEPARTURE_MONITOR_URL}?${params.toString()}`);
                 const data = await res.json();
                 const list = data.departureList || [];
@@ -289,7 +378,7 @@
                 const line = dep.servingLine.number;
                 const direction = dep.servingLine.direction;
                 const lineClass = monitor.lineColor(dep.servingLine);
-                
+
                 // Ausfall-Logik
                 const isCancelled = dep.state === 'cancelled' || dep.servingLine.state === 'deleted' || dep.realtimeStatus === 'DEPARTURE_CANCELLED';
 
@@ -317,7 +406,7 @@
                     const paceHtml = getPaceHtml(minutes, monitor.distance);
                     const minClass = (minutes !== null && minutes <= 5) ? 'text-green-400' : 'text-white';
                     const minText = minutes === null ? '??' : minutes;
-                    
+
                     rightSideContent = `
                         <div class="text-right flex flex-col justify-center items-end">
                             <div class="text-lg font-bold ${minClass} leading-none">
@@ -330,7 +419,7 @@
                 }
 
                 const opacityClass = isCancelled ? 'opacity-50 grayscale' : '';
-                
+
                 html += `
                 <li class="p-4 flex items-center justify-between ${opacityClass} ${isCached ? 'opacity-80' : 'fade-in'}">
                     <div class="flex items-center gap-3 min-w-0">
@@ -357,24 +446,24 @@
 
         // --- Helper ---
 
-        function formatTime(t) { if(!t) return ""; try { return `${t.hour.padStart(2,'0')}:${t.minute.padStart(2,'0')}`; } catch(e){ return ""; } }
-        function parseDateTime(t) { if(!t) return null; return new Date(t.year, t.month-1, t.day, t.hour, t.minute); }
-        function getMinutesUntil(d) { if(!d) return null; return Math.max(0, Math.floor((d - new Date()) / 60000)); }
-        
+        function formatTime(t) { if (!t) return ""; try { return `${t.hour.padStart(2, '0')}:${t.minute.padStart(2, '0')}`; } catch (e) { return ""; } }
+        function parseDateTime(t) { if (!t) return null; return new Date(t.year, t.month - 1, t.day, t.hour, t.minute); }
+        function getMinutesUntil(d) { if (!d) return null; return Math.max(0, Math.floor((d - new Date()) / 60000)); }
+
         function getPaceHtml(min, dist) {
             if (min === null) return '';
             const buffer = PACE_CONFIG.BUFFER_TIME_MINUTES;
             const time = min - buffer;
             const km = dist / 1000;
-            
+
             if (time <= 0) return '<span class="text-[10px] font-bold text-red-500 uppercase tracking-wider">Zu Spät</span>';
-            
-            const kmh = km / (time/60);
+
+            const kmh = km / (time / 60);
             let color = 'text-green-500'; let text = 'Gehen';
             if (kmh > PACE_CONFIG.PACE_WALK_KMH) { color = 'text-yellow-500'; text = 'Laufen'; }
             if (kmh > PACE_CONFIG.PACE_JOG_KMH) { color = 'text-orange-500'; text = 'Rennen'; }
             if (kmh > PACE_CONFIG.PACE_RUN_KMH) { color = 'text-red-500'; text = 'Sprint'; }
-            
+
             return `<span class="text-[10px] font-medium ${color}">${text}</span>`;
         }
 
@@ -382,35 +471,35 @@
 
         function switchTab(key) {
             // Timer stoppen
-            Object.values(monitors).forEach(m => { if(m.refreshTimer) clearInterval(m.refreshTimer); });
-            
+            Object.values(monitors).forEach(m => { if (m.refreshTimer) clearInterval(m.refreshTimer); });
+
             activeMonitorKey = key;
             const mon = monitors[key];
 
             // Buttons
             document.querySelectorAll('.tab-btn').forEach(b => {
-                if(b.dataset.target === mon.panelId) b.classList.add('active'); else b.classList.remove('active');
+                if (b.dataset.target === mon.panelId) b.classList.add('active'); else b.classList.remove('active');
             });
             // Panels
             document.querySelectorAll('.tab-panel').forEach(p => {
-                if(p.id === mon.panelId) p.classList.remove('hidden'); else p.classList.add('hidden');
+                if (p.id === mon.panelId) p.classList.remove('hidden'); else p.classList.add('hidden');
             });
 
             footerDistanceText.textContent = mon.distanceText;
 
             // Daten laden
             updateDepartures(mon); // Lädt sofort Cache, dann Netz
-            
+
             // Timer neu starten
             mon.refreshTimer = setInterval(() => updateDepartures(mon), REFRESH_INTERVAL_MS);
         }
 
         // --- Location Smart Logic ---
-        
+
         function haversine(lat1, lon1, lat2, lon2) {
-            const R=6371; const dLat=(lat2-lat1)*Math.PI/180; const dLon=(lon2-lon1)*Math.PI/180;
-            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
         function initApp() {
@@ -437,9 +526,9 @@
                     const lat = pos.coords.latitude; const lon = pos.coords.longitude;
                     const d1 = haversine(lat, lon, GRENZSTRASSE_COORDS.latitude, GRENZSTRASSE_COORDS.longitude);
                     const d2 = haversine(lat, lon, EUROPAHALLE_COORDS.latitude, EUROPAHALLE_COORDS.longitude);
-                    
+
                     const smartKey = d1 < d2 ? 'grenzstrasse' : 'europahalle';
-                    
+
                     // Wenn wir auf dem "falschen" Tab sind und die Distanz eindeutig ist (<2km Nähe), umschalten
                     // Wir speichern es auch, damit beim nächsten Reload ohne GPS die letzte bekannte Position gilt
                     if (activeMonitorKey !== smartKey && Math.min(d1, d2) < 2.0) {
@@ -447,7 +536,7 @@
                         localStorage.setItem('preferred_station', smartKey);
                         switchTab(smartKey);
                     }
-                }, err => {}, { timeout: 5000 });
+                }, err => { }, { timeout: 5000 });
             }
         }
 
@@ -456,4 +545,5 @@
 
     </script>
 </body>
+
 </html>

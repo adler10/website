@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,15 +11,21 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         /* Basis-Stile aus der Original-App */
-        #map { height: 100%; }
-        .leaflet-container { border-radius: 0.5rem; }
+        #map {
+            height: 100%;
+        }
+
+        .leaflet-container {
+            border-radius: 0.5rem;
+        }
+
         .incident-selected {
             border-color: #E600E6 !important;
             background-color: #f9fafb !important;
         }
-        
+
         /* --- Tutorial Stile --- */
-        
+
         /* Overlay für den Hintergrund */
         #tutorial-backdrop {
             position: fixed;
@@ -28,6 +35,7 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
+
         #tutorial-backdrop.show {
             opacity: 1;
         }
@@ -45,8 +53,10 @@
             opacity: 0;
             transform: scale(0.95);
             transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-            border-top: 4px solid #b91c1c; /* Roter Rand oben */
+            border-top: 4px solid #b91c1c;
+            /* Roter Rand oben */
         }
+
         #tutorial-popup.show {
             opacity: 1;
             transform: scale(1);
@@ -56,11 +66,12 @@
         .tutorial-highlight {
             position: relative;
             z-index: 9000 !important;
-            box-shadow: 0 0 0 4px #E600E6, 0 0 15px 5px #E600E6; /* Magenta Leuchten */
+            box-shadow: 0 0 0 4px #E600E6, 0 0 15px 5px #E600E6;
+            /* Magenta Leuchten */
             border-radius: 4px;
             transition: box-shadow 0.3s ease-in-out;
         }
-        
+
         /* Pfeil für das Pop-up */
         #tutorial-popup::before {
             content: '';
@@ -69,7 +80,7 @@
             height: 0;
             border-style: solid;
         }
-        
+
         /* Positionierung der Pfeile */
         #tutorial-popup.arrow-top::before {
             border-width: 0 10px 10px 10px;
@@ -78,6 +89,7 @@
             left: 50%;
             transform: translateX(-50%);
         }
+
         #tutorial-popup.arrow-bottom::before {
             border-width: 10px 10px 0 10px;
             border-color: white transparent transparent transparent;
@@ -85,6 +97,7 @@
             left: 50%;
             transform: translateX(-50%);
         }
+
         #tutorial-popup.arrow-left::before {
             border-width: 10px 10px 10px 0;
             border-color: transparent white transparent transparent;
@@ -92,6 +105,7 @@
             top: 50%;
             transform: translateY(-50%);
         }
+
         #tutorial-popup.arrow-right::before {
             border-width: 10px 0 10px 10px;
             border-color: transparent transparent transparent white;
@@ -101,15 +115,60 @@
         }
 
         /* Mock-Elemente für das Tutorial */
-        .mock-ea-card, .mock-incident-card {
-            display: none; /* Standardmäßig versteckt */
-        }
-        .mock-ea-card.show, .mock-incident-card.show {
-            display: block; /* Wird per JS angezeigt */
+        .mock-ea-card,
+        .mock-incident-card {
+            display: none;
+            /* Standardmäßig versteckt */
         }
 
+        .mock-ea-card.show,
+        .mock-incident-card.show {
+            display: block;
+            /* Wird per JS angezeigt */
+        }
     </style>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body class="bg-gray-100 font-sans">
 
     <!-- Tutorial UI-Elemente (versteckt) -->
@@ -118,11 +177,14 @@
         <h3 id="tutorial-title" class="text-xl font-bold text-gray-900 mb-2">Tutorial-Schritt</h3>
         <p id="tutorial-text" class="text-sm text-gray-700 mb-4">Dies ist der Erklärungstext.</p>
         <div class="flex justify-between items-center">
-            <button id="tutorial-end" class="text-sm text-gray-600 hover:text-red-700 transition-colors">Beenden</button>
+            <button id="tutorial-end"
+                class="text-sm text-gray-600 hover:text-red-700 transition-colors">Beenden</button>
             <div>
                 <span id="tutorial-step-counter" class="text-sm text-gray-500 mr-3">1 / 10</span>
-                <button id="tutorial-prev" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md text-sm transition-colors disabled:opacity-50">Zurück</button>
-                <button id="tutorial-next" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">Weiter</button>
+                <button id="tutorial-prev"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md text-sm transition-colors disabled:opacity-50">Zurück</button>
+                <button id="tutorial-next"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">Weiter</button>
             </div>
         </div>
     </div>
@@ -132,29 +194,38 @@
     <div class="flex flex-col md:flex-row h-screen">
         <!-- Sidebar -->
         <div id="sidebar-container" class="w-full md:w-1/3 bg-white p-4 overflow-y-auto shadow-lg">
-            
+
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold text-red-700">Lokale Einsatzkonsole</h1>
                 <!-- Tutorial Start-Button -->
-                <button id="start-tutorial-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-md transition-colors mr-2">
+                <button id="start-tutorial-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-md transition-colors mr-2">
                     Tutorial starten
                 </button>
                 <!-- NEU: Undo-Button hinzugefügt -->
-                <button id="undo-btn" class="flex items-center space-x-1 bg-gray-300 text-gray-500 font-bold py-1 px-2 rounded text-sm cursor-not-allowed" disabled>
+                <button id="undo-btn"
+                    class="flex items-center space-x-1 bg-gray-300 text-gray-500 font-bold py-1 px-2 rounded text-sm cursor-not-allowed"
+                    disabled>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                        <path fill-rule="evenodd" d="M15.312 8.412a1.002 1.002 0 0 1 .634.341c.288.354.341.854.148 1.256l-1.049 2.098a.75.75 0 0 0 1.295.648l1.049-2.098a2.502 2.502 0 0 0-.154-4.814 1 1 0 0 1-.692-.98 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 1.7 8.356a.75.75 0 0 0-.256.452l-.63 1.89c-.19.569.21.992.746.857l2.128-.532a.75.75 0 0 0 .584-.712c0-.398-.242-.71-.564-.812a4.002 4.002 0 0 0-.001-.001 1 1 0 0 1 1.004-.996c.555 0 1 .444 1 1a1 1 0 0 1-.996 1.004c-.001 0-.002 0-.003-.001h.001a2.502 2.502 0 0 0 2.501 2.396 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 3.737 4.08 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 2.825-1.127 1 1 0 0 1 1.414 1.414 6.002 6.002 0 0 1-4.239 1.693 1 1 0 0 1-.96-1.004 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 15.312 8.412Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M15.312 8.412a1.002 1.002 0 0 1 .634.341c.288.354.341.854.148 1.256l-1.049 2.098a.75.75 0 0 0 1.295.648l1.049-2.098a2.502 2.502 0 0 0-.154-4.814 1 1 0 0 1-.692-.98 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 1.7 8.356a.75.75 0 0 0-.256.452l-.63 1.89c-.19.569.21.992.746.857l2.128-.532a.75.75 0 0 0 .584-.712c0-.398-.242-.71-.564-.812a4.002 4.002 0 0 0-.001-.001 1 1 0 0 1 1.004-.996c.555 0 1 .444 1 1a1 1 0 0 1-.996 1.004c-.001 0-.002 0-.003-.001h.001a2.502 2.502 0 0 0 2.501 2.396 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 3.737 4.08 1 1 0 0 1 .96.992 4.002 4.002 0 0 0 2.825-1.127 1 1 0 0 1 1.414 1.414 6.002 6.002 0 0 1-4.239 1.693 1 1 0 0 1-.96-1.004 4.002 4.002 0 0 0-4.001-3.655 1 1 0 0 1-.996-1.004c0-.555-.444-1-1-1a1 1 0 0 1-1.004-.996A6.002 6.002 0 0 1 15.312 8.412Z"
+                            clip-rule="evenodd" />
                     </svg>
                     <span>Rückgängig</span>
                 </button>
             </div>
 
-            <div id="status-indicator" class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">Online: Adresssuche aktiv</div>
-            
-            <button type="button" id="manage-ea-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
+            <div id="status-indicator"
+                class="text-sm p-2 mb-4 rounded text-center font-medium transition duration-300 bg-green-100 text-green-700">
+                Online: Adresssuche aktiv</div>
+
+            <button type="button" id="manage-ea-btn"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
                 Einsatzabschnitte verwalten
             </button>
-            
-            <button type="button" id="open-create-incident-modal-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
+
+            <button type="button" id="open-create-incident-modal-btn"
+                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full transition duration-150 mb-4">
                 Neuen Einsatz erstellen
             </button>
 
@@ -162,29 +233,41 @@
 
             <!-- Incident List (Active) -->
             <div>
-                <button id="active-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center mb-3">
+                <button id="active-toggle-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center mb-3">
                     Aktive Einsätze (0) ▼
                 </button>
                 <div id="incident-list" class="space-y-3">
                     <!-- Mock-Einsatz für Tutorial -->
-                    <div id="mock-incident" class="mock-incident-card p-3 bg-gray-50 border rounded-lg shadow-sm bg-red-100 text-red-800 border-l-4 border-red-500">
+                    <div id="mock-incident"
+                        class="mock-incident-card p-3 bg-gray-50 border rounded-lg shadow-sm bg-red-100 text-red-800 border-l-4 border-red-500">
                         <div class="flex justify-between items-start">
                             <div class="flex-grow">
                                 <p class="font-semibold text-gray-800 pr-2">B 1 - PKW / Kleinbus innerorts</p>
                                 <p class="text-sm text-gray-600">Beispielstraße 1, 76133 Karlsruhe</p>
                             </div>
                             <button class="flex-shrink-0 text-blue-600 p-1 rounded" title="Einsatz bearbeiten">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 pointer-events-none"><path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="w-5 h-5 pointer-events-none">
+                                    <path
+                                        d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                                    <path
+                                        d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+                                </svg>
                             </button>
                         </div>
                         <div class="mt-2">
-                            <span class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded bg-red-100 text-red-800">OFFEN</span>
+                            <span
+                                class="status-tag text-xs font-medium mr-2 px-2.5 py-0.5 rounded bg-red-100 text-red-800">OFFEN</span>
                         </div>
-                        <div class="mt-2 text-xs font-medium p-1.5 rounded flex justify-between items-center" style="background-color: rgba(79, 70, 229, 0.1);">
+                        <div class="mt-2 text-xs font-medium p-1.5 rounded flex justify-between items-center"
+                            style="background-color: rgba(79, 70, 229, 0.1);">
                             <span style="color: #4f46e5;"><strong>EA: Beispiel-EA</strong> (V: OBM Meier)</span>
                         </div>
                         <div class="button-container mt-2 space-y-2">
-                            <button id="mock-dispatch-btn" class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Einheit entsenden</button>
+                            <button id="mock-dispatch-btn"
+                                class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded w-full transition duration-150">Einheit
+                                entsenden</button>
                         </div>
                     </div>
                 </div>
@@ -193,13 +276,15 @@
             <hr class="my-4">
 
             <!-- Completed Incidents Section (Collapsible) -->
-            <button id="completed-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center">
+            <button id="completed-toggle-btn"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-2 px-4 rounded w-full transition duration-150 flex justify-between items-center">
                 Abgeschlossene Einsätze (0) ▼
             </button>
             <div id="completed-incident-list" class="space-y-3 mt-3 hidden"></div>
 
             <hr class="my-4">
-            <button id="end-shift-btn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded w-full transition duration-150">
+            <button id="end-shift-btn"
+                class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded w-full transition duration-150">
                 Schicht beenden & Bericht erstellen
             </button>
             <p class="text-xs text-gray-500 mt-4 text-center">Daten werden lokal im Browser gespeichert.</p>
@@ -212,32 +297,47 @@
     <!-- Modals (Struktur für Tutorial beibehalten) -->
 
     <!-- Incident Creation Modal -->
-    <div id="incident-creation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden" style="z-index: 8950;">
+    <div id="incident-creation-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden"
+        style="z-index: 8950;">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-900">Neuen Einsatz erstellen</h2>
-                <button id="close-incident-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+                <button id="close-incident-modal-btn"
+                    class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd"
+                            d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                            clip-rule="evenodd" />
+                    </svg>
                 </button>
             </div>
             <div class="overflow-y-auto">
                 <form id="dispatch-form" class="border-t pt-4 border-gray-200" onsubmit="return false;">
-                    <button type="button" id="add-incident-map-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150 mb-3">
+                    <button type="button" id="add-incident-map-btn"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 rounded w-full text-sm transition duration-150 mb-3">
                         Einsatz auf Karte hinzufügen (Pin-Tool)
                     </button>
                     <div class="mb-3 relative">
                         <label for="address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                        <input type="text" id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
+                        <input type="text" id="address"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            placeholder="Adresse eingeben... (76... Postleitzahlen)" autocomplete="off">
                     </div>
                     <div class="mb-3 relative">
                         <label for="keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                        <input type="text" id="keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="z.B. Baum umgestürzt" required autocomplete="off">
+                        <input type="text" id="keyword"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            placeholder="z.B. Baum umgestürzt" required autocomplete="off">
                     </div>
                     <div class="mb-4 p-2 bg-gray-100 rounded-md border border-dashed border-gray-300">
                         <p class="text-xs font-bold text-gray-700">Automatische EA-Zuordnung:</p>
-                        <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse bestimmt...</p>
+                        <p id="auto-section-display" class="text-sm font-semibold text-indigo-700">Wird nach Adresse
+                            bestimmt...</p>
                     </div>
-                    <button type="submit" id="submit-btn" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded w-full" disabled>
+                    <button type="submit" id="submit-btn"
+                        class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded w-full"
+                        disabled>
                         Einsatz erstellen
                     </button>
                 </form>
@@ -246,55 +346,85 @@
     </div>
 
     <!-- EA Management Modal -->
-    <div id="ea-management-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden" style="z-index: 8950;">
+    <div id="ea-management-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden"
+        style="z-index: 8950;">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-900">Einsatzabschnitte verwalten</h2>
-                <button id="close-ea-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+                <button id="close-ea-modal-btn"
+                    class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd"
+                            d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                            clip-rule="evenodd" />
+                    </svg>
                 </button>
             </div>
             <div id="ea-modal-content" class="overflow-y-auto space-y-4">
-                <form id="section-form" class="space-y-3 p-4 bg-gray-50 rounded-lg shadow-inner" onsubmit="return false;">
+                <form id="section-form" class="space-y-3 p-4 bg-gray-50 rounded-lg shadow-inner"
+                    onsubmit="return false;">
                     <h3 class="text-lg font-bold text-gray-800">Neuen EA erstellen</h3>
                     <div>
                         <label for="section-name" class="block text-sm font-medium text-gray-700">Name des EA</label>
-                        <input type="text" id="section-name" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="z.B. Wasserversorgung" required>
+                        <input type="text" id="section-name"
+                            class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            placeholder="z.B. Wasserversorgung" required>
                     </div>
                     <div>
-                        <label for="section-responsible" class="block text-sm font-medium text-gray-700">Verantwortlicher</label>
-                        <input type="text" id="section-responsible" class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="z.B. OBM Meier" required>
+                        <label for="section-responsible"
+                            class="block text-sm font-medium text-gray-700">Verantwortlicher</label>
+                        <input type="text" id="section-responsible"
+                            class="mt-1 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            placeholder="z.B. OBM Meier" required>
                     </div>
                     <div>
                         <label for="section-color" class="block text-sm font-medium text-gray-700">Farbe</label>
-                        <input type="color" id="section-color" class="mt-1 shadow appearance-none border rounded w-full h-10" value="#4f46e5">
+                        <input type="color" id="section-color"
+                            class="mt-1 shadow appearance-none border rounded w-full h-10" value="#4f46e5">
                     </div>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded w-full text-sm transition duration-150">
+                    <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded w-full text-sm transition duration-150">
                         EA erstellen
                     </button>
                 </form>
                 <div class="space-y-4">
-                     <h3 class="text-lg font-bold text-gray-800">Bestehende EAs</h3>
+                    <h3 class="text-lg font-bold text-gray-800">Bestehende EAs</h3>
                     <div id="section-list" class="space-y-3 text-sm">
                         <!-- Mock-EA für Tutorial -->
-                        <div id="mock-ea" class="mock-ea-card flex flex-col p-3 bg-white rounded border-2" style="border-color: #ef4444;">
-                             <div class="flex justify-between items-start mb-2">
+                        <div id="mock-ea" class="mock-ea-card flex flex-col p-3 bg-white rounded border-2"
+                            style="border-color: #ef4444;">
+                            <div class="flex justify-between items-start mb-2">
                                 <div>
-                                    <p class="font-semibold text-lg" style="color: #4f46e5;">Beispiel-EA <span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 font-medium">0 Einsätze aktiv</span></p>
+                                    <p class="font-semibold text-lg" style="color: #4f46e5;">Beispiel-EA <span
+                                            class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full ml-1 font-medium">0
+                                            Einsätze aktiv</span></p>
                                     <p class="text-sm text-gray-700 mt-2"><strong>V:</strong> OBM Meier</p>
                                 </div>
                                 <div class="flex-shrink-0 flex space-x-1 ml-2">
                                     <button class="text-blue-600 p-1 rounded" title="Abschnitt bearbeiten">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 pointer-events-none"><path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                            class="w-5 h-5 pointer-events-none">
+                                            <path
+                                                d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                                            <path
+                                                d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+                                        </svg>
                                     </button>
                                     <button class="text-red-500 p-1 rounded" title="Abschnitt löschen">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 pointer-events-none"><path fill-rule="evenodd" d="M10 2a.75.75 0 0 1 .75.75v.75h4.5a.75.75 0 0 1 0 1.5h-1.5v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9H4.5a.75.75 0 0 1 0-1.5h4.5V2.75A.75.75 0 0 1 10 2ZM8.5 7.5a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Zm3 0a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Z" clip-rule="evenodd" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                            class="w-5 h-5 pointer-events-none">
+                                            <path fill-rule="evenodd"
+                                                d="M10 2a.75.75 0 0 1 .75.75v.75h4.5a.75.75 0 0 1 0 1.5h-1.5v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9H4.5a.75.75 0 0 1 0-1.5h4.5V2.75A.75.75 0 0 1 10 2ZM8.5 7.5a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Zm3 0a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Z"
+                                                clip-rule="evenodd" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center space-x-2 mt-2 pt-2 border-t border-gray-100">
                                 <span class="text-xs font-medium text-red-700">✕ Grenze fehlt</span>
-                                <button id="mock-draw-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded flex-grow text-xs transition duration-150">
+                                <button id="mock-draw-btn"
+                                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded flex-grow text-xs transition duration-150">
                                     Grenze zeichnen
                                 </button>
                             </div>
@@ -304,50 +434,66 @@
             </div>
         </div>
     </div>
-    
+
     <!-- NEU: Incident Edit Modal (vereinfacht für Tutorial) -->
-    <div id="incident-edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden" style="z-index: 8950;">
+    <div id="incident-edit-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden"
+        style="z-index: 8950;">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-900">Einsatz bearbeiten</h2>
-                <button id="close-incident-edit-modal-btn" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                <button id="close-incident-edit-modal-btn"
+                    class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                            clip-rule="evenodd" />
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Scrollable Content Area -->
             <div class="overflow-y-auto">
                 <form id="incident-edit-form" class="border-t pt-4 border-gray-200 space-y-4" onsubmit="return false;">
                     <div class="relative">
                         <label for="edit-address" class="block text-gray-700 text-sm font-bold mb-1">Adresse</label>
-                        <input type="text" id="edit-address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" value="Beispielstraße 1, 76133 Karlsruhe" autocomplete="off">
+                        <input type="text" id="edit-address"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            value="Beispielstraße 1, 76133 Karlsruhe" autocomplete="off">
                     </div>
                     <div class="relative">
-                        <label for="edit-keyword" class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
-                        <input type="text" id="edit-keyword" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" value="B 1 - PKW / Kleinbus innerorts" required autocomplete="off">
+                        <label for="edit-keyword"
+                            class="block text-gray-700 text-sm font-bold mb-1">Alarmstichwort</label>
+                        <input type="text" id="edit-keyword"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            value="B 1 - PKW / Kleinbus innerorts" required autocomplete="off">
                     </div>
-                     <div>
+                    <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
                         <div class="flex w-full rounded-md shadow-sm">
-                            <button type="button" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-l-md border bg-red-600 text-white opacity-75 cursor-not-allowed" disabled>
+                            <button type="button"
+                                class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-l-md border bg-red-600 text-white opacity-75 cursor-not-allowed"
+                                disabled>
                                 Offen
                             </button>
-                            <button type="button" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                            <button type="button"
+                                class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
                                 Entsandt
                             </button>
-                            <button type="button" class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-r-md border bg-white text-gray-700 hover:bg-gray-50">
+                            <button type="button"
+                                class="edit-status-btn flex-1 py-2 px-4 text-sm font-medium rounded-r-md border bg-white text-gray-700 hover:bg-gray-50">
                                 Abgeschlossen
                             </button>
                         </div>
                     </div>
                     <div class="flex justify-between items-center space-x-3">
-                        <button type="button" id="delete-incident-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-150 w-1/2">
+                        <button type="button" id="delete-incident-btn"
+                            class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition duration-150 w-1/2">
                             Einsatz Löschen
                         </button>
-                        <button type="submit" id="save-incident-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-1/2 transition duration-150">
+                        <button type="submit" id="save-incident-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-1/2 transition duration-150">
                             Änderungen speichern
                         </button>
                     </div>
@@ -358,13 +504,18 @@
     <!-- ENDE NEU: Edit Modal -->
 
     <!-- End Shift Modal -->
-    <div id="end-shift-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden" style="z-index: 8950;">
+    <div id="end-shift-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 hidden"
+        style="z-index: 8950;">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Schicht beenden & Bericht erstellen</h2>
             <div class="space-y-4">
                 <div>
-                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner (Name/Namen)</label>
-                    <input type="text" id="lagezeichner-input" class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700" placeholder="z.B. OBM Meier, HBM Schmidt">
+                    <label for="lagezeichner-input" class="block text-sm font-medium text-gray-700 mb-1">Lagezeichner
+                        (Name/Namen)</label>
+                    <input type="text" id="lagezeichner-input"
+                        class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                        placeholder="z.B. OBM Meier, HBM Schmidt">
                 </div>
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800 mb-2">Zusammenfassung</h3>
@@ -375,26 +526,31 @@
                     </ul>
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button id="cancel-report-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
+                    <button id="cancel-report-btn"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
                         Abbrechen
                     </button>
-                    <button id="create-report-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                    <button id="create-report-btn"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
                         Bericht erstellen & Herunterladen
                     </button>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- EA Drawing Panel -->
-    <div id="section-draw-panel" class="fixed bottom-8 right-8 z-[1000] p-4 bg-red-100 text-red-700 rounded-lg hidden shadow-xl w-72">
+    <div id="section-draw-panel"
+        class="fixed bottom-8 right-8 z-[1000] p-4 bg-red-100 text-red-700 rounded-lg hidden shadow-xl w-72">
         <p class="font-bold mb-2">EA-Zeichenmodus aktiv</p>
         <p class="text-sm">Klicken Sie auf die Karte, um Punkte hinzuzufügen.</p>
         <div class="flex mt-3 space-x-2">
-            <button id="finish-draw-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
+            <button id="finish-draw-btn"
+                class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
                 Zeichnen beenden
             </button>
-            <button id="cancel-draw-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
+            <button id="cancel-draw-btn"
+                class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-1 px-3 rounded flex-grow text-sm">
                 Abbrechen
             </button>
         </div>
@@ -430,7 +586,7 @@
         const tutorialPrevBtn = document.getElementById('tutorial-prev');
         const tutorialNextBtn = document.getElementById('tutorial-next');
         const startTutorialBtn = document.getElementById('start-tutorial-btn');
-        
+
         // Modale für das Tutorial
         const eaManagementModal = document.getElementById('ea-management-modal');
         const incidentCreationModal = document.getElementById('incident-creation-modal');
@@ -658,7 +814,7 @@
         function endTutorial() {
             tutorialBackdrop.classList.remove('show');
             tutorialPopup.classList.remove('show');
-            
+
             // Verzögertes Verstecken für Fade-Out
             setTimeout(() => {
                 tutorialBackdrop.classList.add('hidden');
@@ -669,7 +825,7 @@
                 highlightedElement.classList.remove('tutorial-highlight');
                 highlightedElement = null;
             }
-            
+
             // Alle Modale und Mock-Elemente verstecken
             eaManagementModal.classList.add('hidden');
             incidentCreationModal.classList.add('hidden');
@@ -686,7 +842,7 @@
         function positionPopup(element, position) {
             const elRect = element.getBoundingClientRect();
             const popRect = tutorialPopup.getBoundingClientRect();
-            
+
             // Alle Pfeil-Klassen entfernen
             tutorialPopup.classList.remove('arrow-top', 'arrow-bottom', 'arrow-left', 'arrow-right');
 
@@ -729,16 +885,16 @@
             tutorialPopup.style.top = `${top}px`;
             tutorialPopup.style.left = `${left}px`;
         }
-        
+
         function showStep(stepIndex) {
             if (stepIndex < 0 || stepIndex >= tutorialSteps.length) {
                 endTutorial();
                 return;
             }
-            
+
             currentStep = stepIndex;
             const step = tutorialSteps[stepIndex];
-            
+
             // Vorheriges Highlight entfernen
             if (highlightedElement) {
                 highlightedElement.classList.remove('tutorial-highlight');
@@ -746,7 +902,7 @@
                 highlightedElement.removeEventListener('click', goToNextStep);
                 highlightedElement = null;
             }
-            
+
             // Pre-Action ausführen (z.B. Modal öffnen)
             if (step.preAction) {
                 step.preAction();
@@ -758,7 +914,7 @@
                 endTutorial();
                 return;
             }
-            
+
             // Element hervorheben
             highlightedElement = element;
             element.classList.add('tutorial-highlight');
@@ -768,7 +924,7 @@
             tutorialTitle.textContent = step.title;
             tutorialText.textContent = step.text;
             tutorialStepCounter.textContent = `${stepIndex + 1} / ${tutorialSteps.length}`;
-            
+
             // Buttons steuern
             tutorialPrevBtn.disabled = stepIndex === 0;
             if (stepIndex === tutorialSteps.length - 1) {
@@ -812,7 +968,7 @@
                 prevStep.postAction();
             }
         }
-        
+
         function goToNextStep() {
             // Wenn der aktuelle Schritt ein Click-Listener hatte, muss das Highlight
             // manuell entfernt werden, da showStep() sonst das 'click'-Event abfängt.
@@ -831,7 +987,7 @@
             startTutorialBtn.disabled = true;
             tutorialBackdrop.classList.remove('hidden');
             tutorialPopup.classList.remove('hidden');
-            
+
             // Verzögerung für Fade-In
             setTimeout(() => {
                 tutorialBackdrop.classList.add('show');
@@ -860,4 +1016,5 @@
 
     </script>
 </body>
+
 </html>

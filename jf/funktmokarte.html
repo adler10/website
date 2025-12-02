@@ -1,12 +1,56 @@
 <!DOCTYPE html>
-  <html lang="de">
-  <head>
- <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weiterleitung zu Google My Maps</title>
-    <meta http-equiv="refresh" content="1; url=https://www.google.com/maps/d/edit?mid=1L6QglQdRl_lOXeSIiz1m24vo6q70P7o">
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weiterleitung zu Google My Maps</title>
+  <meta http-equiv="refresh" content="1; url=https://www.google.com/maps/d/edit?mid=1L6QglQdRl_lOXeSIiz1m24vo6q70P7o">
+  <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+  <style>
+    body {
+      display: none;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+      authDomain: "auth-107d8.firebaseapp.com",
+      projectId: "auth-107d8",
+      storageBucket: "auth-107d8.firebasestorage.app",
+      messagingSenderId: "735861054924",
+      appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+      measurementId: "G-SYBYJH5P8D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // LOGGED IN: Show the page
+        document.body.style.display = 'block';
+        window.dispatchEvent(new Event('resize'));
+      } else {
+        // NOT LOGGED IN: Go back to index.html (Login)
+        sessionStorage.setItem('redirect_to', window.location.href);
+        window.location.replace('https://dbaldauf.org/403');
+      }
+    });
+
+    window.logout = () => {
+      signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+    };
+  </script>
+  <!-- END GUARD -->
 </head>
+
 <body>
-<p>Du wirst zum Google My Maps weitergeleitet. Sollte das nicht passieren, <a href="https://www.google.com/maps/d/edit?mid=1L6QglQdRl_lOXeSIiz1m24vo6q70P7o">klicke hier</a>.</p>
+  <p>Du wirst zum Google My Maps weitergeleitet. Sollte das nicht passieren, <a
+      href="https://www.google.com/maps/d/edit?mid=1L6QglQdRl_lOXeSIiz1m24vo6q70P7o">klicke hier</a>.</p>
 </body>
+
 </html>

@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Lagezeichner | FF Li-Ho</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <!-- Typography: Roboto Slab (Hero) & Inter (Tech) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@700&display=swap"
+        rel="stylesheet">
+
     <script>
         tailwind.config = {
             theme: {
@@ -41,44 +46,81 @@
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
-        h1, h2, h3, .font-hero { font-family: 'Roboto Slab', serif; font-weight: 700; }
-        
-        #map { height: 100%; width: 100%; z-index: 0; background-color: #e5e7eb; }
-        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+
+        h1,
+        h2,
+        h3,
+        .font-hero {
+            font-family: 'Roboto Slab', serif;
+            font-weight: 700;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 0;
+            background-color: #e5e7eb;
+        }
+
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
         /* Map Cursors */
-        .map-draw-mode, .map-pin-mode { cursor: crosshair !important; }
-        
+        .map-draw-mode,
+        .map-pin-mode {
+            cursor: crosshair !important;
+        }
+
         /* Leaflet Draw Markers */
         .leaflet-drawing-icon {
-            background-color: #cc0000; 
+            background-color: #cc0000;
             border: 2px solid #ffffff;
-            width: 14px; height: 14px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            margin-top: -7px; margin-left: -7px;
+            margin-top: -7px;
+            margin-left: -7px;
             position: absolute;
             box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.3);
             cursor: pointer !important;
             transition: transform 0.1s;
             z-index: 1000;
         }
-        .leaflet-drawing-icon:hover { transform: scale(1.4); }
-        
+
+        .leaflet-drawing-icon:hover {
+            transform: scale(1.4);
+        }
+
         /* Snap Guide Markers */
         .leaflet-snap-icon {
-            background-color: rgba(26, 26, 26, 0.5); 
+            background-color: rgba(26, 26, 26, 0.5);
             border: 1px solid #1a1a1a;
-            width: 8px; height: 8px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            margin-top: -4px; margin-left: -4px;
+            margin-top: -4px;
+            margin-left: -4px;
             position: absolute;
-            pointer-events: none; 
+            pointer-events: none;
             z-index: 500;
         }
 
@@ -92,33 +134,71 @@
 
         /* Animations */
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
 
         /* Toasts */
         .toast-notification {
             transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            opacity: 0; transform: translateX(100%);
+            opacity: 0;
+            transform: translateX(100%);
         }
-        .toast-notification.show { opacity: 1; transform: translateX(0); }
-        .toast-notification.fade-out { opacity: 0; transform: translateX(100%); }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-notification.fade-out {
+            opacity: 0;
+            transform: translateX(100%);
+        }
 
         /* Z-Indices */
-        #offline-overlay { z-index: 9999 !important; }
-        .modal-backdrop { z-index: 5000 !important; }
-        
+        #offline-overlay {
+            z-index: 9999 !important;
+        }
+
+        .modal-backdrop {
+            z-index: 5000 !important;
+        }
+
         /* Status Badges */
-        .status-badge-open { background-color: #cc0000; color: #ffffff; border: 1px solid #990000; }
-        .status-badge-dispatched { background-color: #2563eb; color: #ffffff; border: 1px solid #1d4ed8; }
-        .status-badge-completed { background-color: #d97706; color: #ffffff; border: 1px solid #b45309; }
+        .status-badge-open {
+            background-color: #cc0000;
+            color: #ffffff;
+            border: 1px solid #990000;
+        }
+
+        .status-badge-dispatched {
+            background-color: #2563eb;
+            color: #ffffff;
+            border: 1px solid #1d4ed8;
+        }
+
+        .status-badge-completed {
+            background-color: #d97706;
+            color: #ffffff;
+            border: 1px solid #b45309;
+        }
 
         .ea-label {
             background: transparent;
             border: none;
             box-shadow: none;
-            color: #1a1a1a !important; 
+            color: #1a1a1a !important;
             text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff;
             font-family: 'Roboto Slab', serif;
             font-weight: 700;
@@ -126,60 +206,147 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        
+
         /* Button Styles */
         .btn-hero {
-            background-color: #cc0000; color: white; text-transform: uppercase; font-weight: 700;
-            font-family: 'Inter', sans-serif; letter-spacing: 0.05em; transition: all 0.2s;
+            background-color: #cc0000;
+            color: white;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .btn-hero:hover { background-color: #a30000; transform: translateY(-1px); }
-        .btn-hero:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        
-        .btn-secondary {
-            background-color: white; border: 1px solid #d1d5db; color: #1a1a1a; font-weight: 600;
-            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
-        }
-        .btn-secondary:hover { background-color: #f3f4f6; border-color: #9ca3af; }
 
+        .btn-hero:hover {
+            background-color: #a30000;
+            transform: translateY(-1px);
+        }
+
+        .btn-hero:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            border: 1px solid #d1d5db;
+            color: #1a1a1a;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
     </style>
+    <!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+    <style>
+        body {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // LOGGED IN: Show the page
+                document.body.style.display = 'block';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                // NOT LOGGED IN: Go back to index.html (Login)
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('https://dbaldauf.org/403');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
+        };
+    </script>
+    <!-- END GUARD -->
 </head>
+
 <body class="bg-cool-gray text-soot-black h-screen overflow-hidden flex flex-col md:flex-row relative">
 
     <!-- SIDEBAR TOGGLE BUTTON (Desktop Only) -->
-    <button id="sidebar-toggle-btn" class="fixed z-[2000] top-1/2 -translate-y-1/2 left-0 md:left-[480px] bg-white border border-gray-300 shadow-lg rounded-r-lg p-1 transition-all duration-300 hover:bg-gray-50 hover:text-fire-red h-12 w-6 hidden md:flex items-center justify-center" title="Seitenleiste umschalten">
+    <button id="sidebar-toggle-btn"
+        class="fixed z-[2000] top-1/2 -translate-y-1/2 left-0 md:left-[480px] bg-white border border-gray-300 shadow-lg rounded-r-lg p-1 transition-all duration-300 hover:bg-gray-50 hover:text-fire-red h-12 w-6 hidden md:flex items-center justify-center"
+        title="Seitenleiste umschalten">
         <!-- Lucide: Chevron Left -->
-        <svg id="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+        <svg id="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-chevron-left">
+            <path d="m15 18-6-6 6-6" />
+        </svg>
     </button>
 
     <!-- LEFT SIDEBAR (Main Scroll Container) -->
-    <div id="sidebar-container" class="w-full md:w-[480px] bg-white border-r border-gray-200 h-full shadow-hero z-20 relative overflow-y-auto transition-[width] duration-300 flex-shrink-0">
-        
+    <div id="sidebar-container"
+        class="w-full md:w-[480px] bg-white border-r border-gray-200 h-full shadow-hero z-20 relative overflow-y-auto transition-[width] duration-300 flex-shrink-0">
+
         <!-- 1. HEADER (Scrolls Away) -->
         <div class="p-6 bg-soot-black">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center space-x-3">
                     <div class="bg-fire-red text-white p-2 rounded shadow-lg">
                         <!-- Lucide: Shield Alert -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-shield-alert">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                            <path d="M12 8v4" />
+                            <path d="M12 16h.01" />
+                        </svg>
                     </div>
                     <div>
-                        <h1 class="text-2xl text-white leading-none tracking-tight">EINSATZ<span class="text-fire-red">LEITUNG</span></h1>
-                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Feuerwehr & Katastrophenschutz</p>
+                        <h1 class="text-2xl text-white leading-none tracking-tight">EINSATZ<span
+                                class="text-fire-red">LEITUNG</span></h1>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Feuerwehr &
+                            Katastrophenschutz</p>
                     </div>
                 </div>
-                
-                <button id="undo-btn" class="text-[10px] uppercase font-bold px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center transition-colors border border-gray-700" disabled>
+
+                <button id="undo-btn"
+                    class="text-[10px] uppercase font-bold px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center transition-colors border border-gray-700"
+                    disabled>
                     <!-- Lucide: Rotate Ccw -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw mr-1"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/><path d="M3 5v7h7"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-rotate-ccw mr-1">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12" />
+                        <path d="M3 5v7h7" />
+                    </svg>
                     Rückgängig
                 </button>
             </div>
 
-            <div id="status-indicator" class="flex items-center justify-center space-x-2 text-xs font-bold uppercase tracking-wide py-2 px-3 rounded bg-green-900/30 text-green-400 border border-green-800/50">
+            <div id="status-indicator"
+                class="flex items-center justify-center space-x-2 text-xs font-bold uppercase tracking-wide py-2 px-3 rounded bg-green-900/30 text-green-400 border border-green-800/50">
                 <span class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
                 <span>System online</span>
             </div>
@@ -189,13 +356,24 @@
         <div class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sticky">
             <!-- Main Actions -->
             <div class="p-4 grid grid-cols-2 gap-3">
-                <button id="open-create-incident-modal-btn" class="col-span-2 btn-hero py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+                <button id="open-create-incident-modal-btn"
+                    class="col-span-2 btn-hero py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
                     <!-- Lucide: Siren -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-siren"><path d="M7 12a5 5 0 0 1 5-5v0a5 5 0 0 1 5 5v6H7v-6Z"/><path d="M5 20a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2H5v-2Z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M5.5 4.5 6 5"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-siren">
+                        <path d="M7 12a5 5 0 0 1 5-5v0a5 5 0 0 1 5 5v6H7v-6Z" />
+                        <path d="M5 20a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2H5v-2Z" />
+                        <path d="M21 12h1" />
+                        <path d="M18.5 4.5 18 5" />
+                        <path d="M2 12h1" />
+                        <path d="M5.5 4.5 6 5" />
+                    </svg>
                     <span>Neuer Einsatz</span>
                 </button>
                 <button id="manage-ea-btn" class="btn-secondary py-2 px-3 rounded-lg text-center">EA Verwalten</button>
-                <button id="end-shift-btn" class="btn-secondary py-2 px-3 rounded-lg text-center">Bericht / Ende</button>
+                <button id="end-shift-btn" class="btn-secondary py-2 px-3 rounded-lg text-center">Bericht /
+                    Ende</button>
             </div>
 
             <!-- Search Bar -->
@@ -203,32 +381,48 @@
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <!-- Lucide: Search -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search text-gray-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-search text-gray-400">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.3-4.3" />
+                        </svg>
                     </div>
-                    <input type="text" id="incident-search" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-fire-red focus:border-fire-red text-sm font-sans" placeholder="Suche Ort, Stichwort, EA...">
+                    <input type="text" id="incident-search"
+                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-fire-red focus:border-fire-red text-sm font-sans"
+                        placeholder="Suche Ort, Stichwort, EA...">
                 </div>
             </div>
 
             <!-- Sort Options -->
             <div class="px-4 pb-3 pt-1">
                 <div id="sort-bar" class="flex space-x-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
-                    <button type="button" data-sort="createdAt" class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded bg-soot-black text-white shadow-md transition-all text-center">Zeit</button>
-                    <button type="button" data-sort="keyword" class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded text-gray-500 hover:bg-white hover:text-soot-black transition-all text-center">A-Z</button>
-                    <button type="button" data-sort="status" class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded text-gray-500 hover:bg-white hover:text-soot-black transition-all text-center">Status</button>
-                    <button type="button" data-sort="ea" class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded text-gray-500 hover:bg-white hover:text-soot-black transition-all text-center">EA</button>
+                    <button type="button" data-sort="createdAt"
+                        class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded bg-soot-black text-white shadow-md transition-all text-center">Zeit</button>
+                    <button type="button" data-sort="keyword"
+                        class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded text-gray-500 hover:bg-white hover:text-soot-black transition-all text-center">A-Z</button>
+                    <button type="button" data-sort="status"
+                        class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded text-gray-500 hover:bg-white hover:text-soot-black transition-all text-center">Status</button>
+                    <button type="button" data-sort="ea"
+                        class="sort-btn flex-1 py-1.5 text-[10px] font-bold uppercase rounded text-gray-500 hover:bg-white hover:text-soot-black transition-all text-center">EA</button>
                 </div>
             </div>
         </div>
 
         <!-- 3. SCROLLABLE LIST CONTENT -->
         <div class="p-6 space-y-6">
-            
+
             <!-- Active Incidents -->
             <div class="space-y-3">
-                <button id="active-toggle-btn" class="w-full flex items-center justify-between text-xs font-bold text-soot-black hover:text-fire-red uppercase tracking-widest mb-2 group sticky top-[220px] z-10 bg-gray-50/80 backdrop-blur py-2">
+                <button id="active-toggle-btn"
+                    class="w-full flex items-center justify-between text-xs font-bold text-soot-black hover:text-fire-red uppercase tracking-widest mb-2 group sticky top-[220px] z-10 bg-gray-50/80 backdrop-blur py-2">
                     <span>Aktive Einsätze</span>
                     <!-- Lucide: Chevron Down -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down text-gray-400 group-hover:text-fire-red transition-transform transform rotate-0"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-chevron-down text-gray-400 group-hover:text-fire-red transition-transform transform rotate-0">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </button>
                 <div id="incident-list" class="space-y-4 min-h-[50px]">
                     <!-- Incidents injected here -->
@@ -242,61 +436,77 @@
 
             <!-- Completed Incidents -->
             <div class="space-y-3">
-                <button id="completed-toggle-btn" class="w-full flex items-center justify-between text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest group">
+                <button id="completed-toggle-btn"
+                    class="w-full flex items-center justify-between text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest group">
                     <span>Archiv</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right text-gray-300 transition-transform transform"><path d="m9 18 6-6-6-6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-chevron-right text-gray-300 transition-transform transform">
+                        <path d="m9 18 6-6-6-6" />
+                    </svg>
                 </button>
                 <div id="completed-incident-list" class="space-y-3 hidden">
                     <!-- Completed incidents -->
                 </div>
             </div>
 
-            <p class="text-[10px] text-gray-400 text-center pt-6 uppercase tracking-widest font-medium">Lokaler Speicher Aktiv</p>
+            <p class="text-[10px] text-gray-400 text-center pt-6 uppercase tracking-widest font-medium">Lokaler Speicher
+                Aktiv</p>
         </div>
     </div>
 
     <!-- MAP AREA -->
     <div class="flex-1 relative h-full bg-gray-100">
         <div id="map" class="z-0"></div>
-        
+
         <!-- Overlay Gradient -->
-        <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-soot-black/10 to-transparent pointer-events-none z-[400]"></div>
+        <div
+            class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-soot-black/10 to-transparent pointer-events-none z-[400]">
+        </div>
     </div>
 
     <!-- FLOATING TOOLS PANELS -->
     <div class="fixed bottom-8 right-8 flex flex-col items-end space-y-4 z-[1000] pointer-events-none">
-        
+
         <!-- EA Draw Panel -->
-        <div id="section-draw-panel" class="pointer-events-auto bg-soot-black text-white p-5 rounded-lg shadow-2xl border-l-4 border-fire-red w-80 hidden animate-slide-in">
+        <div id="section-draw-panel"
+            class="pointer-events-auto bg-soot-black text-white p-5 rounded-lg shadow-2xl border-l-4 border-fire-red w-80 hidden animate-slide-in">
             <div class="flex justify-between items-start mb-3">
                 <h3 class="font-hero text-lg tracking-wide">EA ZEICHNEN</h3>
                 <span class="animate-pulse h-2 w-2 rounded-full bg-fire-red mt-2"></span>
             </div>
-            <p class="text-xs text-gray-400 mb-4 font-sans">Punkte auf Karte setzen.<br>Startpunkt klicken zum Schließen.</p>
+            <p class="text-xs text-gray-400 mb-4 font-sans">Punkte auf Karte setzen.<br>Startpunkt klicken zum
+                Schließen.</p>
             <div class="grid grid-cols-2 gap-3">
-                <button id="finish-draw-btn" class="bg-fire-red hover:bg-fire-red-hover text-white text-xs font-bold uppercase py-2 px-3 rounded">Fertig</button>
-                <button id="cancel-draw-btn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase py-2 px-3 rounded">Abbruch</button>
+                <button id="finish-draw-btn"
+                    class="bg-fire-red hover:bg-fire-red-hover text-white text-xs font-bold uppercase py-2 px-3 rounded">Fertig</button>
+                <button id="cancel-draw-btn"
+                    class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase py-2 px-3 rounded">Abbruch</button>
             </div>
         </div>
 
         <!-- Add Incident Panel -->
-        <div id="incident-add-panel" class="pointer-events-auto bg-soot-black text-white p-5 rounded-lg shadow-2xl border-l-4 border-fire-red w-80 hidden animate-slide-in">
+        <div id="incident-add-panel"
+            class="pointer-events-auto bg-soot-black text-white p-5 rounded-lg shadow-2xl border-l-4 border-fire-red w-80 hidden animate-slide-in">
             <div class="flex justify-between items-start mb-3">
                 <h3 class="font-hero text-lg tracking-wide">ORT WÄHLEN</h3>
                 <span class="animate-pulse h-2 w-2 rounded-full bg-fire-red mt-2"></span>
             </div>
             <p class="text-xs text-gray-400 mb-4 font-sans">Zielort auf der Karte anklicken.</p>
-            <button id="cancel-add-incident-btn" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase py-2 px-3 rounded">Abbruch</button>
+            <button id="cancel-add-incident-btn"
+                class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase py-2 px-3 rounded">Abbruch</button>
         </div>
 
         <!-- Edit Incident Panel -->
-        <div id="incident-edit-panel" class="pointer-events-auto bg-soot-black text-white p-5 rounded-lg shadow-2xl border-l-4 border-police-blue w-80 hidden animate-slide-in">
+        <div id="incident-edit-panel"
+            class="pointer-events-auto bg-soot-black text-white p-5 rounded-lg shadow-2xl border-l-4 border-police-blue w-80 hidden animate-slide-in">
             <div class="flex justify-between items-start mb-3">
                 <h3 class="font-hero text-lg tracking-wide">EINSATZ VERSCHIEBEN</h3>
                 <span class="animate-pulse h-2 w-2 rounded-full bg-police-blue mt-2"></span>
             </div>
             <p class="text-xs text-gray-400 mb-4 font-sans">Neuen Ort auf Karte wählen.</p>
-            <button id="cancel-edit-incident-btn" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase py-2 px-3 rounded">Abbruch</button>
+            <button id="cancel-edit-incident-btn"
+                class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase py-2 px-3 rounded">Abbruch</button>
         </div>
     </div>
 
@@ -306,12 +516,20 @@
     <!-- MODALS -->
 
     <!-- Duplicate Warning Modal -->
-    <div id="duplicate-warning-modal" class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300" style="z-index: 6000;">
+    <div id="duplicate-warning-modal"
+        class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300"
+        style="z-index: 6000;">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-slide-in">
             <div class="p-6 bg-red-50 border-b border-red-100 flex items-start space-x-4">
                 <div class="bg-red-100 p-2 rounded-full text-fire-red">
                     <!-- Lucide: Alert Triangle -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-alert-triangle">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                        <path d="M12 9v4" />
+                        <path d="M12 17h.01" />
+                    </svg>
                 </div>
                 <div>
                     <h3 class="font-hero text-xl text-soot-black">DUPLIKAT WARNUNG</h3>
@@ -319,52 +537,80 @@
                 </div>
             </div>
             <div class="p-6 bg-white">
-                <p class="text-sm text-gray-600 mb-6 font-sans font-medium">Möchten Sie diesen Einsatz trotzdem erstellen?</p>
+                <p class="text-sm text-gray-600 mb-6 font-sans font-medium">Möchten Sie diesen Einsatz trotzdem
+                    erstellen?</p>
                 <div class="flex space-x-3">
                     <button id="cancel-duplicate-btn" class="flex-1 btn-secondary py-3 rounded-lg">Abbrechen</button>
-                    <button id="confirm-duplicate-btn" class="flex-1 btn-hero py-3 rounded-lg">Trotzdem Erstellen</button>
+                    <button id="confirm-duplicate-btn" class="flex-1 btn-hero py-3 rounded-lg">Trotzdem
+                        Erstellen</button>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Create Incident Modal -->
-    <div id="incident-creation-modal" class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-slide-in">
+    <div id="incident-creation-modal"
+        class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div
+            class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-slide-in">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-white">
                 <h2 class="font-hero text-xl text-soot-black">NEUER EINSATZ</h2>
-                <button id="close-incident-modal-btn" class="text-gray-400 hover:text-fire-red p-1 rounded transition-colors">
+                <button id="close-incident-modal-btn"
+                    class="text-gray-400 hover:text-fire-red p-1 rounded transition-colors">
                     <!-- FIXED Lucide: X (Path was incorrect in previous version causing render issues) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-x">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 18 18" />
+                    </svg>
                 </button>
             </div>
-            
+
             <div class="p-8 overflow-y-auto bg-gray-50">
                 <form id="dispatch-form" class="space-y-5">
                     <!-- Map Button -->
-                    <button type="button" id="add-incident-map-btn" class="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 text-soot-black border-2 border-gray-200 font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-lg transition-all hover:border-gray-400">
+                    <button type="button" id="add-incident-map-btn"
+                        class="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 text-soot-black border-2 border-gray-200 font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-lg transition-all hover:border-gray-400">
                         <!-- Lucide: Map Pin -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin text-fire-red"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-map-pin text-fire-red">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
                         <span>Auf Karte Wählen</span>
                     </button>
 
                     <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Adresse</label>
-                        <input type="text" id="address" class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg focus:ring-2 focus:ring-fire-red focus:border-fire-red block p-3 transition-shadow shadow-sm" placeholder="Straße, Hausnummer, Ort..." autocomplete="off">
+                        <label
+                            class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Adresse</label>
+                        <input type="text" id="address"
+                            class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg focus:ring-2 focus:ring-fire-red focus:border-fire-red block p-3 transition-shadow shadow-sm"
+                            placeholder="Straße, Hausnummer, Ort..." autocomplete="off">
                         <input type="hidden" id="lat-input"><input type="hidden" id="lon-input">
-                        <input type="hidden" id="location-name-input"> 
-                        <div id="address-suggestions" class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm"></div>
+                        <input type="hidden" id="location-name-input">
+                        <div id="address-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm">
+                        </div>
                     </div>
 
                     <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Alarmstichwort</label>
-                        <input type="text" id="keyword" class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg focus:ring-2 focus:ring-fire-red focus:border-fire-red block p-3 transition-shadow shadow-sm" placeholder="z.B. B 3 - Zimmerbrand" required autocomplete="off">
-                        <div id="keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm"></div>
+                        <label
+                            class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Alarmstichwort</label>
+                        <input type="text" id="keyword"
+                            class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg focus:ring-2 focus:ring-fire-red focus:border-fire-red block p-3 transition-shadow shadow-sm"
+                            placeholder="z.B. B 3 - Zimmerbrand" required autocomplete="off">
+                        <div id="keyword-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm">
+                        </div>
                     </div>
 
-                    <div class="p-4 bg-white rounded-lg border border-gray-200 flex items-center justify-between shadow-sm">
+                    <div
+                        class="p-4 bg-white rounded-lg border border-gray-200 flex items-center justify-between shadow-sm">
                         <span class="text-xs font-bold text-gray-500 uppercase">Auto-EA</span>
-                        <span id="auto-section-display" class="text-sm font-bold text-soot-black">Warte auf Adresse...</span>
+                        <span id="auto-section-display" class="text-sm font-bold text-soot-black">Warte auf
+                            Adresse...</span>
                         <input type="hidden" id="final-section-assignment">
                     </div>
 
@@ -377,38 +623,57 @@
     </div>
 
     <!-- Edit Incident Modal -->
-    <div id="incident-edit-modal" class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="incident-edit-modal"
+        class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-white">
                 <h2 class="font-hero text-xl text-soot-black">EINSATZ BEARBEITEN</h2>
                 <button id="close-incident-edit-modal-btn" class="text-gray-400 hover:text-fire-red p-1 rounded-full">
                     <!-- Lucide: X -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-x">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 18 18" />
+                    </svg>
                 </button>
             </div>
             <div class="p-8 overflow-y-auto bg-gray-50">
                 <form id="incident-edit-form" class="space-y-5">
-                    <button type="button" id="edit-incident-map-btn" class="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 text-soot-black border-2 border-gray-200 font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-lg transition-all hover:border-gray-400">
+                    <button type="button" id="edit-incident-map-btn"
+                        class="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 text-soot-black border-2 border-gray-200 font-bold uppercase text-xs tracking-wider py-3 px-4 rounded-lg transition-all hover:border-gray-400">
                         <span>Marker Verschieben</span>
                     </button>
 
                     <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Adresse</label>
-                        <input type="text" id="edit-address" class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3 shadow-sm" autocomplete="off">
+                        <label
+                            class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Adresse</label>
+                        <input type="text" id="edit-address"
+                            class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3 shadow-sm"
+                            autocomplete="off">
                         <input type="hidden" id="edit-lat-input"><input type="hidden" id="edit-lon-input">
                         <input type="hidden" id="edit-location-name-input">
-                        <div id="edit-address-suggestions" class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm"></div>
+                        <div id="edit-address-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm">
+                        </div>
                     </div>
                     <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Stichwort</label>
-                        <input type="text" id="edit-keyword" class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3 shadow-sm" required autocomplete="off">
-                        <div id="edit-keyword-suggestions" class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm"></div>
+                        <label
+                            class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Stichwort</label>
+                        <input type="text" id="edit-keyword"
+                            class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3 shadow-sm"
+                            required autocomplete="off">
+                        <div id="edit-keyword-suggestions"
+                            class="absolute z-20 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto text-sm">
+                        </div>
                     </div>
-                    
+
                     <!-- Manual EA Selection -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">EA Zuordnung</label>
-                        <select id="edit-ea-select" class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg focus:ring-fire-red focus:border-fire-red block p-3 shadow-sm">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">EA
+                            Zuordnung</label>
+                        <select id="edit-ea-select"
+                            class="w-full bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg focus:ring-fire-red focus:border-fire-red block p-3 shadow-sm">
                             <option value="">Auto (Geo-basiert)</option>
                         </select>
                     </div>
@@ -418,19 +683,25 @@
                         <input type="hidden" id="edit-status-hidden">
                         <!-- VISUAL FEEDBACK: Added colors for active states -->
                         <div class="flex rounded-lg shadow-sm isolate">
-                            <button type="button" id="edit-status-btn-open" data-status="open" class="edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-gray-300 rounded-l-lg focus:z-10 transition-colors bg-white text-gray-600 hover:bg-gray-50">Offen</button>
-                            <button type="button" id="edit-status-btn-dispatched" data-status="dispatched" class="edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 focus:z-10 transition-colors bg-white text-gray-600 hover:bg-gray-50">Disponiert</button>
-                            <button type="button" id="edit-status-btn-completed" data-status="completed" class="edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 rounded-r-lg focus:z-10 transition-colors bg-white text-gray-600 hover:bg-gray-50">Fertig</button>
+                            <button type="button" id="edit-status-btn-open" data-status="open"
+                                class="edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-gray-300 rounded-l-lg focus:z-10 transition-colors bg-white text-gray-600 hover:bg-gray-50">Offen</button>
+                            <button type="button" id="edit-status-btn-dispatched" data-status="dispatched"
+                                class="edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 focus:z-10 transition-colors bg-white text-gray-600 hover:bg-gray-50">Disponiert</button>
+                            <button type="button" id="edit-status-btn-completed" data-status="completed"
+                                class="edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 rounded-r-lg focus:z-10 transition-colors bg-white text-gray-600 hover:bg-gray-50">Fertig</button>
                         </div>
                     </div>
-                    
+
                     <div class="p-3 bg-white rounded-lg border border-gray-200 text-center shadow-sm">
-                        <span id="edit-auto-section-display" class="text-xs font-bold text-gray-500">EA Prüfung...</span>
+                        <span id="edit-auto-section-display" class="text-xs font-bold text-gray-500">EA
+                            Prüfung...</span>
                     </div>
 
                     <div class="flex space-x-3 pt-4">
-                        <button type="button" id="delete-incident-btn" class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs py-3 px-4 rounded-lg">Löschen</button>
-                        <button type="submit" id="save-incident-btn" class="flex-[2] btn-hero py-3 px-4 rounded-lg text-xs">Speichern</button>
+                        <button type="button" id="delete-incident-btn"
+                            class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-xs py-3 px-4 rounded-lg">Löschen</button>
+                        <button type="submit" id="save-incident-btn"
+                            class="flex-[2] btn-hero py-3 px-4 rounded-lg text-xs">Speichern</button>
                     </div>
                 </form>
             </div>
@@ -438,21 +709,32 @@
     </div>
 
     <!-- EA Management Modal -->
-    <div id="ea-management-modal" class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="ea-management-modal"
+        class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h2 class="font-hero text-xl text-soot-black">EINSATZABSCHNITTE (EA)</h2>
-                <button id="close-ea-modal-btn" class="text-gray-400 hover:text-soot-black p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button id="close-ea-modal-btn" class="text-gray-400 hover:text-soot-black p-1 rounded-full"><svg
+                        xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg></button>
             </div>
             <div id="ea-modal-content" class="p-8 overflow-y-auto space-y-8">
                 <form id="section-form" class="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4 shadow-sm">
                     <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Neuen EA erstellen</h3>
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="section-name" class="bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3" placeholder="Name (z.B. Nord)" required>
-                        <input type="text" id="section-responsible" class="bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3" placeholder="Leitung" required>
+                        <input type="text" id="section-name"
+                            class="bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3"
+                            placeholder="Name (z.B. Nord)" required>
+                        <input type="text" id="section-responsible"
+                            class="bg-white border border-gray-300 text-soot-black text-sm font-medium rounded-lg p-3"
+                            placeholder="Leitung" required>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <input type="color" id="section-color" class="h-10 w-14 p-0 border-0 rounded cursor-pointer" value="#cc0000">
+                        <input type="color" id="section-color" class="h-10 w-14 p-0 border-0 rounded cursor-pointer"
+                            value="#cc0000">
                         <button type="submit" class="flex-1 btn-hero py-2.5 px-4 rounded-lg text-sm">Erstellen</button>
                     </div>
                 </form>
@@ -465,30 +747,47 @@
     </div>
 
     <!-- End Shift Modal -->
-    <div id="end-shift-modal" class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="end-shift-modal"
+        class="modal-backdrop fixed inset-0 bg-soot-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-md">
             <div class="p-8">
-                <div class="flex items-center justify-center w-14 h-14 mx-auto bg-gray-100 text-soot-black rounded-full mb-6">
+                <div
+                    class="flex items-center justify-center w-14 h-14 mx-auto bg-gray-100 text-soot-black rounded-full mb-6">
                     <!-- Lucide: File Text -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-file-text">
+                        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                        <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                        <path d="M10 9H8" />
+                        <path d="M16 13H8" />
+                        <path d="M16 17H8" />
+                    </svg>
                 </div>
                 <h2 class="font-hero text-2xl text-soot-black text-center mb-2">BERICHT ERSTELLEN</h2>
                 <p class="text-sm text-gray-500 text-center mb-8 font-medium">Protokoll abschließen und exportieren.</p>
-                
+
                 <div class="bg-gray-50 rounded-lg p-5 mb-6 text-sm border border-gray-200">
-                    <div class="flex justify-between mb-2"><span class="text-gray-500 font-medium">Datum:</span> <span id="report-stats-date" class="font-bold text-soot-black"></span></div>
-                    <div class="flex justify-between mb-2"><span class="text-gray-500 font-medium">Einsätze:</span> <span id="report-stats-incidents" class="font-bold text-soot-black"></span></div>
-                    <div class="flex justify-between"><span class="text-gray-500 font-medium">Abschnitte:</span> <span id="report-stats-eas" class="font-bold text-soot-black"></span></div>
+                    <div class="flex justify-between mb-2"><span class="text-gray-500 font-medium">Datum:</span> <span
+                            id="report-stats-date" class="font-bold text-soot-black"></span></div>
+                    <div class="flex justify-between mb-2"><span class="text-gray-500 font-medium">Einsätze:</span>
+                        <span id="report-stats-incidents" class="font-bold text-soot-black"></span></div>
+                    <div class="flex justify-between"><span class="text-gray-500 font-medium">Abschnitte:</span> <span
+                            id="report-stats-eas" class="font-bold text-soot-black"></span></div>
                 </div>
 
                 <div class="mb-6">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Protokollführer / Lagezeichner</label>
-                    <input type="text" id="lagezeichner-input" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-fire-red focus:ring-fire-red p-3 text-sm font-medium" placeholder="Name eingeben...">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Protokollführer /
+                        Lagezeichner</label>
+                    <input type="text" id="lagezeichner-input"
+                        class="w-full border-gray-300 rounded-lg shadow-sm focus:border-fire-red focus:ring-fire-red p-3 text-sm font-medium"
+                        placeholder="Name eingeben...">
                 </div>
 
                 <div class="flex space-x-3">
                     <button id="cancel-report-btn" class="flex-1 btn-secondary py-3 rounded-lg">Zurück</button>
-                    <button id="create-report-btn" class="flex-[2] btn-hero py-3 rounded-lg text-sm shadow-lg">Bericht Herunterladen</button>
+                    <button id="create-report-btn" class="flex-[2] btn-hero py-3 rounded-lg text-sm shadow-lg">Bericht
+                        Herunterladen</button>
                 </div>
             </div>
         </div>
@@ -496,18 +795,24 @@
 
     <!-- Offline Overlay -->
     <div id="offline-overlay" class="fixed inset-0 bg-soot-black flex flex-col items-center justify-center p-4 hidden">
-        <div class="bg-white p-10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border-t-8 border-fire-red">
+        <div
+            class="bg-white p-10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border-t-8 border-fire-red">
             <div class="text-center mb-8">
                 <h2 class="font-hero text-4xl font-extrabold text-soot-black">SYSTEM OFFLINE</h2>
-                <p class="text-fire-red font-bold mt-2 uppercase tracking-widest text-sm">Notfall-Protokoll: Lesezugriff</p>
+                <p class="text-fire-red font-bold mt-2 uppercase tracking-widest text-sm">Notfall-Protokoll: Lesezugriff
+                </p>
             </div>
             <div class="flex-grow overflow-y-auto bg-gray-50 p-8 rounded-lg border border-gray-200 space-y-10">
                 <div>
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-300 pb-2">Aktive Abschnitte</h3>
+                    <h3
+                        class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-300 pb-2">
+                        Aktive Abschnitte</h3>
                     <div id="offline-ea-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
                 </div>
                 <div>
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-300 pb-2">Einsatzprotokoll</h3>
+                    <h3
+                        class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-300 pb-2">
+                        Einsatzprotokoll</h3>
                     <div id="offline-incident-report" class="space-y-4"></div>
                 </div>
             </div>
@@ -522,57 +827,57 @@
             "B 1": ["B - Fläche klein (< 10m x 10m)", "B - Gasgeruch im Freien", "B - Kleinfeuer", "B - Müllcontainer / -tonne", "B - PKW / Kleinbus innerorts", "B - Rauch- / Brandgeruch Fahrzeug", "B - Rauch- / Brandgeruch im Freien", "B - Unklare Feuer- / Rauchentwicklung im Freien", "B - Zweirad"],
             "B 2": ["B - Alarmstufenerhöhung auf B 2", "B - Bus", "B - Campingplatz", "B - Explosion im Freien", "B - Fahrzeug sonstiges", "B - Garage / Carport / Gartenhaus", "B - Gasaustritt im Freien klein", "B - Lagerplatz klein", "B - Land- / Forst- / Baumaschine", "B - LKW / Kleintransporter", "B - Maschine", "B - mehrere PKW / Kleinbusse", "B - Person im Freien", "B - PKW / Kleinbus außerorts", "B - Spielplatz", "B - Wald klein (< 10m x 10m)", "B - Wohnmobil / Wohnanhänger"],
             "B 3": ["B - Alarmstufenerhöhung auf B 3", "B - Baustelle", "B - Bordell / Laufhaus", "B - Büro- / Bankgebäude", "B - Bus im / am Gebäude", "B - Dehnfuge", "B - Explosion Kleinobjekt im / am Gebäude", "B - Garage / Carport / Gartenhaus im / am Gebäude", "B - Gasgeruch im / am Gebäude", "B - Gaststätte / Restaurant", "B - Gewässer sonstiges", "B - Hafenanlage / Terminal / Schiffsanlegestelle", "B - Hallenbad / Freibad / Pool", "B - Industrieanlage / -betrieg - Sonstige", "B - Kamin / Heizung / Ofen", "B - Kanalisation", "B - Keller", "B - Kleinfeuer im / am Gebäude", "B - Lagerhalle / Container klein", "B - Lagerplatz groß", "B - Land- / Forst- / Baumaschine im / am Gebäude", "B - LKW / Kleintransporter im / am Gebäude", "B - mehrer PKW / Kleinbusse im / am Gebäude", "B - Müllcontainer / -tonne im / am Gebäude", "B - Öffentliches Gebäude / Objekt geschlossen", "B - Öffentliches Objekt / Gebäude sontiges", "B - Person droht sich zu verbrennen", "B - Person im Gebäude", "B - PKW / Kleinbus im / am Gebäude", "B - privates Gebäude sonstiges", "B - Rauch- / Brandgeruch im Gebäude", "B - Scheune / Stall", "B - Schleuse", "B - Terrasse / Balkon", "B - Unklare Feuer- Rauchentwicklung im / am Gebäude", "B - Volksfest / Bierzelt", "B - Werkstatt", "B - Wohn- / Baucontainer", "B -  Wohnmobiel / Wohnanhänger im / am Gebäude", "B - Wohnung", "B - Zimmer", "B - Zweirad im / am Gebäude"],
-			"B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
-			"B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
-			"B 6": ["B - Alarmstufenerhöhung auf B 6"],
-			"B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
-			"B - Bio": ["B - Bio"],
-			"B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage","B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
-			"B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
-			"B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
-			"B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
-			"B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
-			"B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
-			"B - Metall": ["B - Metall"],
-			"B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
-			"B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
-			"B - Straßentunnel": ["B - Tunnel / Unterführung"],
-			"B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
-			"B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
-			"S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
-			"S - First Responder": ["S - First Responder"],
+            "B 4": ["B - Alarmstufenerhöhung auf B 4", "B - Apotheke / Labor / Arztpraxis", "B - Asylheim / Wohnheim", "B - Bahnhof / Flughafen", "B - Brandausweitung", "B - Dachstuhl / Dachboden", "B - Diskothek / Spielhalle", "B - Freizeit- / Vergnügungspark", "B - Hotel / Jugendherberge", "B - Industrieanlage", "B - Kaserne / Militärische Einrichtung", "B - Kaufhaus / Ladengeschäft", "B - Kindergarten / Schule / Universität", "B - Kino / Theater / Oper", "B - Kirche / Glaubensstätte", "B - Lagerhalle / Container groß", "B - Menschenleben konkret in Gefahr", "B - Museum / Galerie", "B - Sportstation / Sporthalle", "B - Versammlungsstätte"],
+            "B 5": ["B - Alarmstufenerhöhung auf B 5", "B - Alten- / Pflegeheim / Krankenhaus", "B - Gefängnis / Haftanstalt / Polizei", "B - Heizkraftwerk", "B - Hochhaus", "B - Parkhaus / Tiefgarage", "B - Sägewerk"],
+            "B 6": ["B - Alarmstufenerhöhung auf B 6"],
+            "B - Atom": ["B - Fahrzeug - Atom", "B - Industrieanlage / -betrieb - Atom", "B - Luftfahrzeug - Atom", "B - Öffentliches Gebäude / Objekt - Atom", "B - Schienenfahrzeug - Atom", "B - Wasserfahrzeug - Atom", "B - Kernkraftwerk"],
+            "B - Bio": ["B - Bio"],
+            "B - BMA": ["B - Auslösung BMA", "B - Auslösung Löschanlage", "B - Private BMA", "B - Privater Rauchmelder", "B - Private Gaswarnanlage"],
+            "B - Boot": ["B - Motorboot / Sportboot", "B - Rauch- / Brandgeruch Wasserfahrzeug"],
+            "B - Chemie": [" B - Fahrzeug - Chemie", "B - Luftfahrzeug - Chemie", "B - Schienenfahrzeug - Chemie", "B - Industrieanlage / -betrieb - Chemie", "B - Öffentliches Gebäude / Objekt - Chemie", "B - Wasserfahrzeug - Chemie"],
+            "B - Elektroanlage": ["B - Elektrizitätswerk / Trafohaus", "B - Photovoltaik / Solaranlage", "B - Strommast / Leitung"],
+            "B - Explosion": ["B - Explosion Fahrzeug", "B - Explosionim / am Gebäude"],
+            "B - Flüssigkeit/Gas": ["B - Biogasanlage", "B - Gasaustritt im / am Gebäude", "B - Gasaustritt im Freien groß", "B - Gasflasche", "B - Gastank / Gaslager", "B - Pipeline", "B - Raffinerie / Ölförderanlage", "B - Tanklaster", "B - Tankstelle / Tanklager"],
+            "B - Metall": ["B - Metall"],
+            "B - Schienentunnel": ["B - Bahnhof / Haltestelle im Untergrund", "B - Schienentunnel / Unterführung"],
+            "B - Schiff": ["B - Explosion Wasserfahrzeug", "B - Fahrgastschiff / Hafenfähre", "B - Luftfahrzeug im Wasser", "B - Transportschiff", "B - Wasserfahrzeug sonstiges"],
+            "B - Straßentunnel": ["B - Tunnel / Unterführung"],
+            "B - Wald": ["B - Fläche groß (> 10m x 10m)", "B - Wald groß (> 10m x 10m)"],
+            "B - Zug": ["B - Explosion Schienenfahrzeug", "B - Güterzug / Tankzug", "B - S-Bahn / Personenzug", "B - Schienenfahrzeug sonstiges", "B - Straßenbahn", "B - U-Bahn"],
+            "S - Erkundung": ["S - Bomben- / Kampfmittelfund", "S - Nachschau", "TH - Leichenbergung", "TH - Person vermisst / Personensuche"],
+            "S - First Responder": ["S - First Responder"],
             "S - Sonstiges": ["S - Ausfall Notruf / Alarmierung", "S - Bedrohungslage", "S - Bereitstellungsraum besetzen", "S - Bombendrohung", "S - Drohendes Attentat", "S - Einsatzalarm überörtlich (ca. 12h)", "S - Einsatzalarm überregional (ca. 24h)", "S - Einsatzbereitschaft herstellen", "S - Führungshaus besetzen", "S - Große Polizeilage (Amok / Terror)", "S - Grundschutz sicherstellen", "S - Maßnahmenstufe 1", "S - Maßnahmenstufe 2", "S - Maßnahmenstufe 3", "S - Stabseinsatz", "S - Vorabinformation / Einsatzanfrage", "S - Voralarm überörtlich (ca. 12h)", "S - Voralarm überregional (ca. 24h)", "S - Wachbesetzung", "S - Überlandhilfe Feuerwehr (außerhalb SK & LK KA)"],
-			"TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
-			"TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
-			"TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
-			"TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
-			"TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
-			"TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
-			"TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
-			"TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
-			"TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
-			"TH - Person im Rhein": ["TH - Person im Rhein"],
-			"TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
-			"TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
-			"TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
-			"TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
-			"TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
-			"TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
-			"TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
-			"TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
-			"TH U - Bio": ["TH U - Bio"],
-			"TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
-			"TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
-			"TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
-			"TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
-			"TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
-			"TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
-			"TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
+            "TH 1": ["TH - Ast / Baum droht zu fallen", "TH - Ast / Baum entfernen", "TH - Fahrbahn reinigen / aufräumen", "TH - Insekten (Bienen / Hornissen / Hummeln / Wespen)", "TH - Sicherungsarbeiten", "TH - Sonstige Hilfeleistung", "TH - Tierrettung klein", "TH - Tür / Fenster verschließen", "TH - Unfallstelle absichern / ausleuchten", "TH - Verkehrszeichen entfernen", "TH - Wasserschaden"],
+            "TH 2": ["TH - Fahrzeug Sicherung / Bergung klein", "TH - Kleineinklemmung", "TH - Person eingeschlossen", "TH - Person eingeschlossen - Aufzug", "TH - Person eingeschlossen - Aufzug + NA", "TH - Person eingeschlossen - Fahrzeug", "TH - Person eingeschlossen - Fahrzeug + NA", "TH - Strom- / Elektrounfall klein", "TH - Unterstützung Rettungsdienst", "TH - Verkehrsunfall (RD - VU mit SoSi)", "TH - Verkehrsunfall ( RD - VU Stufe 1", "TH - Verkehrsunfall (RD - VU Stufe 2)", "TH - Verkehrsunfall (RD - VU Stufe 3)", "TH - Verkehrsunfall (RD - VU Stufe 4)", "TH - VU eCall (Situation unklar)"],
+            "TH 3": ["TH - Notfalltüröffnung", "TH - Notfalltüröffnung + NA", "TH - Türöffnung"],
+            "TH 4": ["B - Fahrzeug - Menschenleben konkret in Gefahr", "TH - Fahrzeug Sicherung / Bergung groß", "TH - Person eingeklemmt", "TH - Person eingeklemmt - Ast / Baum", "TH - Person eingeklemmt - PKW / Kleinbus", "TH - Person eingeklemmt - Tor / Gerüst / Gestänge", "TH - Person gepfählt", "TH - Strom- / Elektrounfall groß", "TH - Tierrettung groß", "TH - Verkehrsunfall (RD - VU Stufe 5)", "TH - Verkehrsunfall ( RD - VU Stufe 6)", "TH - VU PKW - Person eingeklemmt"],
+            "TH 5": ["TH - Baukran droht umzustürzen", "TH - Fahrzeug in Menschenmenge", "TH - Person eingeklemmt - Gebäude", "TH - TH - Person eingeklemmt - Kraftfahrzeug / Maschine", "TH - Person eingeklemmt - LKW / Kleintransporter", "TH - Person eingeklemmt - Maschine / Gerät", "TH - VU LKW - Person eingeklemmt", "TH - TH VU PKW - Personen eingeklemmt (2 bis 5)"],
+            "TH 6": ["TH - VU Bus - Person eingeklemmt", "TH - VU LKW - Person eingeklemmt", "TH - VU Massenkarambolage", "TH - VU PKW - Personen eingeklemmt (mehr als 5)"],
+            "TH 7": ["B - Gebäude eingestürzt", "TH - Baukran umgestürzt", "TH - Einsturz Gerüst / Gebäude / Verkehrsweg", "TH - Gebäude / Fahrzeug verschüttet", "TH - Person verschüttet"],
+            "TH - Beleuchtung": ["TH - Einsatzstelle ausleuchten", "TH - Hubschrauberlandung ausleuchten"],
+            "TH - Höhenrettung": ["B - Windkraftwerk / -rad", "TH - Höhlen / Grubenrettung", "TH - Person auf Windkraftanlage", "TH - Person droht zu springen / abzustürzen über 23m", "TH - Person im Seil über 23m", "TH - SRHT über 23m"],
+            "TH - Person im Rhein": ["TH - Person im Rhein"],
+            "TH - Person im Wasser": ["TH - Eisrettung", "TH - Ertrinkungsunfall / Person im Wasser", "TH - Tauchunfall", "TH - VU Fahrzeug im Wasser (Person in Gefahr)", "TH - Wassersportler / -fahrzeug in Not"],
+            "TH - Rettungskorb schwer": ["TH - Unterstützung Rettungsdienst mit Drehleiter (über 130kg)"],
+            "TH - Schiene 1": ["TH - Person unter güterzug / Tankzug", "TH - Person unter S-Bahn / Personenzug", "TH - Person unter sonstigem Schienenfahrzeug", "TH - Person unter Straßenbahn", "TH - Person unter U-Bahn", "TH - Sicherung / Bergung Schienenfahrzeug"],
+            "TH - Schiene 2": ["TH - Person eingeklemmt - Schienenfahrzeug", "TH - VU Güterzug / Tankzug", "TH - VU S-Bahn / Personenzug", "TH - VU Schienenfahrzeug sonstiges", "TH - VU Straßenbahn", "TH - VU U-Bahn"],
+            "TH - Schlüsseldienst": ["TH - Türöffnung (Amtshilfe)"],
+            "TH U - Atom": ["TH U - Austretender Gefahrstoff - Atom", "TH U - Fahrzeug - Atom", "TH U - Luftfahrzeug - Atom", "TH U - Schienenfahrzeug - Atom", "TH U - Wasserfahrzeug - Atom"],
+            "TH U - Auslaufen von Kraftstoffen groß": ["TH U - Austretende Betriebsstoffe Gewässer", "TH U - Austretende Betriebsstoffe groß", "TH U - Austretender Gefahrstoff klein"],
+            "TH U - Auslaufen von Kraftstoffen klein": ["TH U - Austretende Betriebsstoffe klein"],
+            "TH U - Bio": ["TH U - Bio"],
+            "TH U - Chemie": ["TH U - Austretender Gefahrstoff Gewässer", "TH U - Austretender Gefahrstoff groß", "TH U - Fahrzeug - Chemie", "TH U - Luftfahrzeug - Chemie", "TH U - Schienenfahrzeug - Chemie", "TH U - Wasserfahrzeug - Chemie"],
+            "TH U - Messeinsatz groß": ["TH U - Messeinsatz groß"],
+            "TH U - Messeinsatz klein": ["TH U - Geruch (Messeinsatz)", "TH U - Gewässerverunreinigung"],
+            "TH VU - Boot": ["TH - Sicherung / Bergung Wasserfahrzeug", "TH - VU Motorboot / Sportboot"],
+            "TH VU - Flugzeug 1": ["B - Kleinflugzeug / Hubschrauber", "B - Zeppelin / Ballon", "TH - Sicherung / Bergung Luftfahrzeug", "TH - VU Kleinflugzeug / Hubschrauber", "TH - VU Zeppelin / Ballon"],
+            "TH VU - Flugzeug 2": ["B - Explosion Luftfahrzeug", "B - Luftfahrzeug sonstiges", "B - Passagier- / Verkehrsflugzeug", "B - Transport- / Militärflugzeug", "TH - VU Luftfahrzeug sonstiges", "TH - VU Passagier- / Verkehrsflugzeug", "TH - VU Transport- / Militärflugzeug"],
+            "TH VU - Schiff": ["TH - VU Fahrgastschiff / Hafenfähre", "TH - VU Luftfahrzeug im Wasser", "TH - VU Transportschiff", "TH - VU Wasserfahrzeug sonstiges"],
         };
 
         // --- UTILITIES ---
         function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
@@ -593,7 +898,7 @@
             }
             return `rgba(${r},${g},${b},${alpha})`;
         }
-        
+
         function formatGermanAddress(address) {
             const parts = [];
             const street = address.road || '';
@@ -621,7 +926,7 @@
         const markers = new Map();
         const sectionPolygons = new Map();
         let statusHistory = [];
-        
+
         let selectedIncidentId = null;
         let editingIncidentId = null;
         let drawingSectionId = null;
@@ -629,8 +934,8 @@
         const currentDrawLayer = new L.LayerGroup();
         let currentVertexMarkers = [];
         let currentPolyline = null;
-        let currentSnapMarkers = []; 
-        
+        let currentSnapMarkers = [];
+
         let isIncidentAddMode = false;
         let isIncidentEditMode = false;
         let currentSortCriteria = 'createdAt';
@@ -643,7 +948,7 @@
         // --- MAP SETUP ---
         const map = L.map('map', { zoomControl: false }).setView([49.123, 8.404], 14);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 19
@@ -687,7 +992,7 @@
                 editEaSelect: document.getElementById('edit-ea-select')
             }
         };
-        
+
         const toggleBtn = document.getElementById('sidebar-toggle-btn');
         const sidebar = document.getElementById('sidebar-container');
         const icon = document.getElementById('sidebar-toggle-icon');
@@ -697,7 +1002,7 @@
             if (sidebar.classList.contains('md:w-0')) {
                 // Expand
                 sidebar.classList.remove('md:w-0', 'w-0', 'overflow-hidden', 'p-0');
-                sidebar.classList.add('md:w-[480px]'); 
+                sidebar.classList.add('md:w-[480px]');
                 toggleBtn.classList.remove('md:left-0');
                 toggleBtn.classList.add('md:left-[480px]');
                 icon.innerHTML = '<path d="m15 18-6-6 6-6"/>'; // Left chevron
@@ -739,9 +1044,9 @@
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`);
                 const data = await response.json();
                 if (data && data.address) {
-                    return { 
-                        formattedAddress: formatGermanAddress(data.address), 
-                        lat: lat, 
+                    return {
+                        formattedAddress: formatGermanAddress(data.address),
+                        lat: lat,
                         lon: lon,
                         poiName: getPoiName(data.address)
                     };
@@ -779,11 +1084,11 @@
         }
         function onSegment(p, q, r) {
             return (q[0] <= Math.max(p[0], r[0]) && q[0] >= Math.min(p[0], r[0]) &&
-                    q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1]));
+                q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1]));
         }
         function segmentsIntersect(p1, q1, p2, q2) {
-            if ((p1[0]===p2[0] && p1[1]===p2[1]) || (p1[0]===q2[0] && p1[1]===q2[1]) || 
-                (q1[0]===p2[0] && q1[1]===p2[1]) || (q1[0]===q2[0] && q1[1]===q2[1])) return false;
+            if ((p1[0] === p2[0] && p1[1] === p2[1]) || (p1[0] === q2[0] && p1[1] === q2[1]) ||
+                (q1[0] === p2[0] && q1[1] === p2[1]) || (q1[0] === q2[0] && q1[1] === q2[1])) return false;
             const o1 = orientation(p1, q1, p2);
             const o2 = orientation(p1, q1, q2);
             const o3 = orientation(p2, q2, p1);
@@ -791,7 +1096,7 @@
             if (o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0 && o1 !== o2 && o3 !== o4) return true;
             return false;
         }
-        
+
         function checkExistingEAOverlaps(newBoundary, excludeSectionId) {
             let intersectionFound = false;
             sections.forEach(section => {
@@ -810,7 +1115,7 @@
             });
             return intersectionFound;
         }
-        
+
         function recalculateSectionAssignments() {
             incidents.forEach(inc => {
                 if (inc.status !== 'completed' && !inc.isManualSection) {
@@ -828,7 +1133,7 @@
             const toast = document.createElement('div');
             // Styled for Modern Heroism Theme
             const colorClass = isError ? 'bg-white border-l-4 border-fire-red text-gray-800' : 'bg-white border-l-4 border-green-600 text-gray-800';
-            const icon = isError ? 
+            const icon = isError ?
                 `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle mr-3 text-fire-red"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>` :
                 `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle mr-3 text-green-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
             toast.className = `toast-notification pointer-events-auto flex items-center p-4 rounded shadow-hero mb-3 text-sm font-bold font-sans ${colorClass}`;
@@ -858,7 +1163,7 @@
                 if (rawSec) JSON.parse(rawSec).forEach(s => sections.set(s.id, s));
                 const rawHist = localStorage.getItem('v4_history');
                 if (rawHist) statusHistory = JSON.parse(rawHist);
-            } catch(e) { console.error("Load error", e); }
+            } catch (e) { console.error("Load error", e); }
             renderAll();
         }
 
@@ -877,11 +1182,11 @@
                 const filterFn = (i) => {
                     const sec = sections.get(i.sectionId);
                     const secName = sec ? sec.name.toLowerCase() : '';
-                    return i.keyword.toLowerCase().includes(lower) || 
-                           i.formattedAddress.toLowerCase().includes(lower) ||
-                           (i.locationName && i.locationName.toLowerCase().includes(lower)) ||
-                           (i.notes && i.notes.toLowerCase().includes(lower)) ||
-                           secName.includes(lower);
+                    return i.keyword.toLowerCase().includes(lower) ||
+                        i.formattedAddress.toLowerCase().includes(lower) ||
+                        (i.locationName && i.locationName.toLowerCase().includes(lower)) ||
+                        (i.notes && i.notes.toLowerCase().includes(lower)) ||
+                        secName.includes(lower);
                 };
                 activeArray = activeArray.filter(filterFn);
                 completedArray = completedArray.filter(filterFn);
@@ -897,29 +1202,29 @@
             completedArray.sort(sortFn);
 
             let hasActive = false;
-            
+
             const renderItem = (inc, container) => {
                 const isCompleted = inc.status === 'completed';
                 const section = sections.get(inc.sectionId);
                 // UPDATED PIN COLORS
                 const color = isCompleted ? '#d97706' : (inc.status === 'dispatched' ? '#2563eb' : '#cc0000');
-                
+
                 if (inc.lat) {
                     const isSelected = selectedIncidentId === inc.id;
                     const iconHtml = `<div style="background:${color}; width:16px; height:16px; border:2px solid ${isSelected ? '#fff' : '#fff'}; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.4); transform: scale(${isSelected ? 1.5 : 1}); transition: all 0.2s;"></div>`;
                     const marker = L.marker([inc.lat, inc.lon], {
-                        icon: L.divIcon({ html: iconHtml, className: 'bg-transparent', iconSize: [24,24] }),
+                        icon: L.divIcon({ html: iconHtml, className: 'bg-transparent', iconSize: [24, 24] }),
                         zIndexOffset: isSelected ? 1000 : 0
                     }).addTo(map);
-                    
+
                     marker.bindTooltip(inc.keyword, { direction: 'top', offset: [0, -10], className: 'bg-white text-soot-black border-0 shadow-lg font-bold font-sans' });
-                    
+
                     marker.on('click', () => {
                         selectedIncidentId = inc.id;
                         renderIncidents();
                         map.flyTo([inc.lat, inc.lon], 15);
                     });
-                    
+
                     // REMOVED DOUBLE CLICK EVENT
 
                     markers.set(inc.id, marker);
@@ -929,16 +1234,16 @@
                 const isSelected = selectedIncidentId === inc.id;
                 const statusBorder = inc.status === 'open' ? 'border-fire-red' : (inc.status === 'dispatched' ? 'border-police-blue' : 'border-alert-amber');
                 const bgClass = isSelected ? 'incident-selected' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm';
-                
+
                 el.className = `p-4 rounded-lg border-l-[6px] transition-all cursor-pointer ${statusBorder} ${bgClass}`;
-                
+
                 const locNameHtml = inc.locationName ? `<div class="text-xs font-bold text-fire-red mb-1 uppercase tracking-wider flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin mr-1"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${inc.locationName}</div>` : '';
 
                 el.innerHTML = `
                     ${locNameHtml}
                     <div class="flex justify-between items-start">
                         <h4 class="font-hero text-lg text-soot-black leading-tight">${inc.keyword}</h4>
-                        <span class="text-[10px] font-mono text-gray-400 mt-1">${new Date(inc.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        <span class="text-[10px] font-mono text-gray-400 mt-1">${new Date(inc.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <p class="text-gray-600 text-sm mt-1 font-medium">${inc.formattedAddress}</p>
                     <div class="flex items-center justify-between mt-3">
@@ -964,22 +1269,22 @@
                         </div>
                     ` : ''}
                 `;
-                
+
                 el.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA' || e.target.closest('.edit-inc-btn')) return;
                     selectedIncidentId = isSelected ? null : inc.id;
                     renderIncidents();
-                    if(selectedIncidentId && inc.lat) map.setView([inc.lat, inc.lon], 15);
+                    if (selectedIncidentId && inc.lat) map.setView([inc.lat, inc.lon], 15);
                 };
 
                 const editBtn = el.querySelector('.edit-inc-btn');
-                if(editBtn) editBtn.onclick = () => loadEditModal(inc.id);
-                
+                if (editBtn) editBtn.onclick = () => loadEditModal(inc.id);
+
                 container.appendChild(el);
             };
 
             activeArray.forEach(i => renderItem(i, els.incidentList));
-            if(activeArray.length > 0) hasActive = true;
+            if (activeArray.length > 0) hasActive = true;
 
             if (isCompletedSectionOpen) {
                 completedArray.forEach(i => renderItem(i, els.completedIncidentList));
@@ -994,7 +1299,7 @@
             sections.forEach(sec => {
                 if (sec.boundary && sec.boundary.length >= 3) {
                     const poly = L.polygon(sec.boundary, { color: sec.color, fillColor: sec.color, fillOpacity: 0.15, weight: 3 }).addTo(map);
-                    poly.bindTooltip(`<span style="color:${sec.color}">${sec.name}</span>`, {permanent:true, direction:'center', className:'ea-label'});
+                    poly.bindTooltip(`<span style="color:${sec.color}">${sec.name}</span>`, { permanent: true, direction: 'center', className: 'ea-label' });
                     sectionPolygons.set(sec.id, poly);
                 }
             });
@@ -1041,13 +1346,13 @@
         function renderKeywordAutocomplete(query, container, inputElement, callback) {
             container.innerHTML = '';
             if (query.length < 2) { container.classList.add('hidden'); return; }
-            
+
             let hasMatches = false;
             for (const category in AAO_KEYWORD_CATEGORIES) {
                 const keywords = AAO_KEYWORD_CATEGORIES[category];
                 const catMatch = category.toLowerCase().includes(query);
                 let matches = catMatch ? keywords : keywords.filter(k => k.toLowerCase().includes(query));
-                
+
                 if (matches.length > 0) {
                     hasMatches = true;
                     const colors = getCategoryColors(category);
@@ -1055,7 +1360,7 @@
                     header.textContent = category;
                     header.className = `p-3 mt-1 font-bold text-xs uppercase border-t border-gray-100 ${colors.header}`;
                     container.appendChild(header);
-                    
+
                     matches.forEach(kw => {
                         const item = document.createElement('div');
                         item.textContent = kw;
@@ -1076,12 +1381,12 @@
         function setupAddressAutocomplete(inputId, suggestionId, latId, lonId, displayId, locNameId) {
             const inp = document.getElementById(inputId);
             const sug = document.getElementById(suggestionId);
-            
+
             inp.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
                 const query = inp.value;
                 if (query.length < 3) { sug.classList.add('hidden'); return; }
-                
+
                 debounceTimer = setTimeout(async () => {
                     const data = await geocodeAddress(query);
                     sug.innerHTML = '';
@@ -1098,7 +1403,7 @@
                                 document.getElementById(latId).value = d.lat;
                                 document.getElementById(lonId).value = d.lon;
                                 const poi = getPoiName(d.address);
-                                if(locNameId) document.getElementById(locNameId).value = poi || '';
+                                if (locNameId) document.getElementById(locNameId).value = poi || '';
                                 sug.classList.add('hidden');
                                 updateSectionDisplay(displayId, parseFloat(d.lat), parseFloat(d.lon));
                                 if (inputId === 'address') validateCreateForm();
@@ -1131,7 +1436,7 @@
                 map.getContainer().classList.add('map-draw-mode');
                 els.sectionDrawPanel.classList.remove('hidden');
                 els.modals.ea.classList.add('hidden');
-                
+
                 sections.forEach(sec => {
                     if (sec.id !== id && sec.boundary) {
                         sec.boundary.forEach(pt => {
@@ -1165,15 +1470,15 @@
                 }
                 currentDrawPoints.forEach((p, idx) => {
                     const m = L.marker(p, { icon: L.divIcon({ className: 'leaflet-drawing-icon' }), draggable: true }).addTo(currentDrawLayer);
-                    m.on('drag', e => { 
-                        currentDrawPoints[idx] = [e.target.getLatLng().lat, e.target.getLatLng().lng]; 
+                    m.on('drag', e => {
+                        currentDrawPoints[idx] = [e.target.getLatLng().lat, e.target.getLatLng().lng];
                         // Visual update logic
                         const layers = currentDrawLayer.getLayers();
-                         layers.forEach(l => {
+                        layers.forEach(l => {
                             if (l instanceof L.Polyline) l.setLatLngs(currentDrawPoints);
                         });
-                    }); 
-                    m.on('click', (e) => { L.DomEvent.stopPropagation(e); if(idx===0 && currentDrawPoints.length>=3) finishDrawing(); else { currentDrawPoints.splice(idx, 1); redrawDrawLayer(); } });
+                    });
+                    m.on('click', (e) => { L.DomEvent.stopPropagation(e); if (idx === 0 && currentDrawPoints.length >= 3) finishDrawing(); else { currentDrawPoints.splice(idx, 1); redrawDrawLayer(); } });
                 });
             }
         }
@@ -1184,15 +1489,15 @@
             const s = sections.get(drawingSectionId);
             s.boundary = [...currentDrawPoints];
             sections.set(drawingSectionId, s);
-            saveState(); 
-            setDrawMode(false); 
-            recalculateSectionAssignments(); 
+            saveState();
+            setDrawMode(false);
+            recalculateSectionAssignments();
             showMessage("Abschnitt gespeichert", false);
         }
 
         map.on('click', async (e) => {
-            if (isIncidentAddMode) { handleGeoSelect(e.latlng, 'create'); } 
-            else if (isIncidentEditMode) { handleGeoSelect(e.latlng, 'edit'); } 
+            if (isIncidentAddMode) { handleGeoSelect(e.latlng, 'create'); }
+            else if (isIncidentEditMode) { handleGeoSelect(e.latlng, 'edit'); }
             else if (drawingSectionId) {
                 let lat = e.latlng.lat, lng = e.latlng.lng;
                 const clickPt = map.latLngToContainerPoint(e.latlng);
@@ -1253,15 +1558,15 @@
             saveState();
         };
         window.deleteSection = (id) => {
-            if(confirm("Diesen Abschnitt löschen?")) { 
-                sections.delete(id); 
-                saveState(); 
-                recalculateSectionAssignments(); 
-                renderAll(); 
+            if (confirm("Diesen Abschnitt löschen?")) {
+                sections.delete(id);
+                saveState();
+                recalculateSectionAssignments();
+                renderAll();
             }
         };
         function updateUndoButton() { document.getElementById('undo-btn').disabled = statusHistory.length === 0; }
-        
+
         document.getElementById('undo-btn').onclick = () => {
             const last = statusHistory.pop();
             if (last) {
@@ -1273,8 +1578,8 @@
         // --- FORMS & MODALS ---
         function openModal(name) {
             els.modals[name].classList.remove('hidden');
-            if(name === 'ea') renderEAControl();
-            if(name === 'end') {
+            if (name === 'ea') renderEAControl();
+            if (name === 'end') {
                 document.getElementById('report-stats-date').textContent = new Date().toLocaleDateString();
                 document.getElementById('report-stats-incidents').textContent = incidents.size;
                 document.getElementById('report-stats-eas').textContent = sections.size;
@@ -1292,18 +1597,18 @@
             e.preventDefault();
             const lat = parseFloat(els.inputs.lat.value);
             const lon = parseFloat(els.inputs.lon.value);
-            if(!lat) return showMessage("Keine Koordinaten gewählt!", true);
+            if (!lat) return showMessage("Keine Koordinaten gewählt!", true);
 
-            const duplicates = Array.from(incidents.values()).filter(i => 
-                (i.status !== 'completed') && 
+            const duplicates = Array.from(incidents.values()).filter(i =>
+                (i.status !== 'completed') &&
                 (map.distance(L.latLng(i.lat, i.lon), L.latLng(lat, lon)) < 15)
             );
 
             if (duplicates.length > 0) {
                 pendingIncident = {
-                    formattedAddress: els.inputs.address.value, 
-                    keyword: els.inputs.keyword.value, 
-                    lat, lon, 
+                    formattedAddress: els.inputs.address.value,
+                    keyword: els.inputs.keyword.value,
+                    lat, lon,
                     locName: els.inputs.locName.value
                 };
                 closeModal('create');
@@ -1312,9 +1617,9 @@
             }
 
             commitIncident({
-                formattedAddress: els.inputs.address.value, 
-                keyword: els.inputs.keyword.value, 
-                lat, lon, 
+                formattedAddress: els.inputs.address.value,
+                keyword: els.inputs.keyword.value,
+                lat, lon,
                 locName: els.inputs.locName.value
             });
         };
@@ -1323,33 +1628,33 @@
             const id = generateUUID();
             const secId = findContainingSection(data.lat, data.lon);
             incidents.set(id, {
-                id, 
-                formattedAddress: data.formattedAddress, 
-                keyword: data.keyword, 
-                lat: data.lat, 
+                id,
+                formattedAddress: data.formattedAddress,
+                keyword: data.keyword,
+                lat: data.lat,
                 lon: data.lon,
-                locationName: data.locName, 
-                status: 'open', 
-                notes: '', 
-                sectionId: secId, 
+                locationName: data.locName,
+                status: 'open',
+                notes: '',
+                sectionId: secId,
                 createdAt: new Date().toISOString(),
                 isManualSection: false
             });
-            saveState(); 
-            closeModal('create'); 
+            saveState();
+            closeModal('create');
             closeModal('duplicate');
-            renderAll(); 
+            renderAll();
             document.getElementById('dispatch-form').reset();
             showMessage("EINSATZ ALARMIERT", false);
             pendingIncident = null;
         }
 
         document.getElementById('confirm-duplicate-btn').onclick = () => {
-            if(pendingIncident) commitIncident(pendingIncident);
+            if (pendingIncident) commitIncident(pendingIncident);
         };
         document.getElementById('cancel-duplicate-btn').onclick = () => {
             closeModal('duplicate');
-            openModal('create'); 
+            openModal('create');
             pendingIncident = null;
         };
 
@@ -1361,7 +1666,7 @@
             inc.lat = parseFloat(els.inputs.editLat.value);
             inc.lon = parseFloat(els.inputs.editLon.value);
             const stat = document.getElementById('edit-status-hidden').value;
-            if(stat) inc.status = stat;
+            if (stat) inc.status = stat;
 
             const manualEaId = els.inputs.editEaSelect.value;
             if (manualEaId) {
@@ -1385,7 +1690,7 @@
             els.inputs.editLat.value = inc.lat;
             els.inputs.editLon.value = inc.lon;
             updateSectionDisplay('edit-auto-section-display', inc.lat, inc.lon);
-            
+
             // Populate EA list...
             const eaSelect = els.inputs.editEaSelect;
             eaSelect.innerHTML = '<option value="">Auto (Geo-basiert)</option>';
@@ -1397,28 +1702,28 @@
             });
             if (inc.isManualSection && inc.sectionId) eaSelect.value = inc.sectionId;
             else eaSelect.value = "";
-            
+
             // UPDATE STATUS BUTTONS
             const status = inc.status;
             document.getElementById('edit-status-hidden').value = status;
             document.querySelectorAll('.edit-status-btn').forEach(btn => {
                 // Reset classes
                 btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 hover:bg-gray-50 focus:z-10 transition-colors bg-white text-gray-600";
-                
+
                 // First button needs border-l, rounded-l
-                if(btn.id === 'edit-status-btn-open') {
+                if (btn.id === 'edit-status-btn-open') {
                     btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-gray-300 rounded-l-lg hover:bg-gray-50 focus:z-10 transition-colors bg-white text-gray-600";
                 }
                 // Last button needs rounded-r
-                if(btn.id === 'edit-status-btn-completed') {
+                if (btn.id === 'edit-status-btn-completed') {
                     btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 rounded-r-lg hover:bg-gray-50 focus:z-10 transition-colors bg-white text-gray-600";
                 }
 
                 // Apply Active Style
-                if(btn.dataset.status === status) {
-                    if(status === 'open') btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-fire-red rounded-l-lg focus:z-10 transition-colors bg-fire-red text-white shadow-inner";
-                    if(status === 'dispatched') btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-police-blue focus:z-10 transition-colors bg-police-blue text-white shadow-inner";
-                    if(status === 'completed') btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-alert-amber rounded-r-lg focus:z-10 transition-colors bg-alert-amber text-white shadow-inner";
+                if (btn.dataset.status === status) {
+                    if (status === 'open') btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-fire-red rounded-l-lg focus:z-10 transition-colors bg-fire-red text-white shadow-inner";
+                    if (status === 'dispatched') btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-police-blue focus:z-10 transition-colors bg-police-blue text-white shadow-inner";
+                    if (status === 'completed') btn.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-alert-amber rounded-r-lg focus:z-10 transition-colors bg-alert-amber text-white shadow-inner";
                 }
             });
 
@@ -1430,19 +1735,19 @@
             btn.onclick = () => {
                 const status = btn.dataset.status;
                 document.getElementById('edit-status-hidden').value = status;
-                
+
                 // Re-run the styling logic for all buttons in the group
                 document.querySelectorAll('.edit-status-btn').forEach(b => {
                     // Reset basic
                     b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-gray-300 hover:bg-gray-50 focus:z-10 transition-colors bg-white text-gray-600";
-                    if(b.id === 'edit-status-btn-open') b.classList.add('border', 'rounded-l-lg'); // fix left
-                    if(b.id === 'edit-status-btn-completed') b.classList.add('rounded-r-lg');   // fix right
-                    
+                    if (b.id === 'edit-status-btn-open') b.classList.add('border', 'rounded-l-lg'); // fix left
+                    if (b.id === 'edit-status-btn-completed') b.classList.add('rounded-r-lg');   // fix right
+
                     // Apply active
-                    if(b.dataset.status === status) {
-                         if(status === 'open') b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-fire-red rounded-l-lg focus:z-10 transition-colors bg-fire-red text-white shadow-inner";
-                         if(status === 'dispatched') b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-police-blue focus:z-10 transition-colors bg-police-blue text-white shadow-inner";
-                         if(status === 'completed') b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-alert-amber rounded-r-lg focus:z-10 transition-colors bg-alert-amber text-white shadow-inner";
+                    if (b.dataset.status === status) {
+                        if (status === 'open') b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border border-fire-red rounded-l-lg focus:z-10 transition-colors bg-fire-red text-white shadow-inner";
+                        if (status === 'dispatched') b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-police-blue focus:z-10 transition-colors bg-police-blue text-white shadow-inner";
+                        if (status === 'completed') b.className = "edit-status-btn flex-1 py-3 text-xs font-bold uppercase border-t border-b border-r border-alert-amber rounded-r-lg focus:z-10 transition-colors bg-alert-amber text-white shadow-inner";
                     }
                 });
             }
@@ -1473,12 +1778,12 @@
             loadState();
             setupAddressAutocomplete('address', 'address-suggestions', 'lat-input', 'lon-input', 'auto-section-display', 'location-name-input');
             setupAddressAutocomplete('edit-address', 'edit-address-suggestions', 'edit-lat-input', 'edit-lon-input', 'edit-auto-section-display', 'edit-location-name-input');
-            
+
             els.inputs.keyword.addEventListener('input', () => {
                 renderKeywordAutocomplete(els.inputs.keyword.value.toLowerCase(), els.inputs.keywordSuggestions, els.inputs.keyword, validateCreateForm);
                 validateCreateForm();
             });
-            els.inputs.editKeyword.addEventListener('input', () => 
+            els.inputs.editKeyword.addEventListener('input', () =>
                 renderKeywordAutocomplete(els.inputs.editKeyword.value.toLowerCase(), els.inputs.editKeywordSuggestions, els.inputs.editKeyword)
             );
             document.addEventListener('click', e => { if (!e.target.closest('input')) document.querySelectorAll('[id$="-suggestions"]').forEach(el => el.classList.add('hidden')); });
@@ -1492,24 +1797,24 @@
         document.getElementById('cancel-report-btn').onclick = () => closeModal('end');
         document.getElementById('close-incident-edit-modal-btn').onclick = () => closeModal('edit');
         document.getElementById('cancel-edit-incident-btn').onclick = () => closeModal('edit');
-        
-        function setIncidentAddMode(v) { isIncidentAddMode=v; v ? (closeModal('create'), els.incidentAddPanel.classList.remove('hidden')) : els.incidentAddPanel.classList.add('hidden'); }
-        function setIncidentEditMode(v) { isIncidentEditMode=v; v ? (closeModal('edit'), els.incidentEditPanel.classList.remove('hidden')) : els.incidentEditPanel.classList.add('hidden'); }
-        
+
+        function setIncidentAddMode(v) { isIncidentAddMode = v; v ? (closeModal('create'), els.incidentAddPanel.classList.remove('hidden')) : els.incidentAddPanel.classList.add('hidden'); }
+        function setIncidentEditMode(v) { isIncidentEditMode = v; v ? (closeModal('edit'), els.incidentEditPanel.classList.remove('hidden')) : els.incidentEditPanel.classList.add('hidden'); }
+
         document.getElementById('add-incident-map-btn').onclick = () => setIncidentAddMode(true);
         document.getElementById('cancel-add-incident-btn').onclick = () => { setIncidentAddMode(false); openModal('create'); };
         document.getElementById('edit-incident-map-btn').onclick = () => setIncidentEditMode(true);
         document.getElementById('cancel-edit-incident-btn').onclick = () => { setIncidentEditMode(false); openModal('edit'); };
-        document.getElementById('delete-incident-btn').onclick = () => { if(confirm("Diesen Einsatz wirklich löschen?")) { incidents.delete(editingIncidentId); saveState(); closeModal('edit'); renderAll(); }};
+        document.getElementById('delete-incident-btn').onclick = () => { if (confirm("Diesen Einsatz wirklich löschen?")) { incidents.delete(editingIncidentId); saveState(); closeModal('edit'); renderAll(); } };
 
         document.getElementById('sort-bar').onclick = e => { if (e.target.classList.contains('sort-btn')) { currentSortCriteria = e.target.dataset.sort; renderAll(); } };
         document.getElementById('active-toggle-btn').onclick = () => els.incidentList.classList.toggle('hidden');
-        document.getElementById('completed-toggle-btn').onclick = () => { isCompletedSectionOpen=!isCompletedSectionOpen; els.completedIncidentList.classList.toggle('hidden'); renderAll(); };
+        document.getElementById('completed-toggle-btn').onclick = () => { isCompletedSectionOpen = !isCompletedSectionOpen; els.completedIncidentList.classList.toggle('hidden'); renderAll(); };
 
         document.getElementById('create-report-btn').onclick = () => {
             const name = document.getElementById('lagezeichner-input').value;
             if (!name) return showMessage("Bitte Name des Protokollführers eingeben", true);
-            
+
             // Safe data export for the report (escape special chars)
             const safeIncidents = JSON.stringify(Array.from(incidents.values())).replace(/`/g, '\\`').replace(/\${/g, '\\${').replace(/<\//g, '<\\/');
             const safeSections = JSON.stringify(Array.from(sections.values())).replace(/`/g, '\\`').replace(/\${/g, '\\${').replace(/<\//g, '<\\/');
@@ -1722,22 +2027,22 @@
 </body>
 </html>`;
 
-            const blob = new Blob([reportHTML], {type:'text/html'});
-            const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`Einsatzbericht_${Date.now()}.html`; a.click();
+            const blob = new Blob([reportHTML], { type: 'text/html' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Einsatzbericht_${Date.now()}.html`; a.click();
         };
 
         window.addEventListener('online', () => els.modals.offline.classList.add('hidden'));
         window.addEventListener('offline', () => {
             els.modals.offline.classList.remove('hidden');
-            
+
             // 1. POPULATE INCIDENTS
             document.getElementById('offline-incident-report').innerHTML = Array.from(incidents.values())
-                .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by time desc
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by time desc
                 .map(i => {
                     // Status translation
                     const statusMap = { 'open': 'Offen', 'dispatched': 'Disponiert', 'completed': 'Abgeschlossen' };
                     const colorMap = { 'open': 'text-fire-red', 'dispatched': 'text-police-blue', 'completed': 'text-alert-amber' };
-                    
+
                     return `
                     <div class="p-4 border-b border-gray-200 hover:bg-gray-50 flex justify-between">
                         <div>
@@ -1749,29 +2054,30 @@
                              <span class="text-[10px] font-bold uppercase tracking-wider mb-1 ${colorMap[i.status] || 'text-gray-500'}">
                                 ${statusMap[i.status] || i.status}
                             </span>
-                            <span class="text-xs text-gray-400 font-mono">${new Date(i.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <span class="text-xs text-gray-400 font-mono">${new Date(i.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                     </div>`;
                 }).join('');
 
             // 2. POPULATE SECTIONS
             const offlineEaList = document.getElementById('offline-ea-list');
-             if(offlineEaList) {
-                 offlineEaList.innerHTML = '';
-                 if(sections.size === 0) offlineEaList.innerHTML = '<p class="text-gray-400 italic text-sm col-span-2">Keine aktiven Abschnitte.</p>';
-                 sections.forEach(sec => {
-                     const activeCount = Array.from(incidents.values()).filter(i => i.sectionId === sec.id && i.status !== 'completed').length;
-                     offlineEaList.innerHTML += `
+            if (offlineEaList) {
+                offlineEaList.innerHTML = '';
+                if (sections.size === 0) offlineEaList.innerHTML = '<p class="text-gray-400 italic text-sm col-span-2">Keine aktiven Abschnitte.</p>';
+                sections.forEach(sec => {
+                    const activeCount = Array.from(incidents.values()).filter(i => i.sectionId === sec.id && i.status !== 'completed').length;
+                    offlineEaList.innerHTML += `
                         <div class="bg-gray-50 border-l-4 p-3 rounded shadow-sm" style="border-left-color: ${sec.color}">
                             <div class="font-bold text-gray-900 text-sm">${sec.name}</div>
                             <div class="text-xs text-gray-500">${sec.responsible}</div>
                             <div class="mt-2 text-xs font-bold text-gray-700">${activeCount} Aktive Einsätze</div>
                         </div>
                      `;
-                 });
-             }
+                });
+            }
         });
 
     </script>
 </body>
+
 </html>
