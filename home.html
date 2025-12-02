@@ -3,26 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Central Command | Home</title>
+    <title>System Explorer</title>
     
-    <!-- Tailwind & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; display: none; /* Hidden by Auth Guard */ }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s ease;
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #e2e8f0; 
+            display: none; /* Hidden by Auth Guard */ 
+            overflow: hidden; /* App-like feel */
         }
-        .glass-card:hover {
-            background: rgba(51, 65, 85, 0.8);
-            transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .explorer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .item-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1rem 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .item-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .item-card:active {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(0.98);
+        }
+
+        .item-name {
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+            word-break: break-word;
+            line-height: 1.2;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .sidebar-item.active {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            font-weight: 500;
         }
     </style>
 
@@ -46,11 +110,11 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.body.style.display = 'block';
+                document.body.style.display = 'flex'; // Changed to flex for layout
                 document.getElementById('user-email').textContent = user.email;
             } else {
                 sessionStorage.setItem('redirect_to', window.location.href);
-                window.location.replace('403.html');
+                window.location.replace('index.html');
             }
         });
 
@@ -58,200 +122,372 @@
             signOut(auth).then(() => window.location.replace('index.html'));
         };
     </script>
-    <!-- END GUARD -->
-
 </head>
-<body class="min-h-screen">
+<body class="h-screen w-screen flex overflow-hidden">
 
-    <!-- Header -->
-    <header class="fixed top-0 w-full z-50 bg-slate-900/90 backdrop-blur border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 p-2 rounded-lg">
-                    <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
-                </div>
-                <h1 class="text-xl font-bold tracking-tight text-white">Central Command</h1>
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex-col hidden md:flex">
+        <div class="p-4 flex items-center gap-3 border-b border-slate-800 h-16">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+            <div class="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Favoriten</div>
+            <div onclick="navigateTo('root')" class="sidebar-item active" id="nav-root">
+                <i data-lucide="home" class="w-4 h-4"></i> Home
+            </div>
+            <div onclick="navigateTo('fw')" class="sidebar-item" id="nav-fw">
+                <i data-lucide="flame" class="w-4 h-4"></i> Feuerwehr
+            </div>
+            <div onclick="navigateTo('jf')" class="sidebar-item" id="nav-jf">
+                <i data-lucide="users" class="w-4 h-4"></i> Jugend
+            </div>
+            <div onclick="navigateTo('alarm')" class="sidebar-item" id="nav-alarm">
+                <i data-lucide="bell" class="w-4 h-4"></i> Alarm
+            </div>
+            <div onclick="navigateTo('game')" class="sidebar-item" id="nav-game">
+                <i data-lucide="gamepad-2" class="w-4 h-4"></i> Games
             </div>
             
-            <div class="flex items-center gap-4">
-                <span id="user-email" class="text-sm text-slate-400 hidden sm:block"></span>
-                <button onclick="window.logout()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors border border-slate-700">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">Abmelden</span>
-                </button>
+            <div class="mt-8 px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">System</div>
+            <div onclick="window.logout()" class="sidebar-item hover:text-red-400">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Abmelden
             </div>
         </div>
-    </header>
+        
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-500 truncate" id="user-email">
+            user@system.local
+        </div>
+    </aside>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+    <main class="flex-1 flex flex-col min-w-0 bg-slate-900/50">
         
-        <!-- Section: Operational -->
-        <div class="mb-10">
-            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
-                <i data-lucide="siren" class="text-red-500"></i> Einsatzleitung & Ops
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="fw/dispatchv2.html" class="glass-card p-5 rounded-xl block group relative overflow-hidden">
-                    <div class="absolute top-0 right-0 bg-red-600 text-xs font-bold px-2 py-1 rounded-bl-lg">LIVE</div>
-                    <div class="mb-3 p-3 bg-red-500/20 w-fit rounded-lg text-red-400 group-hover:text-white group-hover:bg-red-500 transition-colors">
-                        <i data-lucide="map"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-1">Lagekarte V2</h3>
-                    <p class="text-sm text-slate-400">Aktuelles Führungssystem mit Karten, EA und Protokoll.</p>
-                </a>
+        <!-- Toolbar -->
+        <header class="h-16 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900/80 backdrop-blur-md z-10">
+            <div class="flex items-center gap-4 flex-1">
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden text-slate-400"><i data-lucide="menu" class="w-5 h-5"></i></button>
                 
-                <a href="lst/index.html" class="glass-card p-5 rounded-xl block group">
-                    <div class="mb-3 p-3 bg-indigo-500/20 w-fit rounded-lg text-indigo-400 group-hover:text-white group-hover:bg-indigo-500 transition-colors">
-                        <i data-lucide="radio"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-1">Leitstelle (Modular)</h3>
-                    <p class="text-sm text-slate-400">Modulare LST-Ansicht für Disponenten.</p>
-                </a>
+                <!-- Navigation Controls -->
+                <div class="flex items-center gap-2 text-slate-400">
+                    <button onclick="goBack()" class="p-1 hover:bg-slate-800 rounded transition-colors"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <button onclick="goForward()" class="p-1 hover:bg-slate-800 rounded transition-colors"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                </div>
 
-                <a href="monitor.html" class="glass-card p-5 rounded-xl block group">
-                    <div class="mb-3 p-3 bg-emerald-500/20 w-fit rounded-lg text-emerald-400 group-hover:text-white group-hover:bg-emerald-500 transition-colors">
-                        <i data-lucide="activity"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-1">EKG Monitor</h3>
-                    <p class="text-sm text-slate-400">Patientenmonitor Simulator (C3).</p>
-                </a>
+                <!-- Breadcrumbs -->
+                <div class="flex items-center gap-1 text-sm bg-slate-800/50 py-1.5 px-3 rounded-md border border-slate-700/50 flex-1 max-w-xl overflow-hidden" id="breadcrumbs">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="relative hidden sm:block">
+                <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+                <input type="text" id="searchInput" placeholder="Suchen..." class="bg-slate-800 border border-slate-700 text-sm rounded-full pl-9 pr-4 py-1.5 focus:outline-none focus:border-blue-500 w-48 transition-all focus:w-64">
+            </div>
+        </header>
+
+        <!-- File Grid -->
+        <div class="flex-1 overflow-y-auto" id="main-area">
+            <div class="explorer-grid" id="file-grid">
+                <!-- Content Injected by JS -->
             </div>
         </div>
 
-        <!-- Section: Vehicles -->
-        <div class="mb-10">
-            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
-                <i data-lucide="truck" class="text-blue-500"></i> Fahrzeug Tablets
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="alarm/lh19-1_app.html" class="glass-card p-4 rounded-xl block">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-blue-600/20 p-2 rounded text-blue-400"><i data-lucide="tablet"></i></div>
-                        <div>
-                            <div class="font-bold">LH 19-1</div>
-                            <div class="text-xs text-slate-400">MTW App</div>
-                        </div>
-                    </div>
-                </a>
-                <a href="alarm/lh40.html" class="glass-card p-4 rounded-xl block">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-blue-600/20 p-2 rounded text-blue-400"><i data-lucide="tablet"></i></div>
-                        <div>
-                            <div class="font-bold">LH 40</div>
-                            <div class="text-xs text-slate-400">MLF Status</div>
-                        </div>
-                    </div>
-                </a>
-                <a href="alarm/display.html" class="glass-card p-4 rounded-xl block">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-slate-700/50 p-2 rounded text-slate-300"><i data-lucide="monitor"></i></div>
-                        <div>
-                            <div class="font-bold">Wachen-Display</div>
-                            <div class="text-xs text-slate-400">Großanzeige</div>
-                        </div>
-                    </div>
-                </a>
-                <a href="alarm/settings.html" class="glass-card p-4 rounded-xl block">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-slate-700/50 p-2 rounded text-slate-300"><i data-lucide="settings"></i></div>
-                        <div>
-                            <div class="font-bold">Alarm Config</div>
-                            <div class="text-xs text-slate-400">Admin Panel</div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <!-- Section: Jugendfeuerwehr -->
-        <div class="mb-10">
-            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
-                <i data-lucide="flame" class="text-orange-500"></i> Bali-Cup (JF)
-            </h2>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="jf/balicup.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
-                    <div class="font-bold text-orange-400 mb-1">Hub</div>
-                    <div class="text-xs text-slate-400">Startseite</div>
-                </a>
-                <a href="jf/balicup/ranking.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
-                    <div class="font-bold text-orange-400 mb-1">Ranking</div>
-                    <div class="text-xs text-slate-400">Live Tabelle</div>
-                </a>
-                <a href="jf/balicup/admin.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
-                    <div class="font-bold text-orange-400 mb-1">Admin</div>
-                    <div class="text-xs text-slate-400">Verwaltung</div>
-                </a>
-                <a href="jf/balicup/stationen/1.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
-                    <div class="font-bold text-orange-400 mb-1">Stationen</div>
-                    <div class="text-xs text-slate-400">Direkteingabe</div>
-                </a>
-            </div>
-        </div>
-
-        <!-- Section: Productivity -->
-        <div class="mb-10">
-            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
-                <i data-lucide="wrench" class="text-purple-500"></i> Tools & Apps
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="chat.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
-                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="message-circle"></i></div>
-                    <div>
-                        <div class="font-bold">CanvasConnect</div>
-                        <div class="text-xs text-slate-400">Spatial Chat</div>
-                    </div>
-                </a>
-                <a href="anwesenheit.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
-                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="users"></i></div>
-                    <div>
-                        <div class="font-bold">Anwesenheit</div>
-                        <div class="text-xs text-slate-400">Tracker</div>
-                    </div>
-                </a>
-                <a href="pizzatest.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
-                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="pizza"></i></div>
-                    <div>
-                        <div class="font-bold">Pizza Konto</div>
-                        <div class="text-xs text-slate-400">Finance Tool</div>
-                    </div>
-                </a>
-                <a href="bahn.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
-                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="train"></i></div>
-                    <div>
-                        <div class="font-bold">Abfahrtsmonitor</div>
-                        <div class="text-xs text-slate-400">KVV Live</div>
-                    </div>
-                </a>
-                 <a href="game/pwa.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
-                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="gamepad-2"></i></div>
-                    <div>
-                        <div class="font-bold">Game Controller</div>
-                        <div class="text-xs text-slate-400">PWA Remote</div>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <!-- Footer: System / Debug -->
-        <div class="border-t border-slate-800 pt-8 mt-12">
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">System & Debug Pages</h3>
-            <div class="flex flex-wrap gap-3">
-                <a href="404.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">404 Error</a>
-                <a href="403.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">403 Forbidden</a>
-                <a href="503.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">503 Critical</a>
-                <a href="fw/documentation.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">Docs V1</a>
-                <a href="fw/dispatch_tutorial.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">Tutorial</a>
-            </div>
-            <div class="mt-6 text-center text-xs text-slate-700">
-                &copy; 2025 dbaldauf.org | System v2.4.0
-            </div>
-        </div>
-
+        <!-- Status Bar -->
+        <footer class="h-8 bg-slate-900 border-t border-slate-800 flex items-center px-4 text-xs text-slate-500 justify-between">
+            <span id="item-count">0 Objekte</span>
+            <span>File System v1.0</span>
+        </footer>
     </main>
 
     <script>
-        lucide.createIcons();
+        // --- 1. THE FILE SYSTEM STRUCTURE ---
+        // I mapped your entire repo into this JSON structure
+        const fileSystem = {
+            "root": {
+                name: "Home",
+                type: "folder",
+                children: {
+                    "alarm": {
+                        name: "alarm",
+                        type: "folder",
+                        children: {
+                            "display.html": { name: "display.html", type: "file", path: "alarm/display.html" },
+                            "lh19-1.html": { name: "lh19-1.html", type: "file", path: "alarm/lh19-1.html" },
+                            "lh19-1_app.html": { name: "lh19-1_app.html", type: "file", path: "alarm/lh19-1_app.html" },
+                            "lh40.html": { name: "lh40.html", type: "file", path: "alarm/lh40.html" },
+                            "settings.html": { name: "settings.html", type: "file", path: "alarm/settings.html" },
+                            "IMG_0269.jpeg": { name: "IMG_0269.jpeg", type: "image", path: "alarm/IMG_0269.jpeg" }
+                        }
+                    },
+                    "fw": {
+                        name: "fw",
+                        type: "folder",
+                        children: {
+                            "dispatch.html": { name: "dispatch.html", type: "file", path: "fw/dispatch.html" },
+                            "dispatch_tutorial.html": { name: "dispatch_tutorial.html", type: "file", path: "fw/dispatch_tutorial.html" },
+                            "dispatchv2.html": { name: "dispatchv2.html", type: "file", path: "fw/dispatchv2.html" },
+                            "documentation.html": { name: "documentation.html", type: "file", path: "fw/documentation.html" },
+                            "documentationv2.html": { name: "documentationv2.html", type: "file", path: "fw/documentationv2.html" }
+                        }
+                    },
+                    "game": {
+                        name: "game",
+                        type: "folder",
+                        children: {
+                            "display.html": { name: "display.html", type: "file", path: "game/display.html" },
+                            "pwa.html": { name: "pwa.html", type: "file", path: "game/pwa.html" }
+                        }
+                    },
+                    "jf": {
+                        name: "jf",
+                        type: "folder",
+                        children: {
+                            "balicup": {
+                                name: "balicup",
+                                type: "folder",
+                                children: {
+                                    "stationen": {
+                                        name: "stationen",
+                                        type: "folder",
+                                        children: {
+                                            "1.html": { name: "1.html", type: "file", path: "jf/balicup/stationen/1.html" },
+                                            "2.html": { name: "2.html", type: "file", path: "jf/balicup/stationen/2.html" },
+                                            "3.html": { name: "3.html", type: "file", path: "jf/balicup/stationen/3.html" },
+                                            "4.html": { name: "4.html", type: "file", path: "jf/balicup/stationen/4.html" },
+                                            "5.html": { name: "5.html", type: "file", path: "jf/balicup/stationen/5.html" },
+                                            "6.html": { name: "6.html", type: "file", path: "jf/balicup/stationen/6.html" },
+                                            "7.html": { name: "7.html", type: "file", path: "jf/balicup/stationen/7.html" },
+                                            "8.html": { name: "8.html", type: "file", path: "jf/balicup/stationen/8.html" }
+                                        }
+                                    },
+                                    "admin.html": { name: "admin.html", type: "file", path: "jf/balicup/admin.html" },
+                                    "ranking.html": { name: "ranking.html", type: "file", path: "jf/balicup/ranking.html" }
+                                }
+                            },
+                            "bali.html": { name: "bali.html", type: "file", path: "jf/bali.html" },
+                            "balicup.html": { name: "balicup.html", type: "file", path: "jf/balicup.html" },
+                            "docs.html": { name: "docs.html", type: "file", path: "jf/docs.html" },
+                            "funktmo.html": { name: "funktmo.html", type: "file", path: "jf/funktmo.html" },
+                            "funktmokarte.html": { name: "funktmokarte.html", type: "file", path: "jf/funktmokarte.html" },
+                            "test.html": { name: "test.html", type: "file", path: "jf/test.html" },
+                            "wertung.html": { name: "wertung.html", type: "file", path: "jf/wertung.html" },
+                            "wertung2.html": { name: "wertung2.html", type: "file", path: "jf/wertung2.html" },
+                            "wertung3.html": { name: "wertung3.html", type: "file", path: "jf/wertung3.html" }
+                        }
+                    },
+                    "lst": {
+                        name: "lst",
+                        type: "folder",
+                        children: {
+                            "index.html": { name: "index.html", type: "file", path: "lst/index.html" },
+                            "js": { name: "js", type: "folder", children: {} } // Simplified for display
+                        }
+                    },
+                    "403.html": { name: "403.html", type: "file", path: "403.html", icon: "alert-triangle", color: "text-red-400" },
+                    "404.html": { name: "404.html", type: "file", path: "404.html", icon: "alert-triangle", color: "text-orange-400" },
+                    "410.html": { name: "410.html", type: "file", path: "410.html", icon: "alert-triangle", color: "text-orange-400" },
+                    "418.html": { name: "418.html", type: "file", path: "418.html", icon: "coffee", color: "text-amber-400" },
+                    "503.html": { name: "503.html", type: "file", path: "503.html", icon: "server-crash", color: "text-red-400" },
+                    "anwesenheit.html": { name: "anwesenheit.html", type: "file", path: "anwesenheit.html" },
+                    "bahn.html": { name: "bahn.html", type: "file", path: "bahn.html", icon: "train" },
+                    "chat.html": { name: "chat.html", type: "file", path: "chat.html", icon: "message-circle" },
+                    "github.html": { name: "github.html", type: "file", path: "github.html", icon: "github" },
+                    "instagram.html": { name: "instagram.html", type: "file", path: "instagram.html", icon: "instagram" },
+                    "index2.html": { name: "index2.html", type: "file", path: "index2.html" },
+                    "lyrik.html": { name: "lyrik.html", type: "file", path: "lyrik.html", icon: "feather" },
+                    "monitor.html": { name: "monitor.html", type: "file", path: "monitor.html", icon: "activity" },
+                    "pizzatest.html": { name: "pizzatest.html", type: "file", path: "pizzatest.html", icon: "pizza" }
+                }
+            }
+        };
+
+        // --- 2. STATE MANAGEMENT ---
+        let currentPath = ['root'];
+        let history = [['root']];
+        let historyIndex = 0;
+
+        // --- 3. RENDERING ENGINE ---
+        function render() {
+            const grid = document.getElementById('file-grid');
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            const countLabel = document.getElementById('item-count');
+            
+            grid.innerHTML = '';
+            breadcrumbs.innerHTML = '';
+
+            // 1. Get contents of current folder
+            let currentFolder = fileSystem;
+            currentPath.forEach(key => {
+                currentFolder = currentFolder[key]?.children || currentFolder[key];
+            });
+
+            // 2. Render Breadcrumbs
+            currentPath.forEach((folderKey, index) => {
+                // Separator
+                if(index > 0) {
+                    const sep = document.createElement('span');
+                    sep.className = 'text-slate-500';
+                    sep.innerHTML = '/';
+                    breadcrumbs.appendChild(sep);
+                }
+
+                // Folder Name
+                const span = document.createElement('span');
+                span.className = 'cursor-pointer hover:text-white transition-colors ' + (index === currentPath.length-1 ? 'text-white font-medium' : 'text-slate-400');
+                span.innerText = folderKey === 'root' ? 'Home' : folderKey;
+                span.onclick = () => navigateToPathIndex(index);
+                breadcrumbs.appendChild(span);
+            });
+
+            // 3. Render Grid Items
+            const items = Object.values(currentFolder).sort((a, b) => {
+                // Sort: Folders first, then files
+                if(a.type === b.type) return a.name.localeCompare(b.name);
+                return a.type === 'folder' ? -1 : 1;
+            });
+
+            countLabel.innerText = `${items.length} Objekte`;
+
+            if(items.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">Dieser Ordner ist leer.</div>';
+            }
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card group';
+                
+                // Icon Logic
+                let iconName = 'file';
+                let iconColor = 'text-slate-400';
+                
+                if (item.type === 'folder') {
+                    iconName = 'folder';
+                    iconColor = 'text-blue-400 fill-blue-400/20';
+                } else if (item.name.endsWith('.html')) {
+                    iconName = 'file-code';
+                    iconColor = 'text-emerald-400';
+                } else if (item.type === 'image') {
+                    iconName = 'image';
+                    iconColor = 'text-purple-400';
+                }
+
+                // Custom Icons override
+                if (item.icon) {
+                    iconName = item.icon;
+                    if(item.color) iconColor = item.color;
+                }
+
+                card.innerHTML = `
+                    <i data-lucide="${iconName}" class="w-10 h-10 ${iconColor} mb-1 transition-transform group-hover:scale-110"></i>
+                    <span class="item-name text-slate-300 group-hover:text-white">${item.name}</span>
+                `;
+
+                // Interaction
+                if (item.type === 'folder') {
+                    card.onclick = () => openFolder(item.name);
+                } else {
+                    card.onclick = () => window.location.href = item.path;
+                }
+
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+            updateSidebarHighlight();
+        }
+
+        // --- 4. NAVIGATION LOGIC ---
+        function openFolder(folderName) {
+            currentPath.push(folderName);
+            addToHistory();
+            render();
+        }
+
+        function navigateTo(target) {
+            // Used by Sidebar
+            if(target === 'root') currentPath = ['root'];
+            else if(target === 'fw') currentPath = ['root', 'fw'];
+            else if(target === 'jf') currentPath = ['root', 'jf'];
+            else if(target === 'alarm') currentPath = ['root', 'alarm'];
+            else if(target === 'game') currentPath = ['root', 'game'];
+            
+            addToHistory();
+            render();
+        }
+
+        function navigateToPathIndex(index) {
+            currentPath = currentPath.slice(0, index + 1);
+            addToHistory();
+            render();
+        }
+
+        function addToHistory() {
+            // Remove any forward history if we diverge
+            history = history.slice(0, historyIndex + 1);
+            history.push([...currentPath]);
+            historyIndex++;
+        }
+
+        function goBack() {
+            if(historyIndex > 0) {
+                historyIndex--;
+                currentPath = history[historyIndex];
+                render();
+            }
+        }
+
+        function goForward() {
+            if(historyIndex < history.length - 1) {
+                historyIndex++;
+                currentPath = history[historyIndex];
+                render();
+            }
+        }
+
+        function updateSidebarHighlight() {
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            
+            const currentFolder = currentPath[currentPath.length - 1];
+            
+            if(currentPath.length === 1) document.getElementById('nav-root').classList.add('active');
+            else if(currentPath.includes('fw')) document.getElementById('nav-fw').classList.add('active');
+            else if(currentPath.includes('jf')) document.getElementById('nav-jf').classList.add('active');
+            else if(currentPath.includes('alarm')) document.getElementById('nav-alarm').classList.add('active');
+            else if(currentPath.includes('game')) document.getElementById('nav-game').classList.add('active');
+        }
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            if(!term) {
+                render();
+                return;
+            }
+
+            // Simple flatten search
+            // (In a real app, you'd crawl the JSON recursively)
+            // For now, let's just search the CURRENT view for simplicity, 
+            // OR you can implement a deep search if you want. 
+            // Let's stick to current view to match standard explorer behavior 
+            // or we can filter the items array inside render().
+            
+            // Re-render filtering the items manually here would be cleaner
+            const items = document.querySelectorAll('.item-card');
+            items.forEach(item => {
+                const name = item.querySelector('.item-name').innerText.toLowerCase();
+                if(name.includes(term)) item.style.display = 'flex';
+                else item.style.display = 'none';
+            });
+        });
+
+        // Init
+        render();
+
     </script>
 </body>
 </html>
