@@ -26,11 +26,8 @@
         }
     </style>
    <!-- FIREBASE AUTH PROTECTION START -->
-<style>
-    /* Hide body by default to prevent "Flash of Unauthenticated Content" */
-    body { display: none; }
-</style>
-
+<!-- FIREBASE AUTH GUARD (Copy to Content Pages) -->
+<style>body { display: none; }</style>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
@@ -45,31 +42,26 @@
         measurementId: "G-SYBYJH5P8D"
     };
 
-    // Initialize with a unique name to avoid conflicts
-    const app = initializeApp(firebaseConfig, "AuthGuardApp");
+    const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
     onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // User NOT logged in:
-            // 1. Redirect to 403 error page
-            // 2. Use 'replace' so the Back button doesn't bring them back here
-            window.location.replace('403.html');
-        } else {
-            // User IS logged in:
-            // 1. Reveal the page content
+        if (user) {
+            // LOGGED IN: Show the page
             document.body.style.display = 'block';
-            // 2. Trigger a resize event in case canvas/layout needs to recalculate
             window.dispatchEvent(new Event('resize'));
+        } else {
+            // NOT LOGGED IN: Go back to index.html (Login)
+            sessionStorage.setItem('redirect_to', window.location.href);
+            window.location.replace('index.html');
         }
     });
 
-    // Make logout globally available for any buttons on the page
     window.logout = () => {
-        signOut(auth).then(() => window.location.replace('403.html'));
+        signOut(auth).then(() => window.location.replace('index.html'));
     };
 </script>
-<!-- FIREBASE AUTH PROTECTION END -->
+<!-- END GUARD -->
 </head>
 <body class="min-h-screen p-4 sm:p-8">
 
