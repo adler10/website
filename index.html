@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000000; }
+        body { margin: 0; overflow: hidden; background-color: #000000; display: none; /* Hidden until checks finish */ }
         canvas { display: block; }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
@@ -38,8 +38,7 @@
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase tracking-widest text-neutral-500">Identity</label>
                     <div class="relative">
-                        <!-- Added 'name' attribute for better browser autofill handling -->
-                        <input id="email" name="email" type="email" placeholder="user@domain.com" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10" required>
+                        <input id="email" type="email" placeholder="user@domain.com" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10" required>
                         <i data-lucide="user" class="w-4 h-4 text-neutral-600 absolute left-3 top-2.5"></i>
                     </div>
                 </div>
@@ -47,7 +46,7 @@
                 <div class="space-y-1">
                     <label class="text-[10px] uppercase tracking-widest text-neutral-500">Passcode</label>
                     <div class="relative">
-                        <input id="password" name="password" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10" required>
+                        <input id="password" type="password" placeholder="••••••••" class="w-full bg-black/50 border border-neutral-800 text-white px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors rounded-sm pl-10" required>
                         <i data-lucide="key" class="w-4 h-4 text-neutral-600 absolute left-3 top-2.5"></i>
                     </div>
                 </div>
@@ -66,7 +65,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
@@ -78,57 +77,51 @@
             measurementId: "G-SYBYJH5P8D"
         };
 
-        const app = initializeApp(firebaseConfig, "LoginPageApp");
+        const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+
+        // 1. CHECK STATUS
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is already logged in. Redirect them!
+                // Change 'home.html' to whatever your main protected page is called
+                const destination = sessionStorage.getItem('redirect_to') || 'home.html';
+                window.location.replace(destination);
+            } else {
+                // Not logged in. Show the login form.
+                document.body.style.display = 'block';
+            }
+        });
 
         const form = document.getElementById('loginForm');
         const errorMsg = document.getElementById('errorMsg');
         const loginBox = document.getElementById('loginBox');
         const btnText = document.getElementById('btnText');
 
+        // 2. HANDLE LOGIN
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // TRIM inputs to remove accidental spaces
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
-
-            if (!email || !password) {
-                showError("Please enter email and password");
-                return;
-            }
 
             btnText.innerText = "Verifying...";
             errorMsg.style.opacity = '0';
 
             try {
+                // Sign in
                 await signInWithEmailAndPassword(auth, email, password);
-                // SUCCESS
-                window.location.replace('index.html'); // Use replace to prevent back button returning to login
+                // The onAuthStateChanged listener above will catch this and redirect
             } catch (error) {
-                console.error("Login Failed:", error.code, error.message);
+                console.error(error);
                 btnText.innerText = "Connect";
-                
-                if (error.code === 'auth/invalid-email') {
-                    showError("Invalid Email Format");
-                } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    showError("Invalid Email or Password");
-                } else if (error.code === 'auth/too-many-requests') {
-                    showError("Too many attempts. Try later.");
-                } else {
-                    showError("Connection Error");
-                }
+                errorMsg.innerText = "Invalid Credentials";
+                errorMsg.style.opacity = '1';
+                loginBox.classList.add('shake');
+                setTimeout(() => loginBox.classList.remove('shake'), 500);
             }
         });
 
-        function showError(msg) {
-            errorMsg.innerText = msg;
-            errorMsg.style.opacity = '1';
-            loginBox.classList.add('shake');
-            setTimeout(() => loginBox.classList.remove('shake'), 500);
-        }
-
-        // Visuals
+        // Background Visuals
         lucide.createIcons();
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -167,13 +160,14 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.lineWidth = 0.2;
             ctx.strokeStyle = '#06b6d4';
-            particles.forEach((p, i) => {
+            particles.forEach((p, index) => {
                 p.update(canvas.width, canvas.height);
                 p.draw(ctx);
-                for(let j=i; j<particles.length; j++) {
+                for(let j=index; j<particles.length; j++) {
                     const p2 = particles[j];
-                    const d = Math.sqrt((p.x-p2.x)**2 + (p.y-p2.y)**2);
-                    if(d<100) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+                    if(Math.sqrt((p.x-p2.x)**2 + (p.y-p2.y)**2) < 100) {
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                    }
                 }
             });
             requestAnimationFrame(animate);
