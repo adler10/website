@@ -1,1 +1,257 @@
-<p>Hallo</p>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central Command | Home</title>
+    
+    <!-- Tailwind & Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; display: none; /* Hidden by Auth Guard */ }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+        .glass-card:hover {
+            background: rgba(51, 65, 85, 0.8);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+
+    <!-- FIREBASE AUTH GUARD -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+            authDomain: "auth-107d8.firebaseapp.com",
+            projectId: "auth-107d8",
+            storageBucket: "auth-107d8.firebasestorage.app",
+            messagingSenderId: "735861054924",
+            appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+            measurementId: "G-SYBYJH5P8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.body.style.display = 'block';
+                document.getElementById('user-email').textContent = user.email;
+            } else {
+                sessionStorage.setItem('redirect_to', window.location.href);
+                window.location.replace('index.html');
+            }
+        });
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.replace('index.html'));
+        };
+    </script>
+    <!-- END GUARD -->
+
+</head>
+<body class="min-h-screen">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-lg">
+                    <i data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Central Command</h1>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <span id="user-email" class="text-sm text-slate-400 hidden sm:block"></span>
+                <button onclick="window.logout()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-colors border border-slate-700">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Abmelden</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        
+        <!-- Section: Operational -->
+        <div class="mb-10">
+            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <i data-lucide="siren" class="text-red-500"></i> Einsatzleitung & Ops
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="fw/dispatchv2.html" class="glass-card p-5 rounded-xl block group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-red-600 text-xs font-bold px-2 py-1 rounded-bl-lg">LIVE</div>
+                    <div class="mb-3 p-3 bg-red-500/20 w-fit rounded-lg text-red-400 group-hover:text-white group-hover:bg-red-500 transition-colors">
+                        <i data-lucide="map"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">Lagekarte V2</h3>
+                    <p class="text-sm text-slate-400">Aktuelles Führungssystem mit Karten, EA und Protokoll.</p>
+                </a>
+                
+                <a href="lst/index.html" class="glass-card p-5 rounded-xl block group">
+                    <div class="mb-3 p-3 bg-indigo-500/20 w-fit rounded-lg text-indigo-400 group-hover:text-white group-hover:bg-indigo-500 transition-colors">
+                        <i data-lucide="radio"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">Leitstelle (Modular)</h3>
+                    <p class="text-sm text-slate-400">Modulare LST-Ansicht für Disponenten.</p>
+                </a>
+
+                <a href="monitor.html" class="glass-card p-5 rounded-xl block group">
+                    <div class="mb-3 p-3 bg-emerald-500/20 w-fit rounded-lg text-emerald-400 group-hover:text-white group-hover:bg-emerald-500 transition-colors">
+                        <i data-lucide="activity"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">EKG Monitor</h3>
+                    <p class="text-sm text-slate-400">Patientenmonitor Simulator (C3).</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Section: Vehicles -->
+        <div class="mb-10">
+            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <i data-lucide="truck" class="text-blue-500"></i> Fahrzeug Tablets
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="alarm/lh19-1_app.html" class="glass-card p-4 rounded-xl block">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-600/20 p-2 rounded text-blue-400"><i data-lucide="tablet"></i></div>
+                        <div>
+                            <div class="font-bold">LH 19-1</div>
+                            <div class="text-xs text-slate-400">MTW App</div>
+                        </div>
+                    </div>
+                </a>
+                <a href="alarm/lh40.html" class="glass-card p-4 rounded-xl block">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-600/20 p-2 rounded text-blue-400"><i data-lucide="tablet"></i></div>
+                        <div>
+                            <div class="font-bold">LH 40</div>
+                            <div class="text-xs text-slate-400">MLF Status</div>
+                        </div>
+                    </div>
+                </a>
+                <a href="alarm/display.html" class="glass-card p-4 rounded-xl block">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-slate-700/50 p-2 rounded text-slate-300"><i data-lucide="monitor"></i></div>
+                        <div>
+                            <div class="font-bold">Wachen-Display</div>
+                            <div class="text-xs text-slate-400">Großanzeige</div>
+                        </div>
+                    </div>
+                </a>
+                <a href="alarm/settings.html" class="glass-card p-4 rounded-xl block">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-slate-700/50 p-2 rounded text-slate-300"><i data-lucide="settings"></i></div>
+                        <div>
+                            <div class="font-bold">Alarm Config</div>
+                            <div class="text-xs text-slate-400">Admin Panel</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Section: Jugendfeuerwehr -->
+        <div class="mb-10">
+            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <i data-lucide="flame" class="text-orange-500"></i> Bali-Cup (JF)
+            </h2>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="jf/balicup.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
+                    <div class="font-bold text-orange-400 mb-1">Hub</div>
+                    <div class="text-xs text-slate-400">Startseite</div>
+                </a>
+                <a href="jf/balicup/ranking.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
+                    <div class="font-bold text-orange-400 mb-1">Ranking</div>
+                    <div class="text-xs text-slate-400">Live Tabelle</div>
+                </a>
+                <a href="jf/balicup/admin.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
+                    <div class="font-bold text-orange-400 mb-1">Admin</div>
+                    <div class="text-xs text-slate-400">Verwaltung</div>
+                </a>
+                <a href="jf/balicup/stationen/1.html" class="glass-card p-4 rounded-xl block text-center hover:bg-orange-900/20 border-orange-500/30">
+                    <div class="font-bold text-orange-400 mb-1">Stationen</div>
+                    <div class="text-xs text-slate-400">Direkteingabe</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Section: Productivity -->
+        <div class="mb-10">
+            <h2 class="text-lg font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                <i data-lucide="wrench" class="text-purple-500"></i> Tools & Apps
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="chat.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
+                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="message-circle"></i></div>
+                    <div>
+                        <div class="font-bold">CanvasConnect</div>
+                        <div class="text-xs text-slate-400">Spatial Chat</div>
+                    </div>
+                </a>
+                <a href="anwesenheit.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
+                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="users"></i></div>
+                    <div>
+                        <div class="font-bold">Anwesenheit</div>
+                        <div class="text-xs text-slate-400">Tracker</div>
+                    </div>
+                </a>
+                <a href="pizzatest.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
+                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="pizza"></i></div>
+                    <div>
+                        <div class="font-bold">Pizza Konto</div>
+                        <div class="text-xs text-slate-400">Finance Tool</div>
+                    </div>
+                </a>
+                <a href="bahn.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
+                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="train"></i></div>
+                    <div>
+                        <div class="font-bold">Abfahrtsmonitor</div>
+                        <div class="text-xs text-slate-400">KVV Live</div>
+                    </div>
+                </a>
+                 <a href="game/pwa.html" class="glass-card p-5 rounded-xl flex items-center gap-4 group">
+                    <div class="bg-purple-500/20 p-3 rounded-full text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i data-lucide="gamepad-2"></i></div>
+                    <div>
+                        <div class="font-bold">Game Controller</div>
+                        <div class="text-xs text-slate-400">PWA Remote</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer: System / Debug -->
+        <div class="border-t border-slate-800 pt-8 mt-12">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">System & Debug Pages</h3>
+            <div class="flex flex-wrap gap-3">
+                <a href="404.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">404 Error</a>
+                <a href="403.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">403 Forbidden</a>
+                <a href="503.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">503 Critical</a>
+                <a href="fw/documentation.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">Docs V1</a>
+                <a href="fw/dispatch_tutorial.html" class="text-xs text-slate-600 hover:text-white bg-slate-900 px-3 py-1 rounded border border-slate-800">Tutorial</a>
+            </div>
+            <div class="mt-6 text-center text-xs text-slate-700">
+                &copy; 2025 dbaldauf.org | System v2.4.0
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
