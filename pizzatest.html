@@ -53,12 +53,12 @@
         } else {
             // NOT LOGGED IN: Go back to index.html (Login)
             sessionStorage.setItem('redirect_to', window.location.href);
-            window.location.replace('index.html');
+            window.location.replace('https://dbaldauf.org/403');
         }
     });
 
     window.logout = () => {
-        signOut(auth).then(() => window.location.replace('index.html'));
+        signOut(auth).then(() => window.location.replace('https://dbaldauf.org/403'));
     };
 </script>
 <!-- END GUARD -->
