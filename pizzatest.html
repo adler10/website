@@ -25,6 +25,48 @@
             transition: opacity 0.3s ease;
         }
     </style>
+    <!-- FIREBASE AUTH PROTECTION START -->
+<script type="module">
+    // 1. Import Firebase from CDN (Works in plain HTML)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+    // 2. Your Specific Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBSI3GyiL3584lh0Nwb79hEEW35suvSh4g",
+        authDomain: "auth-107d8.firebaseapp.com",
+        projectId: "auth-107d8",
+        storageBucket: "auth-107d8.firebasestorage.app",
+        messagingSenderId: "735861054924",
+        appId: "1:735861054924:web:c87c51e6abcb8f48481169",
+        measurementId: "G-SYBYJH5P8D"
+    };
+
+    // 3. Initialize with a unique name ("AuthGuardApp") to prevent conflicts
+    const app = initializeApp(firebaseConfig, "AuthGuardApp");
+    const auth = getAuth(app);
+
+    // 4. The Guard Logic
+    onAuthStateChanged(auth, (user) => {
+        const currentPath = window.location.pathname;
+        const isErrorPage = currentPath.includes('403.html');
+        const isLoginPage = currentPath.includes('login.html');
+
+        if (!user) {
+            // If NOT logged in...
+            console.warn("Access Denied: Redirecting to 403.");
+            
+            // Redirect to 403 page (unless we are already there or on login)
+            if (!isErrorPage && !isLoginPage) {
+                window.location.href = '403.html';
+            }
+        } else {
+            // If logged in...
+            console.log("Access Granted:", user.email);
+        }
+    });
+</script>
+<!-- FIREBASE AUTH PROTECTION END -->
 </head>
 <body class="min-h-screen p-4 sm:p-8">
 
