@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mein Untis</title>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel für JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: white; }
+        .loader { border: 4px solid #333; border-top: 4px solid #f97316; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Icons
+        const { Calendar, Clock, MapPin, User, ChevronLeft, ChevronRight, LogOut, Settings, ShieldCheck, AlertCircle, Server } = lucide;
+
+        // Configuration
+        const SCHOOL_NAME = "ces-karlsruhe";
+        const SERVER_URL = "ces-karlsruhe.webuntis.com";
+
+        // Helper: Format Time (Untis format 800 -> 08:00)
+        const formatTime = (timeInt) => {
+            const str = timeInt.toString().padStart(4, '0'); // 800 -> 0800
+            return `${str.slice(0, 2)}:${str.slice(2)}`;
+        };
+
+        // Helper: Convert Untis Date (20231024) to JS Date
+        const parseUntisDate = (dateInt) => {
+            const str = dateInt.toString();
+            const year = parseInt(str.slice(0, 4));
+            const month = parseInt(str.slice(4, 6)) - 1;
+            const day = parseInt(str.slice(6, 8));
+            return new Date(year, month, day);
+        };
+
+        // Helper: Get Date as Untis Integer (20231024)
+        const getUntisDate = (dateObj) => {
+            const y = dateObj.getFullYear();
+            const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+            const d = dateObj.getDate().toString().padStart(2, '0');
+            return parseInt(`${y}${m}${d}`);
+        };
+
+        function App() {
+            // State
+            const [proxyUrl, setProxyUrl] = React.useState(localStorage.getItem('untis_proxy') || '');
+            const [username, setUsername] = React.useState(localStorage.getItem('untis_user') || '');
+            const [password, setPassword] = React.useState('');
+            const [otp, setOtp] = React.useState(''); // Not used in standard API, but kept for UI
+            
+            const [session, setSession] = React.useState(null); // { sessionId, personId, personType }
+            const [lessons, setLessons] = React.useState([]);
+            const [viewDate, setViewDate] = React.useState(new Date());
+            
+            const [loading, setLoading] = React.useState(false);
+            const [error, setError] = React.useState('');
+            const [showSettings, setShowSettings] = React.useState(!proxyUrl);
+
+            // API Call Helper
+            const untisCall = async (method, params) => {
+                if (!proxyUrl) throw new Error("Keine Proxy URL konfiguriert");
+                
+                // Wir hängen die Ziel-URL als Query-Parameter an den Proxy
+                // Der WebUntis JSON-RPC Endpunkt
+                const targetUrl = `https://${SERVER_URL}/WebUntis/jsonrpc.do?school=${SCHOOL_NAME}`;
+                
+                // Anfrage an DEINEN Cloudflare Worker
+                const response = await fetch(proxyUrl + "?url=" + encodeURIComponent(targetUrl), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: "req-1",
+                        method: method,
+                        params: params,
+                        jsonrpc: "2.0"
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message || "API Fehler");
+                return data.result;
+            };
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+
+                try {
+                    // 1. Authenticate
+                    // Hinweis: Bei 2FA muss das Token oft an das Passwort angehängt werden oder es ist komplexer.
+                    // Wir probieren hier den Standard-Login.
+                    const result = await untisCall('authenticate', {
+                        user: username,
+                        password: password, // Versuche evtl password + otp, falls 2FA aktiv
+                        client: "MeinUntisApp"
+                    });
+
+                    if (result && result.sessionId) {
+                        const newSession = {
+                            sessionId: result.sessionId,
+                            personId: result.personId,
+                            personType: result.personType
+                        };
+                        setSession(newSession);
+                        localStorage.setItem('untis_user', username);
+                        localStorage.setItem('untis_proxy', proxyUrl);
+                        fetchTimetable(newSession, viewDate);
+                    } else {
+                        throw new Error("Login fehlgeschlagen (Keine Session ID)");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const fetchTimetable = async (currentSession, date) => {
+                setLoading(true);
+                try {
+                    // Wir holen den Plan für die ganze Woche des Datums
+                    // Berechne Montag und Freitag
+                    const curr = new Date(date);
+                    const first = curr.getDate() - curr.getDay() + 1; // Montag
+                    const last = first + 4; // Freitag
+                    
+                    const monday = new Date(curr.setDate(first));
+                    const friday = new Date(curr.setDate(last));
+
+                    const result = await untisCall('getTimetable', {
+                        options: {
+                            element: {
+                                id: currentSession.personId,
+                                type: currentSession.personType
+                            },
+                            startDate: getUntisDate(monday),
+                            endDate: getUntisDate(friday),
+                            showBooking: true,
+                            showInfo: true,
+                        }
+                    });
+                    
+                    // WebUntis gibt Array von Stunden zurück
+                    setLessons(result || []);
+                } catch (err) {
+                    setError("Stundenplan konnte nicht geladen werden: " + err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // Effect: Lade Plan neu wenn Datum sich ändert und eingeloggt
+            React.useEffect(() => {
+                if (session) {
+                    fetchTimetable(session, viewDate);
+                }
+            }, [viewDate]);
+
+            const changeDate = (days) => {
+                const newDate = new Date(viewDate);
+                newDate.setDate(newDate.getDate() + days);
+                if (newDate.getDay() === 0) newDate.setDate(newDate.getDate() + 1);
+                if (newDate.getDay() === 6) newDate.setDate(newDate.getDate() + 2);
+                setViewDate(newDate);
+            };
+
+            const currentDayLessons = React.useMemo(() => {
+                const dateInt = getUntisDate(viewDate);
+                return lessons
+                    .filter(l => l.date === dateInt)
+                    .sort((a, b) => a.startTime - b.startTime);
+            }, [lessons, viewDate]);
+
+            const handleLogout = async () => {
+                try {
+                    if(session) await untisCall('logout', { sessionId: session.sessionId });
+                } catch(e) {}
+                setSession(null);
+                setLessons([]);
+                setPassword('');
+            };
+
+            // --- RENDER ---
+
+            if (!session) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
+                            <div className="h-24 bg-gradient-to-r from-orange-500 to-pink-600 flex items-center justify-center">
+                                <h1 className="text-2xl font-bold text-white">MY UNTIS LOGIN</h1>
+                            </div>
+                            <div className="p-8 space-y-4">
+                                
+                                {showSettings ? (
+                                    <div className="bg-gray-900 p-4 rounded-lg border border-gray-600 mb-4">
+                                        <label className="block text-xs font-bold text-orange-400 mb-1">CLOUDFLARE WORKER URL</label>
+                                        <input 
+                                            type="text" 
+                                            value={proxyUrl}
+                                            onChange={(e) => setProxyUrl(e.target.value)}
+                                            placeholder="https://mein-worker.blabla.workers.dev"
+                                            className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Erstelle einen Worker mit dem Code unten und füge die URL hier ein.</p>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setShowSettings(true)} className="text-xs text-gray-400 flex items-center gap-1 hover:text-white">
+                                        <Settings size={12} /> Proxy Einstellungen
+                                    </button>
+                                )}
+
+                                <form onSubmit={handleLogin} className="space-y-4">
+                                    <input 
+                                        type="text" 
+                                        value={username} 
+                                        onChange={e => setUsername(e.target.value)} 
+                                        placeholder="Benutzername"
+                                        className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600 focus:border-orange-500 outline-none"
+                                    />
+                                    <input 
+                                        type="password" 
+                                        value={password} 
+                                        onChange={e => setPassword(e.target.value)} 
+                                        placeholder="Passwort (ggf. + 2FA Code)"
+                                        className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600 focus:border-orange-500 outline-none"
+                                    />
+                                    
+                                    {error && <div className="text-red-400 text-sm bg-red-900/20 p-2 rounded border border-red-500/30">{error}</div>}
+
+                                    <button type="submit" disabled={loading || !proxyUrl} className="w-full bg-gradient-to-r from-orange-500 to-pink-600 text-white font-bold py-3 rounded-lg hover:opacity-90 disabled:opacity-50">
+                                        {loading ? <div className="loader mx-auto"></div> : 'Anmelden'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-950 pb-20">
+                    {/* Header */}
+                    <div className="bg-gray-900/80 backdrop-blur border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-pink-500 flex items-center justify-center font-bold">
+                                {username[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-sm">CES Karlsruhe</h2>
+                                <p className="text-xs text-gray-400">{username}</p>
+                            </div>
+                        </div>
+                        <button onClick={handleLogout} className="p-2 bg-gray-800 rounded-full hover:bg-red-500/20 hover:text-red-400"><LogOut size={18}/></button>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="p-4">
+                        <div className="flex justify-between items-center mb-6">
+                            <button onClick={() => changeDate(-1)} className="p-2 bg-gray-800 rounded hover:bg-gray-700"><ChevronLeft/></button>
+                            <div className="text-center">
+                                <h3 className="font-bold text-lg">{viewDate.toLocaleDateString('de-DE', { weekday: 'long' })}</h3>
+                                <p className="text-sm text-gray-400">{viewDate.toLocaleDateString('de-DE')}</p>
+                            </div>
+                            <button onClick={() => changeDate(1)} className="p-2 bg-gray-800 rounded hover:bg-gray-700"><ChevronRight/></button>
+                        </div>
+
+                        {/* List */}
+                        <div className="space-y-3">
+                            {loading ? (
+                                <div className="text-center py-10"><div className="loader mx-auto"></div><p className="text-gray-500 mt-2">Lade Plan...</p></div>
+                            ) : currentDayLessons.length === 0 ? (
+                                <div className="text-center py-12 text-gray-500">Keine Stunden heute.</div>
+                            ) : (
+                                currentDayLessons.map((l, i) => (
+                                    <div key={l.id + i} className={`relative bg-gray-900 border border-gray-800 rounded-xl overflow-hidden p-4 flex justify-between items-center ${l.code === 'cancelled' ? 'opacity-50 grayscale' : ''}`}>
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${l.code === 'cancelled' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
+                                        <div>
+                                            <div className="flex items-center gap-2 text-xs text-gray-400 font-mono mb-1">
+                                                <Clock size={12}/> {formatTime(l.startTime)} - {formatTime(l.endTime)}
+                                            </div>
+                                            <h4 className="font-bold text-lg">{l.substText || l.subjects?.[0]?.longName || l.subjects?.[0]?.name || "Unbekannt"}</h4>
+                                            <div className="text-sm text-gray-300 flex items-center gap-2">
+                                                <User size={12}/> {l.teachers?.[0]?.name}
+                                                {l.code === 'cancelled' && <span className="text-red-400 text-xs font-bold uppercase ml-2">Entfällt</span>}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <div className="bg-gray-800 border border-gray-700 px-3 py-1 rounded text-sm font-bold text-orange-400 flex items-center gap-1">
+                                                <MapPin size={12}/> {l.rooms?.[0]?.name || "?"}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        lucide.createIcons();
+    </script>
+</body>
+</html>
