@@ -2,14 +2,18 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mein Untis</title>
+    
+    <!-- PWA Settings für iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Untis">
-    <meta name="theme-color" content="#1F2937">
+    <meta name="theme-color" content="#020617">
     
-    <title>Mein Untis</title>
+    <!-- Manifest als Data URI für Install-To-Home-Screen -->
+    <link rel="manifest" href='data:application/json;charset=utf-8,%7B%22name%22%3A%22Mein%20Untis%22%2C%22short_name%22%3A%22Untis%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%23020617%22%2C%22icons%22%3A%5B%5D%7D'>
+
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -17,12 +21,29 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Icons (Lucide) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { background-color: #0f172a; color: white; }
-        .loader { border: 4px solid #333; border-top: 4px solid #f97316; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        body { 
+            background-color: #020617; 
+            color: white; 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            overscroll-behavior-y: none;
+            /* Safe Area für iPhone Notches */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .loader { border: 3px solid #333; border-top: 3px solid #f97316; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        * { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+        
+        .allow-select { -webkit-user-select: text; user-select: text; }
+        
+        /* Smooth Scrollbar ausblenden für App-Feeling */
+        ::-webkit-scrollbar { display: none; }
     </style>
     <style>
         body {
@@ -66,31 +87,55 @@
 </head>
 <body>
     <div id="root"></div>
+    
+    <div id="error-box" style="display:none; padding: 20px; background: #450a0a; color: #fca5a5; border: 1px solid #f87171; margin: 20px; border-radius: 8px;" class="allow-select">
+        <h3 style="margin-top:0">Es ist ein Fehler aufgetreten:</h3>
+        <pre id="error-msg" style="white-space: pre-wrap;"></pre>
+    </div>
+
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            document.getElementById('root').style.display = 'none';
+            document.getElementById('error-box').style.display = 'block';
+            document.getElementById('error-msg').textContent = msg + "\nZeile: " + line + "\n" + (error ? error.stack : "");
+        };
+    </script>
 
     <script type="text/babel">
-        // Icons
-        const { Calendar, Clock, MapPin, User, ChevronLeft, ChevronRight, LogOut, Settings, ShieldCheck, AlertCircle, Server } = lucide;
+        // --- ICONS ---
+        const IconBase = ({ children, size = 18, className="" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const Clock = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
+        const MapPin = (p) => <IconBase {...p}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></IconBase>;
+        const User = (p) => <IconBase {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconBase>;
+        const ChevronLeft = (p) => <IconBase {...p}><polyline points="15 18 9 12 15 6"/></IconBase>;
+        const ChevronRight = (p) => <IconBase {...p}><polyline points="9 18 15 12 9 6"/></IconBase>;
+        const LogOut = (p) => <IconBase {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></IconBase>;
+        const Settings = (p) => <IconBase {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></IconBase>;
+        const Bug = (p) => <IconBase {...p}><rect width="8" height="14" x="8" y="6" rx="4"/><path d="m19 7-3 2"/><path d="m5 7 3 2"/><path d="m19 19-3-2"/><path d="m5 19 3-2"/><path d="M20 13h-4"/><path d="M4 13h4"/><path d="m10 4 1 2"/></IconBase>;
+        const BarChart = (p) => <IconBase {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></IconBase>;
+        const Calendar = (p) => <IconBase {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></IconBase>;
+        const TrendingUp = (p) => <IconBase {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></IconBase>;
+        const Activity = (p) => <IconBase {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+        const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
+        const Lock = (p) => <IconBase {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>;
 
-        // Configuration
         const SCHOOL_NAME = "ces-karlsruhe";
         const SERVER_URL = "ces-karlsruhe.webuntis.com";
 
-        // Helper: Format Time (Untis format 800 -> 08:00)
+        // --- HELFER ---
         const formatTime = (timeInt) => {
-            const str = timeInt.toString().padStart(4, '0'); // 800 -> 0800
+            if (!timeInt) return "";
+            const str = timeInt.toString().padStart(4, '0'); 
             return `${str.slice(0, 2)}:${str.slice(2)}`;
         };
 
-        // Helper: Convert Untis Date (20231024) to JS Date
-        const parseUntisDate = (dateInt) => {
-            const str = dateInt.toString();
-            const year = parseInt(str.slice(0, 4));
-            const month = parseInt(str.slice(4, 6)) - 1;
-            const day = parseInt(str.slice(6, 8));
-            return new Date(year, month, day);
+        const timeToMinutes = (timeInt) => {
+            const str = timeInt.toString().padStart(4, '0');
+            return parseInt(str.slice(0, 2)) * 60 + parseInt(str.slice(2));
         };
 
-        // Helper: Get Date as Untis Integer (20231024)
         const getUntisDate = (dateObj) => {
             const y = dateObj.getFullYear();
             const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
@@ -98,196 +143,547 @@
             return parseInt(`${y}${m}${d}`);
         };
 
+        const getFirstId = (list) => (list && list.length > 0) ? list[0].id : null;
+
+        const mergeLessons = (lessons) => {
+            if (!lessons || lessons.length === 0) return [];
+            const sorted = [...lessons].sort((a, b) => a.startTime - b.startTime);
+            const merged = [];
+            let current = sorted[0];
+            
+            for (let i = 1; i < sorted.length; i++) {
+                const next = sorted[i];
+                const currentSubjId = getFirstId(current.su);
+                const nextSubjId = getFirstId(next.su);
+                const currentRoomId = getFirstId(current.ro);
+                const nextRoomId = getFirstId(next.ro);
+                const currentTeachId = getFirstId(current.te);
+                const nextTeachId = getFirstId(next.te);
+
+                const sameCode = current.code === next.code;
+                const sameSubject = (currentSubjId === nextSubjId);
+                const sameRoom = (currentRoomId === nextRoomId);
+                const sameTeacher = (currentTeachId === nextTeachId);
+                const continuous = (current.endTime === next.startTime);
+
+                if (sameSubject && sameRoom && sameTeacher && continuous && sameCode) {
+                    current.endTime = next.endTime;
+                } else {
+                    merged.push(current);
+                    current = next;
+                }
+            }
+            merged.push(current);
+            return merged;
+        };
+
+        // --- DASHBOARD: STATS ---
+        const StatsDashboard = ({ lessons, resolveName }) => {
+            const stats = React.useMemo(() => {
+                let totalHours = 0;
+                let cancelledHours = 0;
+                const subjectCounts = {};
+                const processedIds = new Set();
+
+                lessons.forEach(l => {
+                    if (processedIds.has(l.id)) return;
+                    processedIds.add(l.id);
+
+                    const start = timeToMinutes(l.startTime);
+                    const end = timeToMinutes(l.endTime);
+                    const durationUnits = Math.round((end - start) / 45);
+
+                    totalHours += durationUnits;
+                    if (l.code === 'cancelled') cancelledHours += durationUnits;
+
+                    const subjName = resolveName(l, 'subject') || "Sonstige";
+                    subjectCounts[subjName] = (subjectCounts[subjName] || 0) + durationUnits;
+                });
+
+                const topSubjects = Object.entries(subjectCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 4);
+                
+                let weekProgress = 0;
+                if (lessons.length > 0) {
+                    const now = new Date();
+                    const currentUntisDate = getUntisDate(now);
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    let passedMinutes = 0;
+                    let totalMinutes = 0;
+                    const progressProcessed = new Set();
+
+                    lessons.forEach(l => {
+                        if (progressProcessed.has(l.id)) return;
+                        progressProcessed.add(l.id);
+                        const s = timeToMinutes(l.startTime);
+                        const e = timeToMinutes(l.endTime);
+                        const dur = e - s;
+                        totalMinutes += dur;
+
+                        if (l.date < currentUntisDate) {
+                            passedMinutes += dur;
+                        } else if (l.date === currentUntisDate) {
+                            if (currentMinutes >= e) passedMinutes += dur;
+                            else if (currentMinutes > s) passedMinutes += (currentMinutes - s);
+                        }
+                    });
+                    weekProgress = totalMinutes > 0 ? Math.round((passedMinutes / totalMinutes) * 100) : 0;
+                    if (weekProgress > 100) weekProgress = 100;
+                }
+
+                return { totalHours, cancelledHours, topSubjects, weekProgress };
+            }, [lessons]);
+
+            return (
+                <div className="p-4 space-y-4 fade-in">
+                    <div className="bg-slate-900/50 p-4 rounded-3xl border border-slate-800">
+                        <div className="flex justify-between items-end mb-2">
+                            <div className="text-gray-400 text-xs uppercase font-bold flex items-center gap-1">
+                                <TrendingUp size={14}/> Woche
+                            </div>
+                            <div className="text-xl font-bold text-white">{stats.weekProgress}%</div>
+                        </div>
+                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${stats.weekProgress}%` }}></div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <div className="text-gray-400 text-xs uppercase font-bold">Stunden</div>
+                            <div className="text-3xl font-bold text-white mt-1">{stats.totalHours}</div>
+                        </div>
+                        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <div className="text-gray-400 text-xs uppercase font-bold">Entfall</div>
+                            <div className={`text-3xl font-bold mt-1 ${stats.cancelledHours > 0 ? 'text-red-500' : 'text-green-500'}`}>{stats.cancelledHours}</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                        <div className="text-gray-400 text-xs uppercase font-bold mb-4">Top Fächer</div>
+                        <div className="space-y-3">
+                            {stats.topSubjects.map(([name, count], i) => (
+                                <div key={name} className="flex items-center gap-3">
+                                    <div className="w-6 text-gray-500 font-mono text-sm">#{i+1}</div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="font-bold">{name}</span>
+                                            <span className="text-gray-400">{count}h</span>
+                                        </div>
+                                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500" style={{ width: `${(count / stats.totalHours) * 100}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- LIVE ACTIVITY ---
+        const LiveActivity = ({ lessons, resolveName, viewDate }) => {
+            const [now, setNow] = React.useState(new Date());
+
+            React.useEffect(() => {
+                const interval = setInterval(() => setNow(new Date()), 1000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const untisDate = getUntisDate(now);
+            const viewUntisDate = getUntisDate(viewDate);
+            
+            if (viewUntisDate !== untisDate) return null;
+
+            const currentMinutesTotal = now.getHours() * 60 + now.getMinutes();
+            const currentSecondsTotal = currentMinutesTotal * 60 + now.getSeconds();
+            
+            const todayLessons = lessons.filter(l => l.date === untisDate).sort((a,b) => a.startTime - b.startTime);
+
+            if (todayLessons.length === 0) return null;
+
+            let mainText = "Freizeit";
+            let subText = "Kein Unterricht";
+            let progress = 0;
+            let icon = <Activity className="text-white" />;
+            let nextInfo = "";
+            let accentColor = "text-white";
+            let isActive = false;
+
+            const currentLesson = todayLessons.find(l => {
+                const start = timeToMinutes(l.startTime);
+                const end = timeToMinutes(l.endTime);
+                return currentMinutesTotal >= start && currentMinutesTotal < end;
+            });
+
+            if (currentLesson) {
+                isActive = true;
+                const subj = resolveName(currentLesson, 'subject') || "Unterricht";
+                const room = resolveName(currentLesson, 'room') || "?";
+                mainText = subj;
+                subText = `Raum ${room}`;
+                
+                const startM = timeToMinutes(currentLesson.startTime);
+                const endM = timeToMinutes(currentLesson.endTime);
+                
+                const totalDurS = (endM - startM) * 60;
+                const elapsedS = currentSecondsTotal - (startM * 60);
+                
+                progress = (elapsedS / totalDurS) * 100;
+                
+                const timeLeftS = (endM * 60) - currentSecondsTotal;
+                const timeLeftM = Math.floor(timeLeftS / 60);
+                
+                let timeDisplay;
+                if (timeLeftM < 5 && timeLeftM >= 0) {
+                    const m = Math.floor(timeLeftS / 60);
+                    const s = timeLeftS % 60;
+                    timeDisplay = `${m}:${s.toString().padStart(2, '0')}`;
+                } else {
+                    timeDisplay = `${timeLeftM}m`;
+                }
+
+                icon = <div className="text-lg font-bold font-mono tracking-tight flex flex-col items-end leading-none"><span className="text-[10px] text-gray-400 font-sans uppercase mb-1">Noch</span><span>{timeDisplay}</span></div>;
+                accentColor = "text-orange-500";
+
+                const nextL = todayLessons.find(l => timeToMinutes(l.startTime) >= endM);
+                nextInfo = nextL 
+                    ? `Danach: ${resolveName(nextL, 'subject')} (${resolveName(nextL, 'room')})` 
+                    : "Danach: Schulschluss";
+            } else {
+                 const nextL = todayLessons.find(l => timeToMinutes(l.startTime) > currentMinutesTotal);
+                 if (nextL) {
+                     mainText = "Pause";
+                     const start = timeToMinutes(nextL.startTime);
+                     const diff = start - currentMinutesTotal;
+                     
+                     if (diff > 120) {
+                         mainText = "Freizeit";
+                         subText = "Bis morgen";
+                     } else {
+                         subText = `Nächste: ${resolveName(nextL, 'subject')}`;
+                         icon = <div className="font-mono text-sm text-gray-400 flex flex-col items-end"><span className="text-[9px] uppercase">Start in</span><span className="font-bold text-white text-base">{diff}m</span></div>;
+                         nextInfo = `Startet um ${formatTime(nextL.startTime)}`;
+                     }
+                 } else {
+                     mainText = "Feierabend";
+                     subText = "Keine Stunden mehr";
+                     icon = <CheckCircle className="text-green-500"/>;
+                 }
+            }
+
+            return (
+                <div className="mx-4 mb-6">
+                    <div className="bg-black rounded-[36px] p-6 shadow-2xl border border-white/10 relative overflow-hidden">
+                        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-orange-500/20 blur-[60px] rounded-full pointer-events-none ${isActive ? 'opacity-100' : 'opacity-0'}`}></div>
+
+                        <div className="relative z-10 flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                                {isActive && (
+                                    <div className="relative flex h-3 w-3">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                                    </div>
+                                )}
+                                <div>
+                                    <h2 className="text-2xl font-bold tracking-tight text-white leading-none mb-1">{mainText}</h2>
+                                    <p className="text-gray-400 text-sm font-medium">{subText}</p>
+                                </div>
+                            </div>
+                            <div className={accentColor}>{icon}</div>
+                        </div>
+
+                        {isActive && (
+                            <div className="relative z-10 mt-2">
+                                <div className="h-2 bg-gray-800 rounded-full overflow-hidden w-full">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 rounded-full transition-all duration-1000 ease-linear"
+                                        style={{ width: `${progress}%` }}
+                                    ></div>
+                                </div>
+                                <div className="flex justify-between mt-2 items-center">
+                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Aktuell</span>
+                                    <span className="text-[11px] text-gray-400 font-medium">{nextInfo}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         function App() {
-            // State
             const [proxyUrl, setProxyUrl] = React.useState(localStorage.getItem('untis_proxy') || '');
             const [username, setUsername] = React.useState(localStorage.getItem('untis_user') || '');
             const [password, setPassword] = React.useState('');
-            const [otp, setOtp] = React.useState(''); // Not used in standard API, but kept for UI
+            const [saveCreds, setSaveCreds] = React.useState(localStorage.getItem('untis_save_creds') === 'true');
             
-            const [session, setSession] = React.useState(null); // { sessionId, personId, personType }
+            const [session, setSession] = React.useState(null); 
             const [lessons, setLessons] = React.useState([]);
             const [viewDate, setViewDate] = React.useState(new Date());
-            
+            const [masterData, setMasterData] = React.useState({ subjects: {}, teachers: {}, rooms: {} });
+            const [view, setView] = React.useState('timetable'); 
             const [loading, setLoading] = React.useState(false);
             const [error, setError] = React.useState('');
             const [showSettings, setShowSettings] = React.useState(!proxyUrl);
+            const [debugMode, setDebugMode] = React.useState(false);
+            const [debugLog, setDebugLog] = React.useState("");
 
-            // API Call Helper
-            const untisCall = async (method, params) => {
-                if (!proxyUrl) throw new Error("Keine Proxy URL konfiguriert");
-                
-                // Wir hängen die Ziel-URL als Query-Parameter an den Proxy
-                // Der WebUntis JSON-RPC Endpunkt
+            const handleProxyChange = (e) => {
+                const val = e.target.value;
+                setProxyUrl(val);
+                localStorage.setItem('untis_proxy', val);
+            };
+
+            const untisCall = async (method, params, currentSess = session) => {
+                if (!proxyUrl) throw new Error("Keine Proxy URL");
                 const targetUrl = `https://${SERVER_URL}/WebUntis/jsonrpc.do?school=${SCHOOL_NAME}`;
-                
-                // Anfrage an DEINEN Cloudflare Worker
-                const response = await fetch(proxyUrl + "?url=" + encodeURIComponent(targetUrl), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: "req-1",
-                        method: method,
-                        params: params,
-                        jsonrpc: "2.0"
-                    })
-                });
+                const rpcBody = { id: "req-" + Date.now(), method, params, jsonrpc: "2.0" };
+                const headers = { 'Content-Type': 'application/json' };
+                if (currentSess?.sessionId) headers['X-Untis-Session'] = currentSess.sessionId;
 
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message || "API Fehler");
-                return data.result;
+                try {
+                    const response = await fetch(proxyUrl + "?url=" + encodeURIComponent(targetUrl), {
+                        method: 'POST', headers, body: JSON.stringify(rpcBody)
+                    });
+                    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                    const data = await response.json();
+                    if (debugMode) setDebugLog(prev => prev + `\n[${method}] OK`);
+                    if (data.error) throw new Error(data.error.message || "Untis API Error");
+                    return data.result;
+                } catch (e) { throw e; }
+            };
+
+            const fetchMasterData = async (currentSession) => {
+                try {
+                    setDebugLog(prev => prev + `\nStammdaten laden...`);
+                    const [subjects, teachers, rooms] = await Promise.all([
+                        untisCall('getSubjects', {}, currentSession),
+                        untisCall('getTeachers', {}, currentSession),
+                        untisCall('getRooms', {}, currentSession)
+                    ]);
+                    const subjectMap = {}; if(subjects) subjects.forEach(s => subjectMap[String(s.id)] = s);
+                    const teacherMap = {}; if(teachers) teachers.forEach(t => teacherMap[String(t.id)] = t);
+                    const roomMap = {}; if(rooms) rooms.forEach(r => roomMap[String(r.id)] = r);
+                    setMasterData({ subjects: subjectMap, teachers: teacherMap, rooms: roomMap });
+                } catch (e) { console.error("Master data failed", e); }
+            };
+
+            const doLogin = async (usr, pwd, proxy) => {
+                if(!proxy) return;
+                setLoading(true);
+                setError('');
+                setDebugLog("Login startet...");
+                
+                // Temp override state vars for closure if needed
+                const targetProxy = proxy || proxyUrl;
+                
+                try {
+                    // Manuell untisCall nachbauen da wir state noch nicht haben
+                    const targetUrl = `https://${SERVER_URL}/WebUntis/jsonrpc.do?school=${SCHOOL_NAME}`;
+                    const rpcBody = { id: "req-login", method: "authenticate", params: { user: usr, password: pwd, client: "MeinUntisApp" }, jsonrpc: "2.0" };
+                    const response = await fetch(targetProxy + "?url=" + encodeURIComponent(targetUrl), {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rpcBody)
+                    });
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error.message);
+                    
+                    const result = data.result;
+                    if (result && result.sessionId) {
+                        const pType = (result.personType && result.personType > 0) ? result.personType : 5;
+                        const newSession = { sessionId: result.sessionId, personId: result.personId, personType: pType };
+                        setSession(newSession);
+                        localStorage.setItem('untis_session', JSON.stringify(newSession));
+                        localStorage.setItem('untis_user', usr);
+                        // Trigger Data Fetch
+                        await fetchMasterData(newSession);
+                        // Fetch Timetable needs logic from below, easier to trigger via effect or direct call
+                        // Just let effect handle it or call it here
+                        // We call it here to be fast
+                        const d = new Date();
+                        const day = d.getDay();
+                        const diffToMonday = d.getDate() - day + (day === 0 ? -6 : 1);
+                        const monday = new Date(d); monday.setDate(diffToMonday);
+                        const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
+                        const startInt = getUntisDate(monday);
+                        const endInt = getUntisDate(friday);
+                        
+                        const ttRes = await fetch(targetProxy + "?url=" + encodeURIComponent(targetUrl), {
+                            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Untis-Session': result.sessionId },
+                            body: JSON.stringify({ id: "req-tt", method: "getTimetable", params: { options: { element: { id: result.personId, type: pType }, startDate: startInt, endDate: endInt } }, jsonrpc: "2.0" })
+                        });
+                        const ttData = await ttRes.json();
+                        if(ttData.result) setLessons(ttData.result);
+
+                    } else { throw new Error("Keine Session ID."); }
+                } catch (err) { 
+                    setError(err.message); 
+                    setSession(null);
+                } finally { setLoading(false); }
             };
 
             const handleLogin = async (e) => {
                 e.preventDefault();
-                setLoading(true);
-                setError('');
-
-                try {
-                    // 1. Authenticate
-                    // Hinweis: Bei 2FA muss das Token oft an das Passwort angehängt werden oder es ist komplexer.
-                    // Wir probieren hier den Standard-Login.
-                    const result = await untisCall('authenticate', {
-                        user: username,
-                        password: password, // Versuche evtl password + otp, falls 2FA aktiv
-                        client: "MeinUntisApp"
-                    });
-
-                    if (result && result.sessionId) {
-                        const newSession = {
-                            sessionId: result.sessionId,
-                            personId: result.personId,
-                            personType: result.personType
-                        };
-                        setSession(newSession);
-                        localStorage.setItem('untis_user', username);
-                        localStorage.setItem('untis_proxy', proxyUrl);
-                        fetchTimetable(newSession, viewDate);
-                    } else {
-                        throw new Error("Login fehlgeschlagen (Keine Session ID)");
-                    }
-                } catch (err) {
-                    console.error(err);
-                    setError(err.message);
-                } finally {
-                    setLoading(false);
+                if(saveCreds) {
+                    localStorage.setItem('untis_password', password);
+                    localStorage.setItem('untis_save_creds', 'true');
+                } else {
+                    localStorage.removeItem('untis_password');
+                    localStorage.setItem('untis_save_creds', 'false');
                 }
+                doLogin(username, password, proxyUrl);
             };
+
+            // AUTO LOGIN EFFECT
+            React.useEffect(() => {
+                const storedSession = localStorage.getItem('untis_session');
+                const storedUser = localStorage.getItem('untis_user');
+                const storedPass = localStorage.getItem('untis_password');
+                const storedProxy = localStorage.getItem('untis_proxy');
+
+                if(storedUser) setUsername(storedUser);
+                if(storedPass) setPassword(storedPass); // Pre-fill
+                
+                const tryRestore = async () => {
+                    if(storedSession && storedProxy) {
+                        try {
+                            const sess = JSON.parse(storedSession);
+                            setSession(sess);
+                            await fetchMasterData(sess);
+                            // Test fetch to see if session valid
+                            // We do this by calling timetable. If it fails with 401, catch block will run
+                            fetchTimetable(sess, new Date());
+                        } catch(e) {
+                            // Session expired?
+                            if(storedPass && storedUser) {
+                                console.log("Session expired, auto-relogin...");
+                                doLogin(storedUser, storedPass, storedProxy);
+                            } else {
+                                setSession(null);
+                            }
+                        }
+                    } else if(storedUser && storedPass && storedProxy) {
+                        doLogin(storedUser, storedPass, storedProxy);
+                    }
+                };
+                tryRestore();
+            }, []);
 
             const fetchTimetable = async (currentSession, date) => {
                 setLoading(true);
                 try {
-                    // Wir holen den Plan für die ganze Woche des Datums
-                    // Berechne Montag und Freitag
-                    const curr = new Date(date);
-                    const first = curr.getDate() - curr.getDay() + 1; // Montag
-                    const last = first + 4; // Freitag
+                    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    const day = d.getDay();
+                    const diffToMonday = d.getDate() - day + (day === 0 ? -6 : 1);
+                    const monday = new Date(d); monday.setDate(diffToMonday);
+                    const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
                     
-                    const monday = new Date(curr.setDate(first));
-                    const friday = new Date(curr.setDate(last));
-
+                    const startInt = getUntisDate(monday);
+                    const endInt = getUntisDate(friday);
+                    setDebugLog(prev => prev + `\nLade Plan: ${startInt}-${endInt}`);
                     const result = await untisCall('getTimetable', {
                         options: {
-                            element: {
-                                id: currentSession.personId,
-                                type: currentSession.personType
-                            },
-                            startDate: getUntisDate(monday),
-                            endDate: getUntisDate(friday),
-                            showBooking: true,
-                            showInfo: true,
+                            element: { id: currentSession.personId, type: currentSession.personType },
+                            startDate: startInt, endDate: endInt,
+                            showBooking: true, showInfo: true, showSubstText: true, showLsText: true
                         }
-                    });
-                    
-                    // WebUntis gibt Array von Stunden zurück
-                    setLessons(result || []);
+                    }, currentSession);
+                    if (Array.isArray(result)) { setLessons(result); } else { setLessons([]); }
                 } catch (err) {
-                    setError("Stundenplan konnte nicht geladen werden: " + err.message);
-                } finally {
-                    setLoading(false);
-                }
+                    if (err.message.includes("Session") || err.message.includes("not authenticated")) { 
+                        // Auto-Relogin attempt if failure happened here?
+                        // For now just logout
+                        setSession(null); 
+                        setError("Sitzung abgelaufen."); 
+                    } else { setError("Fehler: " + err.message); }
+                } finally { setLoading(false); }
             };
 
-            // Effect: Lade Plan neu wenn Datum sich ändert und eingeloggt
-            React.useEffect(() => {
-                if (session) {
-                    fetchTimetable(session, viewDate);
-                }
-            }, [viewDate]);
+            React.useEffect(() => { if (session) fetchTimetable(session, viewDate); }, [viewDate]);
 
             const changeDate = (days) => {
                 const newDate = new Date(viewDate);
                 newDate.setDate(newDate.getDate() + days);
-                if (newDate.getDay() === 0) newDate.setDate(newDate.getDate() + 1);
-                if (newDate.getDay() === 6) newDate.setDate(newDate.getDate() + 2);
+                const day = newDate.getDay();
+                if (day === 0) newDate.setDate(newDate.getDate() + (days > 0 ? 1 : -2));
+                else if (day === 6) newDate.setDate(newDate.getDate() + (days > 0 ? 2 : -1));
                 setViewDate(newDate);
             };
 
+            const jumpToToday = () => setViewDate(new Date());
+
             const currentDayLessons = React.useMemo(() => {
                 const dateInt = getUntisDate(viewDate);
-                return lessons
-                    .filter(l => l.date === dateInt)
-                    .sort((a, b) => a.startTime - b.startTime);
+                const rawLessons = lessons.filter(l => l.date === dateInt);
+                try { return mergeLessons(rawLessons); } catch (e) { return rawLessons; }
             }, [lessons, viewDate]);
 
             const handleLogout = async () => {
-                try {
-                    if(session) await untisCall('logout', { sessionId: session.sessionId });
-                } catch(e) {}
-                setSession(null);
-                setLessons([]);
-                setPassword('');
+                try { if(session) await untisCall('logout', { sessionId: session.sessionId }); } catch(e) {}
+                setSession(null); setLessons([]); setMasterData({ subjects: {}, teachers: {}, rooms: {} }); 
+                // Clear session but keep creds if checked?
+                localStorage.removeItem('untis_session');
+                // Optional: Clear Password on explicit logout? 
+                // Usually yes for security
+                setSaveCreds(false);
+                localStorage.removeItem('untis_password');
+                localStorage.setItem('untis_save_creds', 'false');
+                setPassword(''); 
+                setDebugLog('');
+            };
+
+            const resolveName = (lesson, type) => {
+                let key = type === 'subject' ? 'su' : (type === 'teacher' ? 'te' : 'ro');
+                let map = type === 'subject' ? masterData.subjects : (type === 'teacher' ? masterData.teachers : masterData.rooms);
+                if (!lesson[key] || lesson[key].length === 0) return null;
+                const id = String(lesson[key][0].id); 
+                const item = map[id];
+                if (!item) return "?"; 
+                return item.name || item.longName || item.text;
             };
 
             // --- RENDER ---
-
             if (!session) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4">
-                        <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
-                            <div className="h-24 bg-gradient-to-r from-orange-500 to-pink-600 flex items-center justify-center">
-                                <h1 className="text-2xl font-bold text-white">MY UNTIS LOGIN</h1>
+                        <div className="w-full max-w-md bg-slate-900 rounded-[32px] shadow-2xl border border-slate-800 overflow-hidden fade-in">
+                            <div className="h-32 bg-gradient-to-tr from-orange-600 via-orange-500 to-amber-500 flex items-center justify-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-black/20"></div>
+                                <h1 className="text-3xl font-bold text-white tracking-tight z-10">Mein Untis</h1>
                             </div>
                             <div className="p-8 space-y-4">
-                                
-                                {showSettings ? (
-                                    <div className="bg-gray-900 p-4 rounded-lg border border-gray-600 mb-4">
-                                        <label className="block text-xs font-bold text-orange-400 mb-1">CLOUDFLARE WORKER URL</label>
-                                        <input 
-                                            type="text" 
-                                            value={proxyUrl}
-                                            onChange={(e) => setProxyUrl(e.target.value)}
-                                            placeholder="https://mein-worker.blabla.workers.dev"
-                                            className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Erstelle einen Worker mit dem Code unten und füge die URL hier ein.</p>
+                                <button onClick={() => setShowSettings(!showSettings)} className="text-xs text-gray-400 flex items-center gap-1 hover:text-white mb-2 ml-auto">
+                                    <Settings size={12} /> Server
+                                </button>
+                                {showSettings && (
+                                    <div className="bg-black p-4 rounded-2xl border border-gray-800 mb-4 fade-in">
+                                        <label className="block text-[10px] uppercase font-bold text-orange-500 mb-2 tracking-widest">Proxy URL</label>
+                                        <input type="text" value={proxyUrl} onChange={handleProxyChange} placeholder="https://..." className="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white focus:border-orange-500 outline-none transition-all allow-select"/>
+                                        <div className="flex items-center gap-2 mt-3">
+                                            <input type="checkbox" checked={debugMode} onChange={e => setDebugMode(e.target.checked)} id="dbg" className="accent-orange-500"/>
+                                            <label htmlFor="dbg" className="text-xs text-gray-500">Debug Modus</label>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <button onClick={() => setShowSettings(true)} className="text-xs text-gray-400 flex items-center gap-1 hover:text-white">
-                                        <Settings size={12} /> Proxy Einstellungen
-                                    </button>
                                 )}
-
                                 <form onSubmit={handleLogin} className="space-y-4">
-                                    <input 
-                                        type="text" 
-                                        value={username} 
-                                        onChange={e => setUsername(e.target.value)} 
-                                        placeholder="Benutzername"
-                                        className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600 focus:border-orange-500 outline-none"
-                                    />
-                                    <input 
-                                        type="password" 
-                                        value={password} 
-                                        onChange={e => setPassword(e.target.value)} 
-                                        placeholder="Passwort (ggf. + 2FA Code)"
-                                        className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600 focus:border-orange-500 outline-none"
-                                    />
+                                    <div>
+                                        <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Benutzername" className="w-full bg-slate-800 text-white rounded-xl p-4 border border-transparent focus:border-gray-600 focus:bg-slate-700 outline-none transition-all placeholder-gray-500 allow-select"/>
+                                    </div>
+                                    <div>
+                                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Passwort" className="w-full bg-slate-800 text-white rounded-xl p-4 border border-transparent focus:border-gray-600 focus:bg-slate-700 outline-none transition-all placeholder-gray-500 allow-select"/>
+                                    </div>
                                     
-                                    {error && <div className="text-red-400 text-sm bg-red-900/20 p-2 rounded border border-red-500/30">{error}</div>}
+                                    <div className="flex items-center gap-2 px-1">
+                                        <input type="checkbox" id="saveCreds" checked={saveCreds} onChange={e => setSaveCreds(e.target.checked)} className="accent-orange-500 w-4 h-4 rounded"/>
+                                        <label htmlFor="saveCreds" className="text-xs text-gray-400 select-none cursor-pointer">Angemeldet bleiben (nur auf eigenem Gerät verwenden!)</label>
+                                    </div>
 
-                                    <button type="submit" disabled={loading || !proxyUrl} className="w-full bg-gradient-to-r from-orange-500 to-pink-600 text-white font-bold py-3 rounded-lg hover:opacity-90 disabled:opacity-50">
-                                        {loading ? <div className="loader mx-auto"></div> : 'Anmelden'}
+                                    {error && <div className="text-red-400 text-sm bg-red-900/20 p-4 rounded-xl border border-red-500/20 flex items-center gap-2"><Bug size={16}/> {error}</div>}
+                                    {debugMode && debugLog && <pre className="text-[10px] text-green-400 bg-black p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-32 allow-select">{debugLog}</pre>}
+                                    <button type="submit" disabled={loading || !proxyUrl} className="w-full bg-white text-black font-bold py-4 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg disabled:opacity-50 disabled:scale-100">
+                                        {loading ? <div className="loader border-black border-t-transparent mx-auto"></div> : 'Anmelden'}
                                     </button>
                                 </form>
                             </div>
@@ -297,69 +693,138 @@
             }
 
             return (
-                <div className="min-h-screen bg-gray-950 pb-20">
-                    {/* Header */}
-                    <div className="bg-gray-900/80 backdrop-blur border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-50">
+                <div className="min-h-screen bg-slate-950 pb-24 font-sans selection:bg-orange-500 selection:text-white">
+                    <div className="bg-slate-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-pink-500 flex items-center justify-center font-bold">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-white shadow-lg text-lg">
                                 {username[0].toUpperCase()}
                             </div>
                             <div>
-                                <h2 className="font-bold text-sm">CES Karlsruhe</h2>
-                                <p className="text-xs text-gray-400">{username}</p>
+                                <h2 className="font-bold text-sm text-white leading-tight">{SCHOOL_NAME}</h2>
+                                <p className="text-xs text-gray-500">{username}</p>
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="p-2 bg-gray-800 rounded-full hover:bg-red-500/20 hover:text-red-400"><LogOut size={18}/></button>
+                        <div className="flex items-center gap-2 bg-slate-900 rounded-full p-1 border border-white/5">
+                            <button 
+                                onClick={() => setView('timetable')} 
+                                className={`p-2.5 rounded-full transition-all ${view === 'timetable' ? 'bg-slate-800 text-white shadow-md' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <Calendar size={18}/>
+                            </button>
+                            <button 
+                                onClick={() => setView('stats')} 
+                                className={`p-2.5 rounded-full transition-all ${view === 'stats' ? 'bg-slate-800 text-white shadow-md' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <BarChart size={18}/>
+                            </button>
+                            <div className="w-[1px] h-6 bg-slate-800 mx-1"></div>
+                            <button onClick={handleLogout} className="p-2.5 rounded-full text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-all"><LogOut size={18}/></button>
+                        </div>
                     </div>
 
-                    {/* Controls */}
-                    <div className="p-4">
-                        <div className="flex justify-between items-center mb-6">
-                            <button onClick={() => changeDate(-1)} className="p-2 bg-gray-800 rounded hover:bg-gray-700"><ChevronLeft/></button>
-                            <div className="text-center">
-                                <h3 className="font-bold text-lg">{viewDate.toLocaleDateString('de-DE', { weekday: 'long' })}</h3>
-                                <p className="text-sm text-gray-400">{viewDate.toLocaleDateString('de-DE')}</p>
-                            </div>
-                            <button onClick={() => changeDate(1)} className="p-2 bg-gray-800 rounded hover:bg-gray-700"><ChevronRight/></button>
-                        </div>
-
-                        {/* List */}
-                        <div className="space-y-3">
-                            {loading ? (
-                                <div className="text-center py-10"><div className="loader mx-auto"></div><p className="text-gray-500 mt-2">Lade Plan...</p></div>
-                            ) : currentDayLessons.length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">Keine Stunden heute.</div>
-                            ) : (
-                                currentDayLessons.map((l, i) => (
-                                    <div key={l.id + i} className={`relative bg-gray-900 border border-gray-800 rounded-xl overflow-hidden p-4 flex justify-between items-center ${l.code === 'cancelled' ? 'opacity-50 grayscale' : ''}`}>
-                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${l.code === 'cancelled' ? 'bg-red-500' : 'bg-orange-500'}`}></div>
-                                        <div>
-                                            <div className="flex items-center gap-2 text-xs text-gray-400 font-mono mb-1">
-                                                <Clock size={12}/> {formatTime(l.startTime)} - {formatTime(l.endTime)}
-                                            </div>
-                                            <h4 className="font-bold text-lg">{l.substText || l.subjects?.[0]?.longName || l.subjects?.[0]?.name || "Unbekannt"}</h4>
-                                            <div className="text-sm text-gray-300 flex items-center gap-2">
-                                                <User size={12}/> {l.teachers?.[0]?.name}
-                                                {l.code === 'cancelled' && <span className="text-red-400 text-xs font-bold uppercase ml-2">Entfällt</span>}
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <div className="bg-gray-800 border border-gray-700 px-3 py-1 rounded text-sm font-bold text-orange-400 flex items-center gap-1">
-                                                <MapPin size={12}/> {l.rooms?.[0]?.name || "?"}
-                                            </div>
-                                        </div>
+                    {/* STATS VIEW */}
+                    {view === 'stats' ? (
+                        <StatsDashboard lessons={lessons} resolveName={resolveName} />
+                    ) : (
+                        /* TIMETABLE VIEW */
+                        <div className="p-4 max-w-2xl mx-auto fade-in">
+                            
+                            {/* Datum Controls */}
+                            <div className="flex justify-between items-center mb-6 px-2">
+                                <button onClick={() => changeDate(-1)} className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center hover:bg-slate-800 text-white border border-white/5 transition-colors"><ChevronLeft size={20}/></button>
+                                
+                                <div className="text-center flex flex-col items-center">
+                                    <h3 className="font-bold text-lg text-white">{viewDate.toLocaleDateString('de-DE', { weekday: 'long' })}</h3>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm text-gray-400 font-medium">{viewDate.toLocaleDateString('de-DE', { day: '2-digit', month: 'long' })}</p>
+                                        {/* Heute Button */}
+                                        <button onClick={jumpToToday} className="text-[10px] bg-slate-800 text-orange-400 px-2 py-0.5 rounded border border-slate-700 hover:bg-slate-700 transition-colors uppercase font-bold tracking-wider">
+                                            Heute
+                                        </button>
                                     </div>
-                                ))
+                                </div>
+
+                                <button onClick={() => changeDate(1)} className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center hover:bg-slate-800 text-white border border-white/5 transition-colors"><ChevronRight size={20}/></button>
+                            </div>
+
+                            {/* LIVE WIDGET */}
+                            <LiveActivity lessons={lessons} resolveName={resolveName} viewDate={viewDate} />
+
+                            {error && (
+                                <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-2xl text-sm flex items-center gap-3">
+                                    <Bug size={18} /> {error}
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                {loading && lessons.length === 0 ? (
+                                    <div className="text-center py-20"><div className="loader mx-auto mb-4"></div><p className="text-gray-600 font-medium">Lade...</p></div>
+                                ) : currentDayLessons.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-24 text-gray-600 bg-slate-900/30 rounded-[32px] border border-white/5 border-dashed mx-2">
+                                        <p className="font-medium">Frei! Keine Stunden.</p>
+                                    </div>
+                                ) : (
+                                    currentDayLessons.map((l, i) => {
+                                        // Erweiterte Logik für "Irregular": 
+                                        // Untis API ist inkonsistent. Wir prüfen "code='irregular'" ODER ob eine Substitution vorliegt (substText vorhanden).
+                                        const isCancelled = l.code === 'cancelled';
+                                        const isIrregular = l.code === 'irregular' || !!l.substText; // Strengerer Check
+                                        
+                                        // Dynamic Colors
+                                        const statusColor = isCancelled ? 'bg-red-500/20 border-red-500/20' : (isIrregular ? 'bg-purple-500/20 border-purple-500/20' : 'bg-slate-900 border-white/5');
+                                        
+                                        const subjectName = resolveName(l, 'subject') || l.substText || "Unbekannt";
+                                        const teacherName = resolveName(l, 'teacher') || "?";
+                                        const roomName = resolveName(l, 'room') || "?";
+
+                                        return (
+                                            <div key={i} className={`relative rounded-2xl overflow-hidden p-5 border flex justify-between items-center transition-all hover:scale-[1.01] active:scale-[0.99] ${statusColor} ${isCancelled ? 'opacity-75 grayscale-[0.5]' : ''}`}>
+                                                
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-400 font-mono mb-1.5 font-medium tracking-wide">
+                                                        <span>{formatTime(l.startTime)}</span>
+                                                        <span className="w-4 h-[1px] bg-gray-700"></span>
+                                                        <span>{formatTime(l.endTime)}</span>
+                                                    </div>
+                                                    <h4 className={`font-bold text-xl mb-1.5 tracking-tight ${isCancelled ? 'line-through text-gray-500 decoration-red-500 decoration-2' : 'text-white'}`}>
+                                                        {subjectName}
+                                                    </h4>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-medium text-gray-300 flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-md">
+                                                            <User size={12}/> {teacherName}
+                                                        </span>
+                                                        {isCancelled && <span className="text-red-200 text-[10px] font-bold uppercase bg-red-500/20 px-2 py-1 rounded">Entfällt</span>}
+                                                        {isIrregular && <span className="text-purple-200 text-[10px] font-bold uppercase bg-purple-500/20 px-2 py-1 rounded">Änderung</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end pl-4">
+                                                    {/* Raum Anzeige: Deutlich Orange bei jeglicher Änderung */}
+                                                    <div className={`border w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-bold shadow-lg relative overflow-hidden transition-colors duration-300 ${isIrregular ? 'bg-orange-500 text-white border-orange-400' : 'bg-slate-800 border-gray-700 text-orange-500'}`}>
+                                                        {isIrregular && <div className="absolute top-0 right-0 w-4 h-4 bg-white/30 rounded-bl-xl"></div>}
+                                                        <span className={`text-[9px] uppercase mb-0.5 ${isIrregular ? 'text-white/80' : 'text-gray-500'}`}>Raum</span>
+                                                        <span className="text-base leading-none">{roomName}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
+
+                            {debugMode && debugLog && (
+                                <div className="mt-8 p-4 bg-slate-900 rounded-2xl border border-gray-800 allow-select">
+                                    <h4 className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">System Log</h4>
+                                    <pre className="text-[10px] text-green-400 whitespace-pre-wrap overflow-x-auto font-mono">{debugLog}</pre>
+                                </div>
                             )}
                         </div>
-                    </div>
+                    )}
                 </div>
             );
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        lucide.createIcons();
     </script>
 </body>
 </html>
