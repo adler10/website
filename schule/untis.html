@@ -300,7 +300,10 @@
             const currentMinutesTotal = now.getHours() * 60 + now.getMinutes();
             const currentSecondsTotal = currentMinutesTotal * 60 + now.getSeconds();
             
-            const todayLessons = lessons.filter(l => l.date === untisDate).sort((a,b) => a.startTime - b.startTime);
+            // WICHTIG: Filtere entfallene Stunden (code 'cancelled') aus der Live-Ansicht
+            const todayLessons = lessons
+                .filter(l => l.date === untisDate && l.code !== 'cancelled')
+                .sort((a,b) => a.startTime - b.startTime);
 
             if (todayLessons.length === 0) return null;
 
@@ -312,6 +315,7 @@
             let accentColor = "text-white";
             let isActive = false;
 
+            // Suche die aktuelle Stunde (die NICHT entfallen ist, weil schon gefiltert)
             const currentLesson = todayLessons.find(l => {
                 const start = timeToMinutes(l.startTime);
                 const end = timeToMinutes(l.endTime);
@@ -348,11 +352,13 @@
                 icon = <div className="text-lg font-bold font-mono tracking-tight flex flex-col items-end leading-none"><span className="text-[10px] text-gray-400 font-sans uppercase mb-1">Noch</span><span>{timeDisplay}</span></div>;
                 accentColor = "text-orange-500";
 
+                // Nächste Stunde suchen (auch nur aus der Liste der nicht-entfallenen)
                 const nextL = todayLessons.find(l => timeToMinutes(l.startTime) >= endM);
                 nextInfo = nextL 
                     ? `Danach: ${resolveName(nextL, 'subject')} (${resolveName(nextL, 'room')})` 
                     : "Danach: Schulschluss";
             } else {
+                 // Suche die nächste Stunde (die nicht entfallen ist)
                  const nextL = todayLessons.find(l => timeToMinutes(l.startTime) > currentMinutesTotal);
                  if (nextL) {
                      mainText = "Pause";
