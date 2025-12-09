@@ -1,94 +1,388 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Explorer</title>
-    
+    <title>Project Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #0f172a; 
-            color: #e2e8f0; 
-            display: none; /* Hidden by Auth Guard */ 
-            overflow: hidden; /* App-like feel */
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
         }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-        .explorer-grid {
+        body {
+            /* HIDDEN BY DEFAULT FOR SECURITY - Revealed by Firebase Script */
+            display: none; 
+            
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted); 
+        }
+
+        .folder-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 1rem;
-            padding: 1.5rem;
         }
 
         .item-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 1rem 0.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            border: 1px solid transparent;
+            transition: all 0.2s ease;
         }
-
         .item-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--bg-panel);
+            transform: translateY(-2px);
         }
 
-        .item-card:active {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(0.98);
+        .tree-item:hover {
+            background-color: rgba(255,255,255,0.05);
         }
-
-        .item-name {
-            font-size: 0.8rem;
-            margin-top: 0.75rem;
-            word-break: break-word;
-            line-height: 1.2;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            color: #94a3b8;
-            font-size: 0.9rem;
-            transition: all 0.15s;
-        }
-
-        .sidebar-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-        }
-
-        .sidebar-item.active {
-            background: rgba(56, 189, 248, 0.1);
-            color: #38bdf8;
-            font-weight: 500;
+        .tree-item.active {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: var(--accent);
+            border-right: 2px solid var(--accent);
         }
     </style>
+</head>
+<body class="h-screen flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-14 border-b border-slate-700 flex items-center px-4 justify-between bg-slate-900 shrink-0">
+        <div class="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <h1 class="font-bold text-lg tracking-wide hidden sm:block">Project<span class="text-blue-500">Hub</span></h1>
+        </div>
+
+        <!-- Search / Filter -->
+        <div class="relative w-full max-w-md mx-4 hidden md:block">
+            <input type="text" id="searchInput" placeholder="Find file..." 
+                class="w-full bg-slate-800 border border-slate-700 rounded-md py-1.5 px-4 text-sm focus:outline-none focus:border-blue-500 transition-colors">
+            <svg class="w-4 h-4 absolute right-3 top-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+
+        <!-- User Profile & Time -->
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-xs text-right">
+                <div class="hidden sm:block">
+                    <div id="user-email" class="text-blue-400 font-medium">Loading...</div>
+                    <div id="clock" class="text-slate-500 font-mono">00:00</div>
+                </div>
+                <button onclick="window.logout()" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1.5 rounded border border-red-900/50 transition-colors text-xs font-bold">
+                    LOGOUT
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar (Tree View) - Hidden on mobile -->
+        <aside class="w-64 bg-slate-900 border-r border-slate-700 flex-col hidden md:flex">
+            <div class="p-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Explorer</div>
+            <div id="sidebarTree" class="flex-1 overflow-y-auto px-2 pb-4 font-mono text-sm">
+                <!-- Tree content injected by JS -->
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col bg-slate-950 relative">
+            
+            <!-- Breadcrumbs bar -->
+            <div class="h-10 border-b border-slate-800 flex items-center px-4 gap-2 text-sm text-slate-400 bg-slate-900/50 backdrop-blur-sm">
+                <button onclick="navigateHome()" class="hover:text-white transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                </button>
+                <div id="breadcrumbs" class="flex items-center gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <!-- Breadcrumbs injected here -->
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div id="contentArea" class="flex-1 overflow-y-auto p-6">
+                <!-- Grid content injected by JS -->
+            </div>
+
+            <!-- Status Bar -->
+            <div class="h-6 bg-slate-900 border-t border-slate-800 flex items-center px-4 text-xs text-slate-500 justify-between shrink-0">
+                <span id="itemCount">0 items</span>
+                <span>Web System v1.1 • Secure</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- UI Logic -->
+    <script>
+        // --- DATA DEFINITION ---
+        const rawFiles = [
+            "alarm/display.html",
+            "alarm/lh19-1.html",
+            "alarm/lh19-1_app.html",
+            "alarm/lh40.html",
+            "alarm/settings.html",
+            "alarm/IMG_0269.jpeg",
+            "fw/dispatch.html",
+            "fw/dispatch_tutorial.html",
+            "fw/dispatchv2.html",
+            "fw/documentation.html",
+            "fw/documentationv2.html",
+            "game/display.html",
+            "game/pwa.html",
+            "jf/balicup/stationen/1.html",
+            "jf/balicup/stationen/2.html",
+            "jf/balicup/stationen/3.html",
+            "jf/balicup/stationen/4.html",
+            "jf/balicup/stationen/5.html",
+            "jf/balicup/stationen/6.html",
+            "jf/balicup/stationen/7.html",
+            "jf/balicup/stationen/8.html",
+            "jf/balicup/admin.html",
+            "jf/balicup/ranking.html",
+            "jf/bali.html",
+            "jf/balicup.html",
+            "jf/docs.html",
+            "jf/funktmo.html",
+            "jf/funktmokarte.html",
+            "jf/test.html",
+            "jf/wertung.html",
+            "jf/wertung2.html",
+            "jf/wertung3.html",
+            "lst/index.html",
+            "lst/js/", 
+            "403.html",
+            "404.html",
+            "410.html",
+            "418.html",
+            "503.html",
+            "anwesenheit.html",
+            "bahn.html",
+            "chat.html",
+            "github.html",
+            "instagram.html",
+            "index2.html",
+            "lyrik.html",
+            "monitor.html",
+            "pizzatest.html"
+        ];
+
+        // Icons
+        const icons = {
+            folder: `<svg class="w-10 h-10 text-blue-500 mb-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>`,
+            folderSm: `<svg class="w-4 h-4 text-blue-500 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>`,
+            html: `<svg class="w-10 h-10 text-orange-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 2v6h6"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 13l-2 2.5 2 2.5m4-5l2 2.5-2 2.5"></path></svg>`,
+            htmlSm: `<svg class="w-4 h-4 text-orange-500 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`,
+            image: `<svg class="w-10 h-10 text-purple-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
+            imageSm: `<svg class="w-4 h-4 text-purple-500 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
+            unknown: `<svg class="w-10 h-10 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>`
+        };
+
+        // --- TREE BUILDER ---
+        function buildFileSystem(paths) {
+            const root = { name: "Home", type: "folder", children: {}, path: "" };
+
+            paths.forEach(path => {
+                const parts = path.split('/').filter(p => p.length > 0);
+                let current = root;
+                let fullPath = "";
+
+                parts.forEach((part, index) => {
+                    fullPath += (fullPath ? "/" : "") + part;
+                    const isLast = index === parts.length - 1;
+                    const isFile = isLast && (part.includes('.') || !path.endsWith('/'));
+
+                    if (!current.children[part]) {
+                        if (isFile) {
+                            let type = 'unknown';
+                            if (part.endsWith('.html')) type = 'html';
+                            if (part.match(/\.(jpg|jpeg|png|gif)$/i)) type = 'image';
+                            current.children[part] = { name: part, type: type, path: fullPath };
+                        } else {
+                            current.children[part] = { name: part, type: 'folder', children: {}, path: fullPath };
+                        }
+                    }
+                    if (!isFile) current = current.children[part];
+                });
+            });
+            return root;
+        }
+
+        const fileSystem = buildFileSystem(rawFiles);
+        let currentDirectory = fileSystem;
+
+        // --- RENDER FUNCTIONS ---
+        function getIcon(type, size = 'lg') {
+            if (size === 'sm') {
+                if (type === 'folder') return icons.folderSm;
+                if (type === 'html') return icons.htmlSm;
+                if (type === 'image') return icons.imageSm;
+                return icons.htmlSm;
+            }
+            if (type === 'folder') return icons.folder;
+            if (type === 'html') return icons.html;
+            if (type === 'image') return icons.image;
+            return icons.unknown;
+        }
+
+        function renderSidebar(node = fileSystem, level = 0) {
+            let html = '';
+            const entries = Object.values(node.children || {}).sort((a, b) => {
+                if (a.type === 'folder' && b.type !== 'folder') return -1;
+                if (a.type !== 'folder' && b.type === 'folder') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            entries.forEach(item => {
+                if (item.type === 'folder') {
+                    const isActive = currentDirectory === item;
+                    const padding = level * 12 + 8;
+                    html += `
+                        <div class="tree-item cursor-pointer py-1 text-slate-300 rounded flex items-center ${isActive ? 'active' : ''}" 
+                             style="padding-left: ${padding}px"
+                             onclick="navigateToPath('${item.path}')">
+                            ${icons.folderSm}
+                            <span class="truncate">${item.name}</span>
+                        </div>
+                    `;
+                    html += renderSidebar(item, level + 1);
+                }
+            });
+            return html;
+        }
+
+        function renderBreadcrumbs() {
+            const pathParts = currentDirectory.path.split('/').filter(p => p);
+            const container = document.getElementById('breadcrumbs');
+            
+            let html = '';
+            let builtPath = '';
+
+            pathParts.forEach((part, idx) => {
+                builtPath += (builtPath ? "/" : "") + part;
+                html += `
+                    <span class="text-slate-600">/</span>
+                    <button onclick="navigateToPath('${builtPath}')" class="hover:text-white px-1 rounded hover:bg-slate-800 transition-colors">
+                        ${part}
+                    </button>
+                `;
+            });
+            
+            if (pathParts.length === 0) html = `<span class="text-slate-500 italic ml-1">Home</span>`;
+            container.innerHTML = html;
+        }
+
+        function renderMainContent(directory = currentDirectory, filter = "") {
+            const grid = document.getElementById('contentArea');
+            let entries = Object.values(directory.children || {});
+            
+            if (filter) {
+                const searchResults = [];
+                const searchRecursive = (node) => {
+                    Object.values(node.children || {}).forEach(child => {
+                        if (child.name.toLowerCase().includes(filter.toLowerCase())) searchResults.push(child);
+                        if (child.type === 'folder') searchRecursive(child);
+                    });
+                };
+                searchRecursive(fileSystem);
+                entries = searchResults;
+            }
+
+            entries.sort((a, b) => {
+                if (a.type === 'folder' && b.type !== 'folder') return -1;
+                if (a.type !== 'folder' && b.type === 'folder') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            document.getElementById('itemCount').innerText = `${entries.length} items`;
+
+            if (entries.length === 0) {
+                grid.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-slate-500 opacity-50">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1m-3-3l-3 3m0 0l-3-3m3 3V3"></path></svg>
+                        <p>This folder is empty</p>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = `<div class="folder-grid">` + entries.map(item => {
+                const isFolder = item.type === 'folder';
+                const href = isFolder ? '#' : item.path;
+                const clickHandler = isFolder ? `onclick="navigateToPath('${item.path}'); return false;"` : '';
+                const target = isFolder ? '' : `target="_blank"`;
+
+                return `
+                    <a href="${href}" ${clickHandler} ${target} class="item-card block p-4 rounded border border-transparent hover:border-slate-700 flex flex-col items-center justify-center text-center cursor-pointer group">
+                        <div class="transform group-hover:scale-110 transition-transform duration-200">
+                            ${getIcon(item.type)}
+                        </div>
+                        <span class="text-xs sm:text-sm text-slate-300 break-all line-clamp-2">${item.name}</span>
+                    </a>
+                `;
+            }).join('') + `</div>`;
+        }
+
+        // --- NAV HELPERS ---
+        function findNodeByPath(pathStr) {
+            if (!pathStr) return fileSystem;
+            const parts = pathStr.split('/').filter(p => p);
+            let current = fileSystem;
+            for (const part of parts) {
+                if (current.children && current.children[part]) current = current.children[part];
+                else return null;
+            }
+            return current;
+        }
+
+        function navigateToPath(path) {
+            const node = findNodeByPath(path);
+            if (node && node.type === 'folder') {
+                currentDirectory = node;
+                renderBreadcrumbs();
+                renderMainContent();
+                document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+                document.getElementById('sidebarTree').innerHTML = renderSidebar();
+            }
+        }
+        function navigateHome() { navigateToPath(""); }
+
+        // --- INIT UI ---
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value;
+            renderMainContent(val ? fileSystem : currentDirectory, val);
+        });
+
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }, 1000);
+
+        // Initial paint
+        document.getElementById('sidebarTree').innerHTML = renderSidebar();
+        renderBreadcrumbs();
+        renderMainContent();
+    </script>
 
     <!-- FIREBASE AUTH GUARD -->
     <script type="module">
@@ -114,6 +408,7 @@
                 document.getElementById('user-email').textContent = user.email;
             } else {
                 sessionStorage.setItem('redirect_to', window.location.href);
+                // Ensure you have an index.html that handles login!
                 window.location.replace('index.html');
             }
         });
@@ -121,373 +416,6 @@
         window.logout = () => {
             signOut(auth).then(() => window.location.replace('index.html'));
         };
-    </script>
-</head>
-<body class="h-screen w-screen flex overflow-hidden">
-
-    <!-- Sidebar -->
-    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex-col hidden md:flex">
-        <div class="p-4 flex items-center gap-3 border-b border-slate-800 h-16">
-            <div class="w-3 h-3 rounded-full bg-red-500"></div>
-            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
-            <div class="w-3 h-3 rounded-full bg-green-500"></div>
-        </div>
-        
-        <div class="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-            <div class="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Favoriten</div>
-            <div onclick="navigateTo('root')" class="sidebar-item active" id="nav-root">
-                <i data-lucide="home" class="w-4 h-4"></i> Home
-            </div>
-            <div onclick="navigateTo('fw')" class="sidebar-item" id="nav-fw">
-                <i data-lucide="flame" class="w-4 h-4"></i> Feuerwehr
-            </div>
-            <div onclick="navigateTo('jf')" class="sidebar-item" id="nav-jf">
-                <i data-lucide="users" class="w-4 h-4"></i> Jugend
-            </div>
-            <div onclick="navigateTo('alarm')" class="sidebar-item" id="nav-alarm">
-                <i data-lucide="bell" class="w-4 h-4"></i> Alarm
-            </div>
-            <div onclick="navigateTo('game')" class="sidebar-item" id="nav-game">
-                <i data-lucide="gamepad-2" class="w-4 h-4"></i> Games
-            </div>
-            
-            <div class="mt-8 px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">System</div>
-            <div onclick="window.logout()" class="sidebar-item hover:text-red-400">
-                <i data-lucide="log-out" class="w-4 h-4"></i> Abmelden
-            </div>
-        </div>
-        
-        <div class="p-4 border-t border-slate-800 text-xs text-slate-500 truncate" id="user-email">
-            user@system.local
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-w-0 bg-slate-900/50">
-        
-        <!-- Toolbar -->
-        <header class="h-16 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900/80 backdrop-blur-md z-10">
-            <div class="flex items-center gap-4 flex-1">
-                <!-- Mobile Menu Button -->
-                <button class="md:hidden text-slate-400"><i data-lucide="menu" class="w-5 h-5"></i></button>
-                
-                <!-- Navigation Controls -->
-                <div class="flex items-center gap-2 text-slate-400">
-                    <button onclick="goBack()" class="p-1 hover:bg-slate-800 rounded transition-colors"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-                    <button onclick="goForward()" class="p-1 hover:bg-slate-800 rounded transition-colors"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
-                </div>
-
-                <!-- Breadcrumbs -->
-                <div class="flex items-center gap-1 text-sm bg-slate-800/50 py-1.5 px-3 rounded-md border border-slate-700/50 flex-1 max-w-xl overflow-hidden" id="breadcrumbs">
-                    <!-- Injected by JS -->
-                </div>
-            </div>
-
-            <!-- Search -->
-            <div class="relative hidden sm:block">
-                <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-                <input type="text" id="searchInput" placeholder="Suchen..." class="bg-slate-800 border border-slate-700 text-sm rounded-full pl-9 pr-4 py-1.5 focus:outline-none focus:border-blue-500 w-48 transition-all focus:w-64">
-            </div>
-        </header>
-
-        <!-- File Grid -->
-        <div class="flex-1 overflow-y-auto" id="main-area">
-            <div class="explorer-grid" id="file-grid">
-                <!-- Content Injected by JS -->
-            </div>
-        </div>
-
-        <!-- Status Bar -->
-        <footer class="h-8 bg-slate-900 border-t border-slate-800 flex items-center px-4 text-xs text-slate-500 justify-between">
-            <span id="item-count">0 Objekte</span>
-            <span>File System v1.0</span>
-        </footer>
-    </main>
-
-    <script>
-        // --- 1. THE FILE SYSTEM STRUCTURE ---
-        // I mapped your entire repo into this JSON structure
-        const fileSystem = {
-            "root": {
-                name: "Home",
-                type: "folder",
-                children: {
-                    "alarm": {
-                        name: "alarm",
-                        type: "folder",
-                        children: {
-                            "display.html": { name: "display.html", type: "file", path: "alarm/display.html" },
-                            "lh19-1.html": { name: "lh19-1.html", type: "file", path: "alarm/lh19-1.html" },
-                            "lh19-1_app.html": { name: "lh19-1_app.html", type: "file", path: "alarm/lh19-1_app.html" },
-                            "lh40.html": { name: "lh40.html", type: "file", path: "alarm/lh40.html" },
-                            "settings.html": { name: "settings.html", type: "file", path: "alarm/settings.html" },
-                            "IMG_0269.jpeg": { name: "IMG_0269.jpeg", type: "image", path: "alarm/IMG_0269.jpeg" }
-                        }
-                    },
-                    "fw": {
-                        name: "fw",
-                        type: "folder",
-                        children: {
-                            "dispatch.html": { name: "dispatch.html", type: "file", path: "fw/dispatch.html" },
-                            "dispatch_tutorial.html": { name: "dispatch_tutorial.html", type: "file", path: "fw/dispatch_tutorial.html" },
-                            "dispatchv2.html": { name: "dispatchv2.html", type: "file", path: "fw/dispatchv2.html" },
-                            "documentation.html": { name: "documentation.html", type: "file", path: "fw/documentation.html" },
-                            "documentationv2.html": { name: "documentationv2.html", type: "file", path: "fw/documentationv2.html" }
-                        }
-                    },
-                    "game": {
-                        name: "game",
-                        type: "folder",
-                        children: {
-                            "display.html": { name: "display.html", type: "file", path: "game/display.html" },
-                            "pwa.html": { name: "pwa.html", type: "file", path: "game/pwa.html" }
-                        }
-                    },
-                    "jf": {
-                        name: "jf",
-                        type: "folder",
-                        children: {
-                            "balicup": {
-                                name: "balicup",
-                                type: "folder",
-                                children: {
-                                    "stationen": {
-                                        name: "stationen",
-                                        type: "folder",
-                                        children: {
-                                            "1.html": { name: "1.html", type: "file", path: "jf/balicup/stationen/1.html" },
-                                            "2.html": { name: "2.html", type: "file", path: "jf/balicup/stationen/2.html" },
-                                            "3.html": { name: "3.html", type: "file", path: "jf/balicup/stationen/3.html" },
-                                            "4.html": { name: "4.html", type: "file", path: "jf/balicup/stationen/4.html" },
-                                            "5.html": { name: "5.html", type: "file", path: "jf/balicup/stationen/5.html" },
-                                            "6.html": { name: "6.html", type: "file", path: "jf/balicup/stationen/6.html" },
-                                            "7.html": { name: "7.html", type: "file", path: "jf/balicup/stationen/7.html" },
-                                            "8.html": { name: "8.html", type: "file", path: "jf/balicup/stationen/8.html" }
-                                        }
-                                    },
-                                    "admin.html": { name: "admin.html", type: "file", path: "jf/balicup/admin.html" },
-                                    "ranking.html": { name: "ranking.html", type: "file", path: "jf/balicup/ranking.html" }
-                                }
-                            },
-                            "bali.html": { name: "bali.html", type: "file", path: "jf/bali.html" },
-                            "balicup.html": { name: "balicup.html", type: "file", path: "jf/balicup.html" },
-                            "docs.html": { name: "docs.html", type: "file", path: "jf/docs.html" },
-                            "funktmo.html": { name: "funktmo.html", type: "file", path: "jf/funktmo.html" },
-                            "funktmokarte.html": { name: "funktmokarte.html", type: "file", path: "jf/funktmokarte.html" },
-                            "test.html": { name: "test.html", type: "file", path: "jf/test.html" },
-                            "wertung.html": { name: "wertung.html", type: "file", path: "jf/wertung.html" },
-                            "wertung2.html": { name: "wertung2.html", type: "file", path: "jf/wertung2.html" },
-                            "wertung3.html": { name: "wertung3.html", type: "file", path: "jf/wertung3.html" }
-                        }
-                    },
-                    "lst": {
-                        name: "lst",
-                        type: "folder",
-                        children: {
-                            "index.html": { name: "index.html", type: "file", path: "lst/index.html" },
-                            "js": { name: "js", type: "folder", children: {} } // Simplified for display
-                        }
-                    },
-                    "403.html": { name: "403.html", type: "file", path: "403.html", icon: "alert-triangle", color: "text-red-400" },
-                    "404.html": { name: "404.html", type: "file", path: "404.html", icon: "alert-triangle", color: "text-orange-400" },
-                    "410.html": { name: "410.html", type: "file", path: "410.html", icon: "alert-triangle", color: "text-orange-400" },
-                    "418.html": { name: "418.html", type: "file", path: "418.html", icon: "coffee", color: "text-amber-400" },
-                    "503.html": { name: "503.html", type: "file", path: "503.html", icon: "server-crash", color: "text-red-400" },
-                    "anwesenheit.html": { name: "anwesenheit.html", type: "file", path: "anwesenheit.html" },
-                    "bahn.html": { name: "bahn.html", type: "file", path: "bahn.html", icon: "train" },
-                    "chat.html": { name: "chat.html", type: "file", path: "chat.html", icon: "message-circle" },
-                    "github.html": { name: "github.html", type: "file", path: "github.html", icon: "github" },
-                    "instagram.html": { name: "instagram.html", type: "file", path: "instagram.html", icon: "instagram" },
-                    "index2.html": { name: "index2.html", type: "file", path: "index2.html" },
-                    "lyrik.html": { name: "lyrik.html", type: "file", path: "lyrik.html", icon: "feather" },
-                    "monitor.html": { name: "monitor.html", type: "file", path: "monitor.html", icon: "activity" },
-                    "pizzatest.html": { name: "pizzatest.html", type: "file", path: "pizzatest.html", icon: "pizza" }
-                }
-            }
-        };
-
-        // --- 2. STATE MANAGEMENT ---
-        let currentPath = ['root'];
-        let history = [['root']];
-        let historyIndex = 0;
-
-        // --- 3. RENDERING ENGINE ---
-        function render() {
-            const grid = document.getElementById('file-grid');
-            const breadcrumbs = document.getElementById('breadcrumbs');
-            const countLabel = document.getElementById('item-count');
-            
-            grid.innerHTML = '';
-            breadcrumbs.innerHTML = '';
-
-            // 1. Get contents of current folder
-            let currentFolder = fileSystem;
-            currentPath.forEach(key => {
-                currentFolder = currentFolder[key]?.children || currentFolder[key];
-            });
-
-            // 2. Render Breadcrumbs
-            currentPath.forEach((folderKey, index) => {
-                // Separator
-                if(index > 0) {
-                    const sep = document.createElement('span');
-                    sep.className = 'text-slate-500';
-                    sep.innerHTML = '/';
-                    breadcrumbs.appendChild(sep);
-                }
-
-                // Folder Name
-                const span = document.createElement('span');
-                span.className = 'cursor-pointer hover:text-white transition-colors ' + (index === currentPath.length-1 ? 'text-white font-medium' : 'text-slate-400');
-                span.innerText = folderKey === 'root' ? 'Home' : folderKey;
-                span.onclick = () => navigateToPathIndex(index);
-                breadcrumbs.appendChild(span);
-            });
-
-            // 3. Render Grid Items
-            const items = Object.values(currentFolder).sort((a, b) => {
-                // Sort: Folders first, then files
-                if(a.type === b.type) return a.name.localeCompare(b.name);
-                return a.type === 'folder' ? -1 : 1;
-            });
-
-            countLabel.innerText = `${items.length} Objekte`;
-
-            if(items.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">Dieser Ordner ist leer.</div>';
-            }
-
-            items.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'item-card group';
-                
-                // Icon Logic
-                let iconName = 'file';
-                let iconColor = 'text-slate-400';
-                
-                if (item.type === 'folder') {
-                    iconName = 'folder';
-                    iconColor = 'text-blue-400 fill-blue-400/20';
-                } else if (item.name.endsWith('.html')) {
-                    iconName = 'file-code';
-                    iconColor = 'text-emerald-400';
-                } else if (item.type === 'image') {
-                    iconName = 'image';
-                    iconColor = 'text-purple-400';
-                }
-
-                // Custom Icons override
-                if (item.icon) {
-                    iconName = item.icon;
-                    if(item.color) iconColor = item.color;
-                }
-
-                card.innerHTML = `
-                    <i data-lucide="${iconName}" class="w-10 h-10 ${iconColor} mb-1 transition-transform group-hover:scale-110"></i>
-                    <span class="item-name text-slate-300 group-hover:text-white">${item.name}</span>
-                `;
-
-                // Interaction
-                if (item.type === 'folder') {
-                    card.onclick = () => openFolder(item.name);
-                } else {
-                    card.onclick = () => window.location.href = item.path;
-                }
-
-                grid.appendChild(card);
-            });
-
-            lucide.createIcons();
-            updateSidebarHighlight();
-        }
-
-        // --- 4. NAVIGATION LOGIC ---
-        function openFolder(folderName) {
-            currentPath.push(folderName);
-            addToHistory();
-            render();
-        }
-
-        function navigateTo(target) {
-            // Used by Sidebar
-            if(target === 'root') currentPath = ['root'];
-            else if(target === 'fw') currentPath = ['root', 'fw'];
-            else if(target === 'jf') currentPath = ['root', 'jf'];
-            else if(target === 'alarm') currentPath = ['root', 'alarm'];
-            else if(target === 'game') currentPath = ['root', 'game'];
-            
-            addToHistory();
-            render();
-        }
-
-        function navigateToPathIndex(index) {
-            currentPath = currentPath.slice(0, index + 1);
-            addToHistory();
-            render();
-        }
-
-        function addToHistory() {
-            // Remove any forward history if we diverge
-            history = history.slice(0, historyIndex + 1);
-            history.push([...currentPath]);
-            historyIndex++;
-        }
-
-        function goBack() {
-            if(historyIndex > 0) {
-                historyIndex--;
-                currentPath = history[historyIndex];
-                render();
-            }
-        }
-
-        function goForward() {
-            if(historyIndex < history.length - 1) {
-                historyIndex++;
-                currentPath = history[historyIndex];
-                render();
-            }
-        }
-
-        function updateSidebarHighlight() {
-            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-            
-            const currentFolder = currentPath[currentPath.length - 1];
-            
-            if(currentPath.length === 1) document.getElementById('nav-root').classList.add('active');
-            else if(currentPath.includes('fw')) document.getElementById('nav-fw').classList.add('active');
-            else if(currentPath.includes('jf')) document.getElementById('nav-jf').classList.add('active');
-            else if(currentPath.includes('alarm')) document.getElementById('nav-alarm').classList.add('active');
-            else if(currentPath.includes('game')) document.getElementById('nav-game').classList.add('active');
-        }
-
-        // Search
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            if(!term) {
-                render();
-                return;
-            }
-
-            // Simple flatten search
-            // (In a real app, you'd crawl the JSON recursively)
-            // For now, let's just search the CURRENT view for simplicity, 
-            // OR you can implement a deep search if you want. 
-            // Let's stick to current view to match standard explorer behavior 
-            // or we can filter the items array inside render().
-            
-            // Re-render filtering the items manually here would be cleaner
-            const items = document.querySelectorAll('.item-card');
-            items.forEach(item => {
-                const name = item.querySelector('.item-name').innerText.toLowerCase();
-                if(name.includes(term)) item.style.display = 'flex';
-                else item.style.display = 'none';
-            });
-        });
-
-        // Init
-        render();
-
     </script>
 </body>
 </html>
